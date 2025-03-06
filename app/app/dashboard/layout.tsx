@@ -15,9 +15,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
 
   const navigation = [
-    { name: "Dashboard", icon: Home, href: "/dashboard" },
-    { name: "Current Case", icon: FileText, href: "/dashboard/current-case" },
-    { name: "Templates", icon: FileText, href: "/dashboard/templates" },
+    { name: "Dashboard", icon: Home, href: "/app/dashboard" },
+    {
+      name: "Current Case",
+      icon: FileText,
+      href: "/app/dashboard/current-case",
+    },
+    { name: "Templates", icon: FileText, href: "/app/dashboard/templates" },
   ];
 
   return (

@@ -1,12 +1,9 @@
-import DeployButton from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import HeaderAuth from "@/components/header-auth";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import Link from "next/link";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { DeepgramContextProvider } from "@/context/DeepgramContextProvider";
+import { MicrophoneContextProvider } from "@/context/MicrophoneContextProvider";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -38,9 +35,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <main className="min-h-screen w-screen flex flex-col">
-            <div className="flex flex-col">{children}</div>
+            <MicrophoneContextProvider>
+              <DeepgramContextProvider>
+                <div className="flex flex-col">{children}</div>
+                <Toaster />
 
-            {/* <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
+                {/* <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
                 <p>
                   Powered by{" "}
                   <a
@@ -54,6 +54,8 @@ export default function RootLayout({
                 </p>
                 <ThemeSwitcher />
               </footer> */}
+              </DeepgramContextProvider>
+            </MicrophoneContextProvider>
           </main>
         </ThemeProvider>
       </body>
