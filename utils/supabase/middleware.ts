@@ -1,62 +1,81 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { type NextRequest, NextResponse } from "next/server";
 
-export const updateSession = async (request: NextRequest) => {
-  // This `try/catch` block is only here for the interactive tutorial.
-  // Feel free to remove once you have Supabase connected.
-  try {
-    // Create an unmodified response
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+export function createClient(request: NextRequest) {
+  // Create an unmodified response
+  const response = NextResponse.next();
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            );
-            response = NextResponse.next({
-              request,
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
-          },
+  // Create a Supabase client configured to use cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
         },
-      }
-    );
+        set(name: string, value: string, options: any) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: any) {
+          request.cookies.delete({
+            name,
+            ...options,
+          });
+          response.cookies.delete({
+            name,
+            ...options,
+          });
+        },
+      },
+    }
+  );
 
-    // This will refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/server-side/nextjs
-    const user = await supabase.auth.getUser();
+  return { supabase, response };
+}
 
-    // protected routes
-    if (request.nextUrl.pathname.startsWith("/app") && user.error) {
+export async function middleware(request: NextRequest) {
+  const { supabase, response } = createClient(request);
+
+  // Check if we have a session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Get the pathname from the URL
+  const { pathname } = request.nextUrl;
+
+  // If user is signed in and trying to access the landing page or auth pages, redirect to dashboard
+  if (session) {
+    if (pathname === "/" || pathname.startsWith("/(auth-pages)")) {
+      return NextResponse.redirect(new URL("/app/dashboard", request.url));
+    }
+  }
+
+  // If user is not signed in and trying to access protected routes, redirect to sign-in
+  if (!session) {
+    if (pathname.startsWith("/app")) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
-
-    if (request.nextUrl.pathname === "/" && !user.error) {
-      return NextResponse.redirect(new URL("/app", request.url));
-    }
-
-    return response;
-  } catch (e) {
-    // If you are here, a Supabase client could not be created!
-    // This is likely because you have not set up environment variables.
-    // Check out http://localhost:3000 for Next Steps.
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
   }
+
+  // Return the response for all other cases
+  return response;
+}
+
+// Specify which routes this middleware should run on
+export const config = {
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
