@@ -61,6 +61,7 @@ import {
   deleteTemplate,
   getTemplates,
 } from "../template-actions";
+import { useAudioRecording } from "../current-case/audio-recording";
 
 // Define the form schema
 const templateFormSchema = z.object({
@@ -146,6 +147,14 @@ export default function TemplatesPage() {
     control: editForm.control,
     name: "schema",
   });
+
+  const {
+    isRecording,
+    isLoading,
+    timer: localTimer,
+    transcriptText,
+    handleRecordingToggle,
+  } = useAudioRecording();
 
   useEffect(() => {
     fetchTemplates();

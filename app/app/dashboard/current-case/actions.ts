@@ -932,7 +932,6 @@ export async function addDifferentialDiagnosis(data: DifferentialDiagnosis) {
         case_id: parsedData.caseId,
         diagnosis: parsedData.diagnosis,
         approved: parsedData.approved,
-        notes: parsedData.notes || "",
       })
       .select()
       .single();

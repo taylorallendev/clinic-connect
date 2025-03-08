@@ -57,11 +57,12 @@ import { ClientSideDate } from "./client-side-dates";
 import { useCaseForm } from "./case-form";
 import { SoapNotesEditor } from "@/components/ui/soap-notes-editor";
 import { Label as UILabel } from "@/components/ui/label";
+import { useTranscription } from "@/hooks/use-transcription";
 
 export default function Home() {
-  // References for tracking transcript state
-  const interimTranscriptRef = useRef<string>("");
-  const finalTranscriptRef = useRef<string>("");
+  // Use the new transcription hook
+  const { transcriptText, setTranscriptText, resetTranscript } =
+    useTranscription();
 
   // Use the case form hook for SOAP notes handling
   const {
@@ -80,18 +81,16 @@ export default function Home() {
     isRecording,
     timer,
     caseActions,
-    transcriptText,
     selectedRecordings,
     setIsRecording,
     setTimer,
     setIsLoading,
-    setTranscriptText,
     setMicrophoneState,
     handleRecordingFinished,
     toggleRecordingSelection,
   } = useCaseStore();
 
-  // Transcription hooks
+  // Transcription hooks - keep these for connection management
   const { connection, connectToDeepgram, disconnectFromDeepgram } =
     useDeepgram();
   const { setupMicrophone, microphone, startMicrophone, stopMicrophone } =
@@ -111,88 +110,6 @@ export default function Home() {
 
     void initMicrophone();
   }, []);
-
-  // Add event listener for transcription results
-  useEffect(() => {
-    if (connection) {
-      console.log("Setting up direct transcription listener");
-
-      // We're using the refs declared at component level
-
-      // Single listener for transcript events
-      const transcriptListener = (data: LiveTranscriptionEvent) => {
-        console.log("Transcript event received:", data);
-
-        const { is_final: isFinal } = data;
-        const transcript = data.channel?.alternatives?.[0]?.transcript ?? "";
-
-        if (!transcript || !transcript.trim()) return;
-
-        console.log("Processing transcript:", transcript, "is_final:", isFinal);
-
-        if (isFinal) {
-          // This is a final transcript chunk
-          const newFinalText =
-            finalTranscriptRef.current +
-            (finalTranscriptRef.current ? " " : "") +
-            transcript.trim();
-
-          finalTranscriptRef.current = newFinalText;
-
-          // Reset interim text since we now have the final version
-          interimTranscriptRef.current = "";
-
-          // Set the complete transcript (final chunks only)
-          setTranscriptText(newFinalText);
-          console.log("Updated final transcript:", newFinalText);
-        } else {
-          // This is an interim transcript - only show for real-time feedback
-          interimTranscriptRef.current = transcript.trim();
-
-          // Display combined transcript (final + current interim)
-          const displayText =
-            finalTranscriptRef.current +
-            (finalTranscriptRef.current ? " " : "") +
-            interimTranscriptRef.current;
-
-          setTranscriptText(displayText);
-          console.log("Updated display transcript:", displayText);
-        }
-      };
-
-      // Add connection state event listeners
-      const openListener = () => {
-        console.log("Deepgram connection opened");
-        toast("Deepgram connection established");
-      };
-
-      const errorListener = (error: any) => {
-        console.error("Deepgram connection error:", error);
-        toast("Deepgram connection error");
-      };
-
-      // Set up event listeners
-      connection.addListener(
-        LiveTranscriptionEvents.Transcript,
-        transcriptListener
-      );
-      connection.addListener(LiveTranscriptionEvents.Open, openListener);
-      connection.addListener(LiveTranscriptionEvents.Error, errorListener);
-
-      console.log("Added transcript listener");
-
-      // Return cleanup function
-      return () => {
-        connection.removeListener(
-          LiveTranscriptionEvents.Transcript,
-          transcriptListener
-        );
-        connection.removeListener(LiveTranscriptionEvents.Open, openListener);
-        connection.removeListener(LiveTranscriptionEvents.Error, errorListener);
-        console.log("Removed all transcription listeners");
-      };
-    }
-  }, [connection, setTranscriptText]);
 
   // Handle microphone audio data
   useEffect(() => {
@@ -271,7 +188,7 @@ export default function Home() {
     }
   }, [localTimer]);
 
-  // Modify recording toggle to include finished handler
+  // Modify recording toggle to use the new resetTranscript function
   const handleRecordingToggle = async () => {
     try {
       if (!isRecording) {
@@ -279,17 +196,15 @@ export default function Home() {
         // Start recording
         setIsLoading(true);
 
-        // Reset the transcript and transcript refs at the start of recording
-        setTranscriptText("");
-        interimTranscriptRef.current = "";
-        finalTranscriptRef.current = "";
+        // Reset the transcript using the new hook function
+        resetTranscript();
 
         await connectToDeepgram({
           model: "nova-3",
           interim_results: true,
           smart_format: true,
           filler_words: true,
-          utterance_end_ms: 1000, // Reduced from 3000 for more responsive transcription
+          utterance_end_ms: 1000,
         });
 
         startMicrophone();
@@ -313,7 +228,7 @@ export default function Home() {
         setTimer(0);
         console.log("Both timers reset to 0 after stopping recording");
 
-        // Save the transcript
+        // Save the transcript - this will use the transcriptText from our hook
         handleRecordingFinished();
 
         console.log("Recording stopped successfully");
@@ -338,10 +253,6 @@ export default function Home() {
       // Reset both timers on error
       setLocalTimer(0);
       setTimer(0);
-
-      // Reset transcript refs
-      interimTranscriptRef.current = "";
-      finalTranscriptRef.current = "";
 
       toast("Failed to toggle recording. Please try again.");
     } finally {

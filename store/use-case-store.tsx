@@ -79,7 +79,12 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
   // Actions
   setIsRecording: (value) => set({ isRecording: value }),
-  setTimer: (value) => set({ timer: value }),
+  setTimer: (value) => {
+    // Use setTimeout to avoid updating during render
+    setTimeout(() => {
+      set({ timer: value });
+    }, 0);
+  },
   addCaseAction: (action) =>
     set((state) => ({ caseActions: [action, ...state.caseActions] })),
   updateCaseAction: (actionId, updatedAction) =>

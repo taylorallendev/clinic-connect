@@ -2,10 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, Home, PawPrint, Settings } from "lucide-react";
+import { FileText, Home, PawPrint, Settings, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ThemeProvider } from "next-themes";
+import { signOutAction } from "@/app/actions";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -33,7 +34,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0ea5e9]">
               <PawPrint className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-medium text-[#0f172a]">PetScribe</h1>
+            <h1 className="text-xl font-medium text-[#0f172a]">
+              ClinicConnect
+            </h1>
           </div>
         </div>
 
@@ -83,6 +86,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Settings className="h-4 w-4 text-[#64748b]" />
             </Button>
           </div>
+
+          {/* Logout Button */}
+          <form action={signOutAction} className="mt-3">
+            <Button
+              type="submit"
+              variant="ghost"
+              className="w-full justify-start gap-3 rounded-lg py-2.5 text-[#64748b] hover:bg-[#f1f5f9]"
+            >
+              <LogOut className="h-5 w-5 text-[#64748b]" />
+              <span>Sign out</span>
+            </Button>
+          </form>
         </div>
       </div>
 
