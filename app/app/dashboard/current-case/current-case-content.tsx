@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -69,6 +69,7 @@ interface SpeechRecognitionEvent {
       [index: number]: {
         transcript: string;
       };
+      isFinal?: boolean;
     } & { length: number };
   };
 }
@@ -168,12 +169,24 @@ export function CurrentCaseContent() {
       recognitionInstance.lang = "en-US";
 
       // Set up event handlers
+      // Note: fullTranscriptRef is now defined outside the function
+      
       recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+        // Use continuous mode approach - build the complete transcript in real-time
         let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+        
+        // Process all results currently available in this session
+        for (let i = 0; i < event.results.length; i++) {
+          // Get the transcribed text from this result segment
+          const result = event.results[i][0].transcript;
+          
+          // Add it to our complete transcript
+          transcript += result + " ";
         }
-        setTranscriptText((prev) => prev + " " + transcript);
+        
+        // Store and display the complete transcript
+        fullTranscriptRef.current = transcript.trim();
+        setTranscriptText(fullTranscriptRef.current);
       };
 
       recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -339,6 +352,11 @@ export function CurrentCaseContent() {
     }
   };
 
+  // Create refs outside the function
+  const finalResultsRef = useRef<string[]>([]);
+  const interimResultRef = useRef<string>("");
+  const fullTranscriptRef = useRef<string>("");
+
   // Update the toggleRecording function
   const toggleRecording = async () => {
     if (isRecording) {
@@ -377,6 +395,11 @@ export function CurrentCaseContent() {
 
         // Clear the transcript for the next recording
         setTranscriptText("");
+        
+        // Reset the transcript tracking refs
+        finalResultsRef.current = [];
+        interimResultRef.current = "";
+        fullTranscriptRef.current = "";
       } catch (error) {
         console.error("Error processing recording:", error);
         toast({
@@ -392,6 +415,11 @@ export function CurrentCaseContent() {
       setIsRecording(true);
       setRecordingTime(0);
       setTranscriptText("");
+      
+      // Reset the transcript tracking refs
+      finalResultsRef.current = [];
+      interimResultRef.current = "";
+      fullTranscriptRef.current = "";
 
       if (recognition) {
         try {
