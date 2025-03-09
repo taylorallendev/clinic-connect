@@ -3,7 +3,7 @@
 import {
   createClient,
   type LiveClient,
-  LiveConnectionState,
+  SOCKET_STATES,
   LiveTranscriptionEvents,
   type LiveSchema,
   type LiveTranscriptionEvent,
@@ -13,15 +13,16 @@ import {
   createContext,
   useContext,
   useState,
+  useRef,
   type ReactNode,
-  type FunctionComponent,
 } from "react";
 
 interface DeepgramContextType {
   connection: LiveClient | null;
   connectToDeepgram: (options: LiveSchema, endpoint?: string) => Promise<void>;
   disconnectFromDeepgram: () => void;
-  connectionState: LiveConnectionState;
+  connectionState: SOCKET_STATES;
+  isConnecting: boolean;
 }
 
 const DeepgramContext = createContext<DeepgramContextType | undefined>(
@@ -38,67 +39,112 @@ interface DeepgramKeyResponse {
 }
 
 const getApiKey = async (): Promise<string> => {
-  const response = await fetch("/api/authenticate", { cache: "no-store" });
-  const result = (await response.json()) as DeepgramKeyResponse;
-  return result.key;
+  try {
+    const response = await fetch("/api/authenticate", { cache: "no-store" });
+
+    if (!response.ok) {
+      throw new Error(
+        `API key fetch failed: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const result = (await response.json()) as DeepgramKeyResponse;
+    return result.key;
+  } catch (error) {
+    console.error("Failed to fetch Deepgram API key:", error);
+    throw new Error(
+      "Authentication failed. Please check your API configuration."
+    );
+  }
 };
 
-const DeepgramContextProvider: FunctionComponent<
-  DeepgramContextProviderProps
-> = ({ children }) => {
+export function DeepgramContextProvider({
+  children,
+}: DeepgramContextProviderProps) {
   const [connection, setConnection] = useState<LiveClient | null>(null);
-  const [connectionState, setConnectionState] = useState<LiveConnectionState>(
-    LiveConnectionState.CLOSED
+  const [connectionState, setConnectionState] = useState<SOCKET_STATES>(
+    SOCKET_STATES.closed
   );
+  const [isConnecting, setIsConnecting] = useState(false);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  /**
-   * Connects to the Deepgram speech recognition service and sets up a live transcription session.
-   *
-   * @param options - The configuration options for the live transcription session.
-   * @param endpoint - The optional endpoint URL for the Deepgram service.
-   * @returns A Promise that resolves when the connection is established.
-   */
   const connectToDeepgram = async (options: LiveSchema, endpoint?: string) => {
+    // Don't allow multiple connection attempts
+    if (isConnecting || connectionState === SOCKET_STATES.open) {
+      return;
+    }
+
     try {
+      setIsConnecting(true);
+
+      // Clean up any existing connection
+      if (connection) {
+        connection.finish();
+        setConnection(null);
+      }
+
       const key = await getApiKey();
       const deepgram = createClient(key);
-
       const conn = deepgram.listen.live(options, endpoint);
 
-      // Wait for connection to be established
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error("Connection timeout"));
-        }, 5000);
+      // Set up connection timeout
+      connectionTimeoutRef.current = setTimeout(() => {
+        if (conn.getReadyState() !== SOCKET_STATES.open) {
+          conn.finish();
+          setConnectionState(SOCKET_STATES.closed);
+          setIsConnecting(false);
+          console.error("Connection timeout after 5 seconds");
+        }
+      }, 5000);
 
-        conn.addListener(LiveTranscriptionEvents.Open, () => {
-          clearTimeout(timeout);
-          setConnectionState(LiveConnectionState.OPEN);
-          resolve();
-        });
-
-        conn.addListener(LiveTranscriptionEvents.Error, (error) => {
-          clearTimeout(timeout);
-          reject(error instanceof Error ? error : new Error(String(error)));
-        });
+      // Set up event listeners
+      conn.addListener(LiveTranscriptionEvents.Open, () => {
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+        }
+        setConnectionState(SOCKET_STATES.open);
+        setIsConnecting(false);
       });
 
       conn.addListener(LiveTranscriptionEvents.Close, () => {
-        setConnectionState(LiveConnectionState.CLOSED);
+        setConnectionState(SOCKET_STATES.closed);
+        setConnection(null);
+      });
+
+      conn.addListener(LiveTranscriptionEvents.Error, (error) => {
+        console.error("Deepgram connection error:", error);
+        setConnectionState(SOCKET_STATES.closed);
+        setIsConnecting(false);
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+        }
       });
 
       setConnection(conn);
     } catch (error) {
       console.error("Failed to connect to Deepgram:", error);
-      setConnectionState(LiveConnectionState.CLOSED);
+      setConnectionState(SOCKET_STATES.closed);
+      setIsConnecting(false);
       throw error;
     }
   };
 
   const disconnectFromDeepgram = () => {
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
+
     if (connection) {
+      // Remove all listeners before finishing the connection
+      connection.removeAllListeners();
       connection.finish();
+      // Add requestClose() as shown in the Deepgram example
+      connection.requestClose();
       setConnection(null);
+      setConnectionState(SOCKET_STATES.closed);
     }
   };
 
@@ -109,14 +155,15 @@ const DeepgramContextProvider: FunctionComponent<
         connectToDeepgram,
         disconnectFromDeepgram,
         connectionState,
+        isConnecting,
       }}
     >
       {children}
     </DeepgramContext.Provider>
   );
-};
+}
 
-function useDeepgram(): DeepgramContextType {
+export function useDeepgram(): DeepgramContextType {
   const context = useContext(DeepgramContext);
   if (context === undefined) {
     throw new Error(
@@ -126,10 +173,4 @@ function useDeepgram(): DeepgramContextType {
   return context;
 }
 
-export {
-  DeepgramContextProvider,
-  useDeepgram,
-  LiveConnectionState,
-  LiveTranscriptionEvents,
-  type LiveTranscriptionEvent,
-};
+export { SOCKET_STATES, LiveTranscriptionEvents, type LiveTranscriptionEvent };

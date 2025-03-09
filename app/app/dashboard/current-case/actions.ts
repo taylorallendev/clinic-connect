@@ -136,11 +136,9 @@ export async function createCase(
       .from("cases")
       .insert({
         name: parsedData.name,
-        date_time: new Date(parsedData.dateTime).toISOString(),
-        assigned_to_id: user.id,
+        dateTime: new Date(parsedData.dateTime).toISOString(),
         visibility: parsedData.visibility,
         type: parsedData.type,
-        status: "draft",
       })
       .select()
       .single();
@@ -1518,6 +1516,133 @@ export async function getRecentCases(limit = 5) {
       success: false,
       error:
         error instanceof Error ? error.message : "Failed to get recent cases",
+    };
+  }
+}
+
+/**
+ * Schema for updating an existing case
+ */
+const updateCaseSchema = createCaseSchema.extend({
+  id: z.number(),
+  actions: z.array(caseActionSchema).optional(),
+});
+
+/**
+ * Updates an existing case with new information
+ *
+ * @param {object} data - Case data including id and fields to update
+ * @returns {Promise<object>} Object with success status and either the updated case data or error message
+ */
+export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
+  try {
+    // Authenticate the user making the request
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    // Validate input data against the schema
+    const parsedData = updateCaseSchema.parse(data);
+
+    // Update the case
+    const { data: updatedCase, error: caseError } = await supabase
+      .from("cases")
+      .update({
+        name: parsedData.name,
+        dateTime: new Date(parsedData.dateTime).toISOString(),
+        visibility: parsedData.visibility,
+        type: parsedData.type,
+      })
+      .eq("id", parsedData.id)
+      .select()
+      .single();
+
+    if (caseError) {
+      console.error("Failed to update case:", caseError);
+      return {
+        success: false,
+        error: caseError.message,
+      };
+    }
+
+    // Revalidate the dashboard path to update the UI
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/case/${parsedData.id}`);
+
+    // Return success and the updated case
+    return { success: true, data: updatedCase };
+  } catch (error) {
+    console.error("Failed to update case:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update case",
+    };
+  }
+}
+
+/**
+ * Retrieves a single case by ID
+ *
+ * @param {number} caseId - The ID of the case to retrieve
+ * @returns {Promise<object>} Object with success status and either the case data or error message
+ */
+export async function getCase(caseId: number) {
+  try {
+    // Authenticate the user making the request
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Fetch the case from the database
+    const { data: caseData, error } = await supabase
+      .from("cases")
+      .select("*")
+      .eq("id", caseId)
+      .single();
+
+    if (error) {
+      console.error("Failed to fetch case:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    if (!caseData) {
+      return {
+        success: false,
+        error: "Case not found",
+      };
+    }
+
+    // Return success and the case data
+    return {
+      success: true,
+      data: {
+        id: caseData.id,
+        name: caseData.name,
+        dateTime: caseData.dateTime,
+        visibility: caseData.visibility,
+        type: caseData.type,
+        assignedTo: caseData.assigned_to || "",
+        // Add any other fields you need
+      },
+    };
+  } catch (error) {
+    console.error("Failed to fetch case:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch case",
     };
   }
 }

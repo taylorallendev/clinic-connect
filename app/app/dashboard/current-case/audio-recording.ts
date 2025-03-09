@@ -76,22 +76,52 @@ export function useAudioRecording() {
     // Single listener for transcript events
     const transcriptListener = (data: LiveTranscriptionEvent) => {
       const transcript = data.channel?.alternatives?.[0]?.transcript ?? "";
+      const isFinal = data.is_final;
 
-      if (transcript && transcript.trim()) {
-        // Get the current accumulated transcript from our ref
-        const currentAccumulated = accumulatedTranscriptRef.current;
+      if (!transcript || !transcript.trim()) return;
 
-        // Append new transcript text to accumulated transcript
-        const newAccumulated =
-          currentAccumulated +
-          (currentAccumulated ? " " : "") +
-          transcript.trim();
+      if (isFinal) {
+        // For final results, handle potential overlaps
+        const cleanedText = transcript.trim();
+        const currentText = accumulatedTranscriptRef.current;
 
-        // Update our local ref with the new accumulated transcript
-        accumulatedTranscriptRef.current = newAccumulated;
+        // If our accumulated transcript already ends with this text, don't add it again
+        if (!currentText.endsWith(cleanedText)) {
+          // Check for partial overlaps
+          const words = cleanedText.split(" ");
+          let overlap = false;
+
+          // Check for overlapping phrases (up to 5 words)
+          for (let i = 1; i < Math.min(words.length, 5); i++) {
+            const phrase = words.slice(0, i).join(" ");
+            if (currentText.endsWith(phrase)) {
+              // Found overlap, only add the non-overlapping part
+              accumulatedTranscriptRef.current +=
+                " " + words.slice(i).join(" ");
+              overlap = true;
+              break;
+            }
+          }
+
+          // If no overlap found, just append with a space
+          if (!overlap) {
+            accumulatedTranscriptRef.current +=
+              (currentText ? " " : "") + cleanedText;
+          }
+        }
 
         // Update the UI with the accumulated transcript
-        setTranscriptText(newAccumulated);
+        setTranscriptText(accumulatedTranscriptRef.current);
+      } else {
+        // For interim results, show them temporarily but don't accumulate
+        const interimText = transcript.trim();
+        const displayText =
+          accumulatedTranscriptRef.current +
+          (accumulatedTranscriptRef.current ? " " : "") +
+          interimText;
+
+        // Just update the UI without changing the accumulated ref
+        setTranscriptText(displayText);
       }
     };
 
@@ -193,13 +223,15 @@ export function useAudioRecording() {
             model: "nova-3",
             interim_results: true,
             smart_format: true,
-            filler_words: true,
+            punctuate: true,
+            diarize: false,
             utterance_end_ms: 1000,
+            vad_turnoff: 500,
           });
 
           startMicrophone();
           setIsRecording(true);
-          setMicrophoneState(MicrophoneState.Open);
+          setMicrophoneState(MicrophoneState.Ready);
 
           toast({
             title: "Recording Started",

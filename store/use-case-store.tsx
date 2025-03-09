@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { LiveConnectionState } from "@/context/DeepgramContextProvider";
+import { SOCKET_STATES } from "@/context/DeepgramContextProvider";
 import { MicrophoneState } from "@/context/MicrophoneContextProvider";
 import { saveActionsToCase as saveActionsToCaseAction } from "@/app/app/dashboard/current-case/actions";
 
@@ -27,8 +27,9 @@ interface CaseState {
   isLoading: boolean;
   transcriptText: string;
   microphoneState: MicrophoneState;
-  connectionState: LiveConnectionState;
+  connectionState: SOCKET_STATES;
   selectedRecordings: string[]; // Array of selected recording IDs
+  currentCaseId: string | null;
 
   // Actions
   setIsRecording: (value: boolean) => void;
@@ -38,12 +39,13 @@ interface CaseState {
   setIsLoading: (value: boolean) => void;
   setTranscriptText: (value: string) => void;
   setMicrophoneState: (state: MicrophoneState) => void;
-  setConnectionState: (state: LiveConnectionState) => void;
+  setConnectionState: (state: SOCKET_STATES) => void;
   handleRecordingFinished: () => void;
   reset: () => void;
   saveActionsToCase: (caseId: number) => Promise<boolean>;
   toggleRecordingSelection: (actionId: string) => void;
   clearSelectedRecordings: () => void;
+  setCurrentCaseId: (id: string | null) => void;
 }
 
 // Initial dummy data
@@ -74,8 +76,9 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   isLoading: false,
   transcriptText: "",
   microphoneState: MicrophoneState.NotSetup,
-  connectionState: LiveConnectionState.CLOSED,
+  connectionState: SOCKET_STATES.closed,
   selectedRecordings: [],
+  currentCaseId: null,
 
   // Actions
   setIsRecording: (value) => set({ isRecording: value }),
@@ -137,8 +140,9 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       isLoading: false,
       transcriptText: "",
       microphoneState: MicrophoneState.NotSetup,
-      connectionState: LiveConnectionState.CLOSED,
+      connectionState: SOCKET_STATES.closed,
       selectedRecordings: [],
+      currentCaseId: null,
     }),
 
   // Updated function to use the server action
@@ -162,4 +166,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       return false;
     }
   },
+
+  setCurrentCaseId: (id) => set({ currentCaseId: id }),
 }));

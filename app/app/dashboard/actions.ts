@@ -4,8 +4,9 @@ import { createClient } from "@/utils/supabase/server";
 
 export interface CaseStatusCounts {
   total: number;
-  drafts: number;
-  approved: number;
+  ongoing: number;
+  completed: number;
+  reviewed: number;
   exported: number;
 }
 
@@ -18,13 +19,7 @@ interface CaseStatusQueryResult {
  * Gets the count of cases for each case type
  * @returns An object containing counts for each status type
  */
-export async function getCaseTypeStats(): Promise<{
-  total: number;
-  ongoing: number;
-  completed: number;
-  reviewed: number;
-  exported: number;
-}> {
+export async function getCaseTypeStats(): Promise<CaseStatusCounts> {
   const supabase = await createClient();
 
   try {
@@ -37,7 +32,7 @@ export async function getCaseTypeStats(): Promise<{
     }
 
     // Initialize counts object
-    const counts = {
+    const counts: CaseStatusCounts = {
       total: 0,
       ongoing: 0,
       completed: 0,
@@ -54,10 +49,13 @@ export async function getCaseTypeStats(): Promise<{
       const status = item.status as string;
 
       // Increment the appropriate counter based on status
-      if (status === "in_progress") counts.ongoing++;
-      else if (status === "completed") counts.completed++;
-      else if (status === "reviewed") counts.reviewed++;
-      else if (status === "exported") counts.exported++;
+      if (status === "in_progress" || status === "Ongoing") counts.ongoing++;
+      else if (status === "completed" || status === "Completed")
+        counts.completed++;
+      else if (status === "reviewed" || status === "Reviewed")
+        counts.reviewed++;
+      else if (status === "exported" || status === "Exported")
+        counts.exported++;
     });
     console.log(counts);
     return counts;
@@ -107,7 +105,9 @@ export async function getUpcomingAppointments(): Promise<Appointment[]> {
     }
 
     // We need to get patient information for each case
-    const patientIds = casesData.map((c) => c.patientId).filter(Boolean);
+    const patientIds = casesData
+      .map((c: CaseData) => c.patientId)
+      .filter(Boolean);
 
     // Get patient data from the patients table
     const { data: patientsData, error: patientsError } = await supabase
@@ -121,12 +121,12 @@ export async function getUpcomingAppointments(): Promise<Appointment[]> {
     }
 
     // Create a map of patient data for quick lookup
-    const patientMap = new Map(
-      patientsData.map((patient) => [patient.id, patient])
+    const patientMap = new Map<string, PatientData>(
+      patientsData.map((patient: PatientData) => [patient.id, patient])
     );
 
     // Map the database results to the Appointment interface
-    const appointments: Appointment[] = casesData.map((item) => {
+    const appointments: Appointment[] = casesData.map((item: CaseData) => {
       const patient = patientMap.get(item.patientId);
       const dateTime = new Date(item.dateTime);
 
@@ -151,7 +151,7 @@ export async function getUpcomingAppointments(): Promise<Appointment[]> {
 
     return appointments;
   } catch (error) {
-    console.error("Failed to get upcoming appointments:", error);
+    console.error("Error in getUpcomingAppointments:", error);
     return [];
   }
 }
@@ -170,6 +170,25 @@ export interface Case {
   time?: string;
 }
 
+interface PatientData {
+  id: string;
+  name: string;
+  metadata?: {
+    owner_name?: string;
+    ownerName?: string;
+    [key: string]: any;
+  };
+}
+
+interface CaseData {
+  id: string;
+  name: string;
+  patientId: string;
+  type: string;
+  dateTime: string;
+  status?: string;
+}
+
 /**
  * Gets all cases from the database
  * @returns An array of cases
@@ -178,24 +197,22 @@ export async function getAllCases(): Promise<Case[]> {
   const supabase = await createClient();
 
   try {
-    // Query the cases table
-    const { data: casesData, error: casesError } = await supabase
+    const { data, error } = await supabase
       .from("cases")
-      .select("id, name, dateTime, type, patientId, status")
+      .select("id, name, patientId, type, dateTime, status")
       .order("dateTime", { ascending: false });
 
-    if (casesError) {
-      console.error("Error fetching cases:", casesError);
-      throw casesError;
+    if (error) {
+      console.error("Error fetching cases:", error);
+      throw error;
     }
 
-    // We need to get patient information for each case
-    const patientIds = casesData.map((c) => c.patientId).filter(Boolean);
+    // Get patient data for each case
+    const patientIds = data.map((c: CaseData) => c.patientId).filter(Boolean);
 
-    // Get patient data from the patients table
     const { data: patientsData, error: patientsError } = await supabase
       .from("patients")
-      .select("id, name, metadata")
+      .select("id, name")
       .in("id", patientIds);
 
     if (patientsError) {
@@ -204,41 +221,34 @@ export async function getAllCases(): Promise<Case[]> {
     }
 
     // Create a map of patient data for quick lookup
-    const patientMap = new Map(
-      patientsData.map((patient) => [patient.id, patient])
+    const patientMap = new Map<string, { id: string; name: string }>(
+      patientsData.map((patient: { id: string; name: string }) => [
+        patient.id,
+        patient,
+      ])
     );
 
-    // Map the database results to the Case interface
-    const cases: Case[] = casesData.map((item) => {
-      const patient = patientMap.get(item.patientId);
+    // Format the cases data
+    return data.map((item: CaseData) => {
       const dateTime = new Date(item.dateTime);
-
-      // Map the database status to the UI status
-      // Adjust this mapping based on your actual status values in the database
-      let uiStatus = "Draft";
-      if (item.status === "in_progress") uiStatus = "Ongoing";
-      else if (item.status === "completed") uiStatus = "Completed";
-      else if (item.status === "reviewed") uiStatus = "Reviewed";
-      else if (item.status === "exported") uiStatus = "Exported";
+      const patient = patientMap.get(item.patientId);
 
       return {
         id: item.id.toString(),
-        name: item.name || `Case for ${patient?.name || "Unknown Patient"}`,
+        name: item.name,
         patient: patient?.name || "Unknown Patient",
-        type: item.type || "General",
+        type: item.type,
         date: dateTime.toLocaleDateString(),
         time: dateTime.toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        assignedTo: "Unassigned", // You might want to add this field to your database
-        status: uiStatus,
+        assignedTo: "Unassigned",
+        status: item.status || "Pending",
       };
     });
-
-    return cases;
   } catch (error) {
-    console.error("Failed to get cases:", error);
+    console.error("Error in getAllCases:", error);
     return [];
   }
 }

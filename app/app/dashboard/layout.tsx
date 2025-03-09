@@ -2,41 +2,116 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, Home, PawPrint, Settings, LogOut } from "lucide-react";
+import {
+  FileText,
+  Home,
+  PawPrint,
+  Settings,
+  LogOut,
+  Calendar,
+  Users,
+  FileBarChart2,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ThemeProvider } from "next-themes";
 import { signOutAction } from "@/app/actions";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+interface UserData {
+  id: string;
+  email: string;
+  user_metadata: {
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+  };
+}
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const [user, setUser] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user as UserData | null);
+      setIsLoading(false);
+    }
+
+    fetchUser();
+  }, []);
 
   const navigation = [
     { name: "Dashboard", icon: Home, href: "/app/dashboard" },
+    {
+      name: "Appointments",
+      icon: Calendar,
+      href: "/app/dashboard/appointments",
+    },
+    { name: "Patients", icon: Users, href: "/app/dashboard/patients" },
     {
       name: "Current Case",
       icon: FileText,
       href: "/app/dashboard/current-case",
     },
-    { name: "Templates", icon: FileText, href: "/app/dashboard/templates" },
+    {
+      name: "Templates",
+      icon: FileBarChart2,
+      href: "/app/dashboard/templates",
+    },
   ];
 
+  // Generate user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user) return "U";
+
+    if (user.user_metadata?.first_name && user.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`;
+    }
+
+    if (user.user_metadata?.full_name) {
+      const nameParts = user.user_metadata.full_name.split(" ");
+      if (nameParts.length >= 2) {
+        return `${nameParts[0][0]}${nameParts[1][0]}`;
+      }
+      return nameParts[0][0];
+    }
+
+    return user.email ? user.email[0].toUpperCase() : "U";
+  };
+
+  // Get display name
+  const getDisplayName = () => {
+    if (!user) return "User";
+
+    if (user.user_metadata?.first_name && user.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
+    }
+
+    if (user.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+
+    return user.email?.split("@")[0] || "User";
+  };
+
   return (
-    <div className="flex h-screen bg-[#f8fafc]">
+    <div className="flex h-screen bg-gradient-to-br from-blue-950 to-indigo-950">
       {/* Sidebar */}
-      <div className="flex w-64 flex-col border-r border-[#e2e8f0] bg-white">
-        <div className="flex items-center justify-between border-b border-[#e2e8f0] p-5">
+      <div className="flex w-64 flex-col border-r border-blue-800/30 bg-blue-950/60 backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-blue-800/30 p-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0ea5e9]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
               <PawPrint className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-medium text-[#0f172a]">
-              ClinicConnect
-            </h1>
+            <h1 className="text-xl font-medium text-blue-50">ClinicConnect</h1>
           </div>
         </div>
 
@@ -48,14 +123,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button
                 key={item.name}
                 variant="ghost"
-                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-[#64748b] hover:bg-[#f1f5f9] ${
-                  isActive ? "bg-[#f1f5f9] font-medium text-[#0ea5e9]" : ""
+                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-blue-300 hover:bg-blue-800/30 ${
+                  isActive ? "bg-blue-800/40 font-medium text-blue-50" : ""
                 }`}
                 asChild
               >
                 <Link href={item.href}>
                   <item.icon
-                    className={`h-5 w-5 ${isActive ? "text-[#0ea5e9]" : "text-[#64748b]"}`}
+                    className={`h-5 w-5 ${isActive ? "text-blue-50" : "text-blue-300"}`}
                   />
                   <span>{item.name}</span>
                 </Link>
@@ -64,26 +139,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="border-t border-[#e2e8f0] p-4">
+        <div className="border-t border-blue-800/30 p-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 border border-[#e2e8f0]">
+            <Avatar className="h-9 w-9 border border-blue-700/30">
               <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback className="bg-[#0ea5e9] text-white">
-                DR
+              <AvatarFallback className="bg-blue-700 text-white">
+                {isLoading ? "..." : getUserInitials()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium text-[#0f172a]">
-                Dr. Sarah Reynolds
+              <p className="text-sm font-medium text-blue-50">
+                {isLoading ? "Loading..." : getDisplayName()}
               </p>
-              <p className="text-xs text-[#64748b]">Happy Paws Clinic</p>
+              <p className="text-xs text-blue-300">{user?.email || ""}</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-8 w-8 rounded-full text-blue-300 hover:bg-blue-800/30 hover:text-blue-50"
             >
-              <Settings className="h-4 w-4 text-[#64748b]" />
+              <Settings className="h-4 w-4" />
             </Button>
           </div>
 
@@ -92,9 +167,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               type="submit"
               variant="ghost"
-              className="w-full justify-start gap-3 rounded-lg py-2.5 text-[#64748b] hover:bg-[#f1f5f9]"
+              className="w-full justify-start gap-3 rounded-lg py-2.5 text-blue-300 hover:bg-blue-800/30"
             >
-              <LogOut className="h-5 w-5 text-[#64748b]" />
+              <LogOut className="h-5 w-5" />
               <span>Sign out</span>
             </Button>
           </form>
@@ -102,7 +177,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6">{children}</div>
+      <div className="flex-1 overflow-auto">{children}</div>
     </div>
   );
 }

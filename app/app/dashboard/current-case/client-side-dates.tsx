@@ -10,8 +10,15 @@ export function ClientSideDate({ timestamp }: ClientSideDateProps) {
   const [formattedDate, setFormattedDate] = useState<string>("");
 
   useEffect(() => {
-    // Format date on the client side only
-    setFormattedDate(new Date(timestamp).toLocaleString());
+    const date = new Date(timestamp);
+    setFormattedDate(
+      date.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    );
   }, [timestamp]);
 
   // Return empty during SSR to avoid hydration mismatch

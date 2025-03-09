@@ -8,6 +8,8 @@ import { redirect } from "next/navigation";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
+  const firstName = formData.get("firstName")?.toString();
+  const lastName = formData.get("lastName")?.toString();
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
 
@@ -19,24 +21,46 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { error } = await supabase.auth.signUp({
+  if (!firstName || !lastName) {
+    return encodedRedirect(
+      "error",
+      "/sign-up",
+      "First name and last name are required"
+    );
+  }
+
+  // Sign up the user with metadata
+  const { error: signUpError } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+      },
     },
   });
 
-  if (error) {
-    console.error(error.code + " " + error.message);
-    return encodedRedirect("error", "/sign-up", error.message);
-  } else {
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link."
-    );
+  if (signUpError) {
+    console.error(signUpError.code + " " + signUpError.message);
+    return encodedRedirect("error", "/sign-up", signUpError.message);
   }
+
+  // Immediately sign in the user after successful sign-up
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    console.error(signInError.code + " " + signInError.message);
+    return encodedRedirect("error", "/sign-up", signInError.message);
+  }
+
+  // Redirect to dashboard after successful sign-up and sign-in
+  return redirect("/app/dashboard");
 };
 
 export const signInAction = async (formData: FormData) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import {
   PlusCircle,
@@ -12,6 +12,7 @@ import {
   MoveUp,
   MoveDown,
   FileJson,
+  Loader2,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -310,15 +311,15 @@ export default function TemplatesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Templates</h1>
+        <h1 className="text-2xl font-bold text-foreground">Templates</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-primary hover:bg-primary/90">
               <PlusCircle className="h-4 w-4 mr-2" />
               New Template
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Template</DialogTitle>
               <DialogDescription>
@@ -604,12 +605,12 @@ export default function TemplatesPage() {
         </Dialog>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search templates..."
-            className="pl-8"
+            className="pl-9 h-10 bg-background border-border"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -619,7 +620,7 @@ export default function TemplatesPage() {
             setTypeFilter(value === "all" ? undefined : value)
           }
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] h-10 bg-background border-border">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
@@ -632,87 +633,98 @@ export default function TemplatesPage() {
         </Select>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <p>Loading templates...</p>
-        </div>
-      ) : filteredTemplates.length === 0 ? (
-        <div className="flex justify-center py-8">
-          <EmptyState
-            title="No templates found"
-            description={
-              typeFilter
-                ? "Try selecting a different template type or clear your filters."
-                : "Create your first template to get started."
-            }
-            icons={[FileJson, PlusCircle, Edit]}
-            action={
-              !typeFilter
-                ? {
-                    label: "Create Template",
-                    onClick: () => setIsCreateDialogOpen(true),
-                  }
-                : undefined
-            }
-            className="mx-auto"
-          />
-        </div>
-      ) : (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {filteredTemplates.map((template) => (
-            <Card key={template.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{template.name}</CardTitle>
-                    <div className="mt-1">
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary">
-                        {template.type === "soap"
-                          ? "SOAP Note"
-                          : template.type === "summary"
-                            ? "Summary"
-                            : template.type === "email"
-                              ? "Email"
-                              : "Structured Template"}
-                      </span>
+      <Suspense fallback={<div>Loading...</div>}>
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <span className="ml-3 text-muted-foreground">
+              Loading templates...
+            </span>
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="flex justify-center py-8">
+            <EmptyState
+              title="No templates found"
+              description={
+                typeFilter
+                  ? "Try selecting a different template type or clear your filters."
+                  : "Create your first template to get started."
+              }
+              icons={[FileJson, PlusCircle, Edit]}
+              action={
+                !typeFilter
+                  ? {
+                      label: "Create Template",
+                      onClick: () => setIsCreateDialogOpen(true),
+                    }
+                  : undefined
+              }
+              className="mx-auto bg-background border-border/60 hover:border-border/80"
+            />
+          </div>
+        ) : (
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {filteredTemplates.map((template) => (
+              <Card
+                key={template.id}
+                className="bg-background border-border hover:border-border/80 transition-colors"
+              >
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-foreground">
+                        {template.name}
+                      </CardTitle>
+                      <div className="mt-1">
+                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary">
+                          {template.type === "soap"
+                            ? "SOAP Note"
+                            : template.type === "summary"
+                              ? "Summary"
+                              : template.type === "email"
+                                ? "Email"
+                                : "Structured Template"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditDialog(template)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(template)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(template)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openDeleteDialog(template)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-40 overflow-hidden text-ellipsis">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {template.content.length > 200
+                        ? `${template.content.substring(0, 200)}...`
+                        : template.content}
+                    </p>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-40 overflow-hidden text-ellipsis">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {template.content.length > 200
-                      ? `${template.content.substring(0, 200)}...`
-                      : template.content}
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="text-xs text-muted-foreground">
-                Created: {new Date(template.createdAt).toLocaleDateString()}
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
+                </CardContent>
+                <CardFooter className="text-xs text-muted-foreground">
+                  Created: {new Date(template.createdAt).toLocaleDateString()}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Suspense>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -996,7 +1008,6 @@ export default function TemplatesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

@@ -40,3 +40,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add these custom styles for the Progress component */
+.Progress {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  height: 8px;
+  width: 100%;
+}
+
+.Progress-indicator {
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 9999px;
+}
