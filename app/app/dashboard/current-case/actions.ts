@@ -346,11 +346,23 @@ export async function generateSoapNotes(
     const transcriptionArray = Array.isArray(transcriptions)
       ? transcriptions
       : [transcriptions];
+    
+    // Log for debugging purposes
+    console.log(`Server received ${transcriptionArray.length} transcripts`);
+    if (transcriptionArray.length > 1) {
+      console.log('First few characters of each transcript:');
+      transcriptionArray.forEach((t, i) => {
+        console.log(`Transcript ${i+1}: ${t.substring(0, 50)}...`);
+      });
+    }
 
     // Combine multiple transcriptions with clear separators
     const combinedTranscription = transcriptionArray
       .map((t, i) => `Recording ${i + 1}:\n${t}`)
       .join("\n\n---\n\n");
+    
+    // Log the combined transcript length for debugging
+    console.log(`Combined transcript length: ${combinedTranscription.length} characters`);
 
     // If a template ID is provided, fetch the template
     if (templateData?.templateId) {
@@ -376,13 +388,24 @@ export async function generateSoapNotes(
         // Create a zod schema from the dynamic schema
         const templateSchema = z.object(dynamicSchema);
 
+        console.log('Using structured template with AI...');
+        
+        // Create a more explicit prompt when multiple transcripts are involved
+        const promptPrefix = transcriptionArray.length > 1 
+          ? `Create COMPREHENSIVE structured output from the following ${transcriptionArray.length} transcriptions. 
+IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete clinical picture.
+Each transcription contains different parts of the patient information.
+
+${combinedTranscription}`
+          : `Create structured output from the following transcription: 
+
+${combinedTranscription}`;
+        
         // Generate the structured output using the template schema
         const result = await generateObject({
           model: openai("gpt-4o"),
           schema: templateSchema,
-          prompt: `Create structured output from the following transcription(s): 
-
-${combinedTranscription}
+          prompt: `${promptPrefix}
           
 Following the template "${
             template.name
@@ -399,10 +422,12 @@ Following the template "${
 }
           
 Template instructions: ${template.content}
+
+IMPORTANT: If multiple transcriptions were provided, ensure your structured output incorporates information from ALL transcriptions.
           
 Do not include any explanatory text, markdown formatting, or code blocks.`,
           system:
-            "You are an assistant that creates structured documentation from transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
+            "You are an assistant that creates structured documentation from transcriptions. Your task is to compile comprehensive clinical notes that incorporate ALL information provided across ALL transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
         });
 
         return { success: true, soapNotes: result.object };
@@ -410,12 +435,23 @@ Do not include any explanatory text, markdown formatting, or code blocks.`,
 
       // For SOAP templates, use the template content as instructions
       if (template.type === "soap") {
+        console.log('Using SOAP template with AI...');
+        
+        // Create a more explicit prompt when multiple transcripts are involved
+        const promptPrefix = transcriptionArray.length > 1 
+          ? `Create COMPREHENSIVE SOAP notes from the following ${transcriptionArray.length} transcriptions. 
+IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete clinical picture.
+Each transcription contains different parts of the patient information.
+
+${combinedTranscription}`
+          : `Create SOAP notes from the following transcription: 
+
+${combinedTranscription}`;
+        
         const result = await generateObject<SoapNotes>({
           model: openai("gpt-4o"),
           schema: soapNotesSchema,
-          prompt: `Create SOAP notes from the following transcription(s): 
-
-${combinedTranscription}
+          prompt: `${promptPrefix}
           
 Template instructions: ${template.content}
           
@@ -426,10 +462,12 @@ Format your response as ONLY a valid JSON object with the following structure:
   "assessment": "...",
   "plan": "..."
 }
+
+IMPORTANT: If multiple transcriptions were provided, ensure your SOAP notes incorporate information from ALL transcriptions.
           
 Do not include any explanatory text, markdown formatting, or code blocks.`,
           system:
-            "You are a veterinary assistant that creates SOAP notes from transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
+            "You are a veterinary assistant that creates SOAP notes from transcriptions. Your task is to compile comprehensive clinical notes that incorporate ALL information provided across ALL transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
         });
 
         return { success: true, soapNotes: result.object };
@@ -437,12 +475,23 @@ Do not include any explanatory text, markdown formatting, or code blocks.`,
     }
 
     // Default to SOAP notes if no template or template type not handled
+    console.log('Generating SOAP notes with AI...');
+    
+    // Create a more explicit prompt when multiple transcripts are involved
+    const promptPrefix = transcriptionArray.length > 1 
+      ? `Create COMPREHENSIVE SOAP notes from the following ${transcriptionArray.length} transcriptions. 
+IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete clinical picture.
+Each transcription contains different parts of the patient information.
+
+${combinedTranscription}`
+      : `Create SOAP notes from the following transcription: 
+
+${combinedTranscription}`;
+    
     const result = await generateObject<SoapNotes>({
       model: openai("gpt-4o"),
       schema: soapNotesSchema,
-      prompt: `Create SOAP notes from the following transcription(s): 
-
-${combinedTranscription}
+      prompt: `${promptPrefix}
       
 Format your response as ONLY a valid JSON object with the following structure:
 {
@@ -456,10 +505,12 @@ Subjective: Summarize the patient history and owner's description of the problem
 Objective: Document physical examination findings, vital signs, and test results.
 Assessment: Provide your clinical assessment and differential diagnoses.
 Plan: Outline the treatment plan, medications, and follow-up recommendations.
+
+IMPORTANT: If multiple transcriptions were provided, ensure your SOAP notes incorporate information from ALL transcriptions.
       
 Do not include any explanatory text, markdown formatting, or code blocks.`,
       system:
-        "You are a veterinary assistant that creates SOAP notes from transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
+        "You are a veterinary assistant that creates SOAP notes from transcriptions. Your task is to compile comprehensive clinical notes that incorporate ALL information provided across ALL transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
     });
 
     return { success: true, soapNotes: result.object };

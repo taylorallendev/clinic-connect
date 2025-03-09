@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { Button } from "./button";
 import { Textarea } from "./textarea";
@@ -16,15 +16,22 @@ export interface RichTextEditorProps {
 
 export function RichTextEditor({ value, onChange, className }: RichTextEditorProps) {
   const [htmlValue, setHtmlValue] = useState(value || "");
+  const editorRef = useRef<HTMLDivElement>(null);
+  
+  // Initialize editor content when value prop changes
+  useEffect(() => {
+    if (editorRef.current && value !== htmlValue) {
+      setHtmlValue(value);
+    }
+  }, [value]);
 
   // Simple command execution for basic formatting
   const exec = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     
     // Get the updated HTML from the contentEditable div
-    const editableDiv = document.getElementById('rich-text-editor');
-    if (editableDiv) {
-      const newValue = editableDiv.innerHTML;
+    if (editorRef.current) {
+      const newValue = editorRef.current.innerHTML;
       setHtmlValue(newValue);
       onChange(newValue);
     }
@@ -68,9 +75,9 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
         </ToggleGroup>
       </div>
       <div
-        id="rich-text-editor"
+        ref={editorRef}
         contentEditable
-        className="min-h-[300px] p-4 outline-none overflow-auto"
+        className="min-h-[300px] p-4 outline-none overflow-auto text-blue-50"
         onPaste={handlePaste}
         dangerouslySetInnerHTML={{ __html: htmlValue }}
         onInput={(e) => {

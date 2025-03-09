@@ -109,8 +109,8 @@ export function MicrophoneContextProvider({
         setMicrophoneState(MicrophoneState.Error);
       });
 
-      // Start recording with 250ms chunks
-      newMicrophone.start(250);
+      // Start recording with 100ms chunks for more responsive transcription
+      newMicrophone.start(100);
       setMicrophone(newMicrophone);
       setMicrophoneState(MicrophoneState.Recording);
     } catch (err) {

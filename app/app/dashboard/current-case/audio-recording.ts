@@ -73,6 +73,9 @@ export function useAudioRecording() {
   useEffect(() => {
     if (!connection) return;
 
+    // Store the last interim text to avoid UI flicker
+    const lastInterimTextRef = useRef<string>("");
+
     // Single listener for transcript events
     const transcriptListener = (data: LiveTranscriptionEvent) => {
       const transcript = data.channel?.alternatives?.[0]?.transcript ?? "";
@@ -110,18 +113,28 @@ export function useAudioRecording() {
           }
         }
 
+        // Clear last interim text since we have a final result
+        lastInterimTextRef.current = "";
+        
         // Update the UI with the accumulated transcript
         setTranscriptText(accumulatedTranscriptRef.current);
       } else {
-        // For interim results, show them temporarily but don't accumulate
+        // For interim results, update smoothly without flashing
         const interimText = transcript.trim();
-        const displayText =
-          accumulatedTranscriptRef.current +
-          (accumulatedTranscriptRef.current ? " " : "") +
-          interimText;
+        
+        // Only update if the interim text is different from the last one
+        // This prevents constant re-rendering when receiving the same interim text
+        if (interimText !== lastInterimTextRef.current) {
+          lastInterimTextRef.current = interimText;
+          
+          const displayText =
+            accumulatedTranscriptRef.current +
+            (accumulatedTranscriptRef.current ? " " : "") +
+            interimText;
 
-        // Just update the UI without changing the accumulated ref
-        setTranscriptText(displayText);
+          // Update the UI immediately without changing the accumulated ref
+          setTranscriptText(displayText);
+        }
       }
     };
 
@@ -225,8 +238,9 @@ export function useAudioRecording() {
             smart_format: true,
             punctuate: true,
             diarize: false,
-            utterance_end_ms: 1000,
-            vad_turnoff: 500,
+            utterance_end_ms: 500,    // Reduced from 1000ms to 500ms for more frequent final results
+            vad_turnoff: 300,         // Reduced from 500ms to 300ms for more responsive voice activity detection
+            interim_results_freq: 2,  // Get interim results more frequently (approx every 2 utterances)
           });
 
           startMicrophone();

@@ -14,6 +14,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Form,
   FormControl,
   FormField,
@@ -45,10 +56,20 @@ import {
   Loader2,
   Save,
   Trash2,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Edit,
+  Maximize2,
+  CornerLeftUp,
+  CornerRightDown,
+  ChevronsUp,
+  ChevronsDown,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
+import { SoapNotesEditor } from "@/components/ui/soap-notes-editor";
 
 declare global {
   interface Window {
@@ -119,13 +140,90 @@ export function CurrentCaseContent() {
   const [recognition, setRecognition] = useState(null);
   const [transcriptText, setTranscriptText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-
+  
+  // Add state for expanded transcripts and SOAP sections
+  const [expandedTranscripts, setExpandedTranscripts] = useState<Record<string, boolean>>({});
+  const [expandedSoapSections, setExpandedSoapSections] = useState<Record<string, Record<string, boolean>>>({});
+  const [editingSoapId, setEditingSoapId] = useState<string | null>(null);
+  const [editingSoapData, setEditingSoapData] = useState<{action: CaseAction, transcript: string} | null>(null);
+  const [caseSummaryCollapsed, setCaseSummaryCollapsed] = useState<boolean>(false);
+  
   // Access case store
   const {
     caseActions: actions,
     addCaseAction: addAction,
     currentCaseId,
   } = useCaseStore();
+  
+  // Initialize SOAP section states when actions change
+  useEffect(() => {
+    // Initialize section states for any new SOAP actions
+    actions.forEach(action => {
+      if (action.type === "soap" && action.content.soap && !expandedSoapSections[action.id]) {
+        setExpandedSoapSections(prev => ({
+          ...prev,
+          [action.id]: {
+            subjective: true,
+            objective: true,
+            assessment: true,
+            plan: true
+          }
+        }));
+      }
+    });
+  }, [actions, expandedSoapSections]);
+  
+  // Function to toggle all sections for a SOAP note
+  const toggleAllSections = (actionId: string, expand: boolean) => {
+    setExpandedSoapSections(prev => ({
+      ...prev,
+      [actionId]: {
+        subjective: expand,
+        objective: expand,
+        assessment: expand,
+        plan: expand
+      }
+    }));
+  };
+  
+  // Function to handle editing SOAP notes
+  const handleEditSoap = (action: CaseAction) => {
+    if (action.type === "soap" && action.content.soap) {
+      setEditingSoapId(action.id);
+      setEditingSoapData({
+        action,
+        transcript: action.content.transcript || ""
+      });
+    }
+  };
+  
+  // Function to close the SOAP editor
+  const handleCloseSoapEditor = () => {
+    setEditingSoapId(null);
+    setEditingSoapData(null);
+  };
+  
+  // Function to update SOAP notes when edited
+  const handleUpdateSoapNotes = (updatedSoap: SoapResponse) => {
+    if (editingSoapId && editingSoapData) {
+      const action = editingSoapData.action;
+      
+      // Update the action in the store
+      useCaseStore.getState().updateCaseAction(editingSoapId, {
+        ...action,
+        content: {
+          ...action.content,
+          soap: updatedSoap
+        }
+      });
+      
+      // Update local state
+      toast({
+        title: "SOAP notes updated",
+        description: "Your changes have been saved"
+      });
+    }
+  };
 
   // Form setup
   const form = useForm<FormValues>({
@@ -490,20 +588,147 @@ export function CurrentCaseContent() {
       setIsGeneratingSoap(false);
     }
   };
+  
+  // Handle generating SOAP notes from multiple selected transcripts
+  const handleGenerateMultipleSoap = async () => {
+    const selectedRecordingIds = useCaseStore.getState().selectedRecordings;
+    
+    if (selectedRecordingIds.length === 0 || isGeneratingSoap) return;
+    
+    setIsGeneratingSoap(true);
+    try {
+      // Get all the selected recordings
+      const selectedRecordings = actions.filter(
+        action => action.type === "recording" && selectedRecordingIds.includes(action.id)
+      );
+      
+      // Sort recordings by timestamp to ensure chronological order
+      selectedRecordings.sort((a, b) => a.timestamp - b.timestamp);
+      
+      // Extract transcripts from the selected recordings
+      const transcripts = selectedRecordings.map(
+        action => action.content.transcript || ""
+      ).filter(transcript => transcript.trim() !== "");
+      
+      if (transcripts.length === 0) {
+        throw new Error("No valid transcripts selected");
+      }
+      
+      // Log the number of transcripts being processed and their content for debugging
+      console.log(`Processing ${transcripts.length} transcripts for SOAP notes generation`);
+      console.log('Transcript contents:', JSON.stringify(transcripts));
+      
+      // Call the server action to generate SOAP notes from multiple transcripts
+      // The transcripts array is passed directly to ensure all content is processed
+      const result = await generateSoapNotes(transcripts);
+      
+      if (result.success && result.soapNotes) {
+        // Create a properly typed SOAP response
+        const soapData: SoapResponse = {
+          subjective: result.soapNotes.subjective || "",
+          objective: result.soapNotes.objective || "",
+          assessment: result.soapNotes.assessment || "",
+          plan: result.soapNotes.plan || "",
+        };
+        
+        // Create a combined transcript with clear separation between selections
+        const combinedTranscript = selectedRecordings.map((recording, index) => 
+          `Recording ${index + 1} (${new Date(recording.timestamp).toLocaleString()}):\n${recording.content.transcript}`
+        ).join('\n\n---\n\n');
+        
+        // Create a new SOAP action to store the generated notes
+        const soapAction: CaseAction = {
+          id: crypto.randomUUID(),
+          type: "soap",
+          content: {
+            transcript: combinedTranscript,
+            soap: soapData,
+          },
+          timestamp: Date.now(),
+        };
+        
+        // Add the new SOAP action to the case
+        useCaseStore.getState().addCaseAction(soapAction);
+        
+        // Update the SOAP notes in local state
+        setSoapNotes(soapData);
+        
+        // Clear the selected recordings
+        useCaseStore.getState().clearSelectedRecordings();
+        
+        toast({
+          title: "SOAP notes generated",
+          description: `SOAP notes generated from ${transcripts.length} selected transcripts.`,
+        });
+      } else {
+        throw new Error(result.error || "Failed to generate SOAP notes");
+      }
+    } catch (error) {
+      console.error("Error generating SOAP notes from multiple transcripts:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate SOAP notes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSoap(false);
+    }
+  };
 
   return (
     <div className="flex flex-col space-y-6 p-6 bg-gradient-to-br from-blue-950 to-indigo-950">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-blue-50">Current Case</h1>
         <div className="flex items-center gap-3">
-          <Badge
-            variant="outline"
-            className="bg-blue-900/30 text-blue-200 border-blue-700/30 px-3 py-1"
-          >
-            {currentCaseId ? `Case ID: ${currentCaseId}` : "New Case"}
-          </Badge>
+          {/* Reset button moved to the left */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                className="text-blue-100 hover:bg-blue-800/30 hover:text-blue-50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-blue-950 border-blue-800">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-blue-50">Reset case?</AlertDialogTitle>
+                <AlertDialogDescription className="text-blue-200">
+                  This will clear all case information, transcripts, and SOAP notes. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-blue-900 text-blue-100 border-blue-700 hover:bg-blue-800">Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => {
+                    // Reset without saving
+                    useCaseStore.getState().reset();
+                    form.reset({
+                      name: "",
+                      dateTime: new Date().toISOString().slice(0, 16),
+                      assignedTo: "",
+                      visibility: "private",
+                      type: "checkup",
+                    });
+                    
+                    // Ensure we're in edit mode
+                    setIsEditMode(true);
+                    
+                    toast({
+                      title: "Case reset",
+                      description: "All case data has been cleared"
+                    });
+                  }}
+                >
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-          {/* Save button moved to top right */}
+          {/* Save button */}
           <Button
             onClick={form.handleSubmit(
               currentCaseId ? handleUpdateCase : onSubmit
@@ -519,13 +744,36 @@ export function CurrentCaseContent() {
             {currentCaseId ? "Update Case" : "Save Case"}
           </Button>
 
+          {/* New Case button */}
           <Button
-            variant="ghost"
-            className="text-blue-100 hover:bg-blue-800/30 hover:text-blue-50"
-            onClick={() => form.reset()}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={async () => {
+              // If there's a current case or unsaved changes, save them first
+              if (actions.length > 0 || form.formState.isDirty) {
+                await form.handleSubmit(currentCaseId ? handleUpdateCase : onSubmit)();
+              }
+              
+              // Reset store and form to start fresh
+              useCaseStore.getState().reset();
+              form.reset({
+                name: "",
+                dateTime: new Date().toISOString().slice(0, 16),
+                assignedTo: "",
+                visibility: "private",
+                type: "checkup",
+              });
+              
+              // Ensure we're ready for a new case
+              setIsEditMode(true);
+              
+              toast({
+                title: "New case created",
+                description: "You can now start working on a new case"
+              });
+            }}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Reset
+            <FileText className="h-4 w-4 mr-2" />
+            New Case
           </Button>
         </div>
       </div>
@@ -762,140 +1010,461 @@ export function CurrentCaseContent() {
                 </div>
               )}
             </div>
-
-            {actions.length > 0 && (
-              <div className="mt-8 space-y-4">
-                <h3 className="text-lg font-medium text-blue-50">
-                  Saved Recordings
-                </h3>
-                {actions.map((action: CaseAction, index) => (
-                  <Card
-                    key={action.id}
-                    className="bg-blue-900/20 border-blue-700/30"
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center">
-                            <Badge className="bg-blue-700/50 text-blue-100 border-0">
-                              Recording {index + 1}
-                            </Badge>
-                            <span className="text-xs text-blue-300 ml-2">
-                              <ClientSideDate timestamp={action.timestamp} />
-                            </span>
-                          </div>
-
-                          <div className="mt-3 text-blue-50 text-sm">
-                            {action.content.transcript}
-                          </div>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-blue-700/30 text-blue-100 hover:bg-blue-800/30 hover:text-blue-50"
-                          onClick={() =>
-                            handleGenerateSoap(
-                              action.id,
-                              action.content.transcript || ""
-                            )
-                          }
-                          disabled={isGeneratingSoap || !!action.content.soap}
-                        >
-                          {isGeneratingSoap ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                              Processing
-                            </>
-                          ) : action.content.soap ? (
-                            <>
-                              <CheckCircle2 className="h-3 w-3 mr-2" />
-                              SOAP Generated
-                            </>
-                          ) : (
-                            <>
-                              <Clipboard className="h-3 w-3 mr-2" />
-                              Generate SOAP
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* SOAP Notes Section */}
+        {/* Case Actions Section */}
         <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-blue-800/30 bg-blue-900/20">
-            <CardTitle className="text-blue-50 flex items-center">
-              <ClipboardCheck className="h-5 w-5 mr-2 text-blue-300" />
-              SOAP Notes
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-blue-50 flex items-center">
+                <ClipboardCheck className="h-5 w-5 mr-2 text-blue-300" />
+                Case Actions
+              </CardTitle>
+              {actions.filter(action => action.type === "recording").length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Check if there are any selected recordings
+                      const selectedCount = useCaseStore.getState().selectedRecordings.length;
+                      const recordingsCount = actions.filter(action => action.type === "recording").length;
+                      
+                      if (selectedCount > 0) {
+                        // Clear all selected recordings if some are selected
+                        useCaseStore.getState().clearSelectedRecordings();
+                      } else {
+                        // Select all recordings if none are selected
+                        const recordingIds = actions
+                          .filter(action => action.type === "recording")
+                          .map(action => action.id);
+                        recordingIds.forEach(id => {
+                          useCaseStore.getState().toggleRecordingSelection(id);
+                        });
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
+                  >
+                    {useCaseStore.getState().selectedRecordings.length > 0 ? "Clear Selection" : "Select All"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleGenerateMultipleSoap}
+                    disabled={isGeneratingSoap || useCaseStore.getState().selectedRecordings.length === 0}
+                  >
+                    {isGeneratingSoap ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Generate SOAP Notes
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-6">
-            {soapNotes ? (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium text-blue-50 flex items-center">
-                    <Badge className="bg-blue-600 text-white mr-2">S</Badge>
-                    Subjective
-                  </h3>
-                  <Textarea
-                    value={soapNotes.subjective || ""}
-                    readOnly
-                    className="bg-blue-900/20 border-blue-700/30 text-blue-50 min-h-24"
-                  />
+            {actions.length > 0 ? (
+              <div className="space-y-4">
+                {/* Recordings */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-blue-50">Transcripts</h3>
+                  {actions
+                    .filter(action => action.type === "recording")
+                    .map((action: CaseAction, index) => {
+                      const isSelected = useCaseStore.getState().selectedRecordings.includes(action.id);
+                      const isTranscriptExpanded = expandedTranscripts[action.id] || false;
+                      
+                      const toggleExpanded = () => {
+                        setExpandedTranscripts(prev => ({
+                          ...prev,
+                          [action.id]: !prev[action.id]
+                        }));
+                      };
+                      
+                      return (
+                        <Card
+                          key={action.id}
+                          className={`bg-blue-900/20 border-blue-700/30 ${
+                            isSelected ? "ring-2 ring-blue-400" : ""
+                          }`}
+                        >
+                          <CardHeader className="p-4 pb-2">
+                            <div className="flex justify-between items-center w-full">
+                              <div className="flex items-center gap-2 flex-1">
+                                <label
+                                  htmlFor={`recording-${action.id}`}
+                                  className="text-blue-50 font-medium cursor-pointer"
+                                >
+                                  Recording {index + 1}
+                                </label>
+                                <Badge className="bg-blue-700/50 text-blue-100 border-0">
+                                  Transcript
+                                </Badge>
+                                <span className="text-xs text-blue-300 ml-1">
+                                  <ClientSideDate timestamp={action.timestamp} />
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  id={`recording-${action.id}`}
+                                  checked={isSelected}
+                                  onChange={() => {
+                                    useCaseStore.getState().toggleRecordingSelection(action.id);
+                                  }}
+                                  className="h-4 w-4 rounded border-blue-700 text-blue-600 focus:ring-blue-500 mr-3"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={toggleExpanded}
+                                  className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                                >
+                                  {isTranscriptExpanded ? (
+                                    <ChevronUp className="h-5 w-5" />
+                                  ) : (
+                                    <ChevronDown className="h-5 w-5" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                            {!isTranscriptExpanded && (
+                              <div 
+                                className="text-blue-50/80 text-sm mt-2 cursor-pointer line-clamp-1"
+                                onClick={toggleExpanded}
+                              >
+                                {action.content.transcript}
+                              </div>
+                            )}
+                          </CardHeader>
+                          {isTranscriptExpanded && (
+                            <CardContent className="p-4 pt-0">
+                              <div
+                                className="text-blue-50 text-sm mt-2 whitespace-pre-line"
+                                onClick={() => {
+                                  // Toggle the recording selection when clicked
+                                  useCaseStore.getState().toggleRecordingSelection(action.id);
+                                }}
+                              >
+                                {action.content.transcript}
+                              </div>
+                            </CardContent>
+                          )}
+                        </Card>
+                      );
+                    })}
                 </div>
 
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium text-blue-50 flex items-center">
-                    <Badge className="bg-green-600 text-white mr-2">O</Badge>
-                    Objective
-                  </h3>
-                  <Textarea
-                    value={soapNotes.objective || ""}
-                    readOnly
-                    className="bg-blue-900/20 border-blue-700/30 text-blue-50 min-h-24"
-                  />
-                </div>
+                {/* SOAP Notes */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-blue-50">SOAP Notes</h3>
+                  {actions
+                    .filter(action => action.type === "soap" && action.content.soap)
+                    .map((action: CaseAction, index) => (
+                      <Card key={action.id} className="bg-blue-900/20 border-blue-700/30">
+                        <CardHeader className="p-4 pb-0">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-green-700/50 text-green-100 border-0">
+                                SOAP Notes
+                              </Badge>
+                              <span className="text-xs text-blue-300">
+                                <ClientSideDate timestamp={action.timestamp} />
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {/* Combined expand/collapse button */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  // Check if all sections are currently expanded
+                                  const allExpanded = Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded);
+                                  // Toggle to opposite state
+                                  toggleAllSections(action.id, !allExpanded);
+                                }}
+                                className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
+                                title={Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded) ? "Collapse all sections" : "Expand all sections"}
+                              >
+                                {Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded) ? (
+                                  <>
+                                    <ChevronsUp className="h-3 w-3 mr-1" />
+                                    Collapse
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronsDown className="h-3 w-3 mr-1" />
+                                    Expand
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditSoap(action)}
+                                className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
+                                title="Edit SOAP notes"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          {action.content.soap && (() => {
+                              // Get current section states
+                              const sections = expandedSoapSections[action.id] || {
+                                subjective: true,
+                                objective: true,
+                                assessment: true,
+                                plan: true
+                              };
+                              
+                              // Toggle function for sections
+                              const toggleSection = (section: string) => {
+                                setExpandedSoapSections(prev => ({
+                                  ...prev,
+                                  [action.id]: {
+                                    ...prev[action.id],
+                                    [section]: !prev[action.id]?.[section]
+                                  }
+                                }));
+                              };
+                              
+                              return (
+                                <div className="space-y-3">
+                                  {/* Subjective */}
+                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                  <div 
+                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                    onClick={() => toggleSection('subjective')}
+                                  >
+                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                      <Badge className="bg-blue-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">S</Badge>
+                                      Subjective
+                                    </h4>
+                                    <div className="flex items-center">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                        onClick={(e) => {
+                                          // Stop propagation to prevent toggling when clicking copy
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(action.content.soap?.subjective || "");
+                                          toast({
+                                            title: "Copied",
+                                            description: "Subjective section copied to clipboard",
+                                          });
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3 mr-1" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                      >
+                                        {sections.subjective ? (
+                                          <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {sections.subjective && (
+                                    <div 
+                                      className="p-3 text-blue-50 text-sm"
+                                      dangerouslySetInnerHTML={{ __html: action.content.soap.subjective }}
+                                    />
+                                  )}
+                                </div>
 
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium text-blue-50 flex items-center">
-                    <Badge className="bg-purple-600 text-white mr-2">A</Badge>
-                    Assessment
-                  </h3>
-                  <Textarea
-                    value={soapNotes.assessment || ""}
-                    readOnly
-                    className="bg-blue-900/20 border-blue-700/30 text-blue-50 min-h-24"
-                  />
-                </div>
+                                {/* Objective */}
+                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                  <div 
+                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                    onClick={() => toggleSection('objective')}
+                                  >
+                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                      <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">O</Badge>
+                                      Objective
+                                    </h4>
+                                    <div className="flex items-center">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                        onClick={(e) => {
+                                          // Stop propagation to prevent toggling when clicking copy
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(action.content.soap?.objective || "");
+                                          toast({
+                                            title: "Copied",
+                                            description: "Objective section copied to clipboard",
+                                          });
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3 mr-1" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                      >
+                                        {sections.objective ? (
+                                          <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {sections.objective && (
+                                    <div 
+                                      className="p-3 text-blue-50 text-sm"
+                                      dangerouslySetInnerHTML={{ __html: action.content.soap.objective }}
+                                    />
+                                  )}
+                                </div>
 
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium text-blue-50 flex items-center">
-                    <Badge className="bg-amber-600 text-white mr-2">P</Badge>
-                    Plan
-                  </h3>
-                  <Textarea
-                    value={soapNotes.plan || ""}
-                    readOnly
-                    className="bg-blue-900/20 border-blue-700/30 text-blue-50 min-h-24"
-                  />
+                                {/* Assessment */}
+                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                  <div 
+                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                    onClick={() => toggleSection('assessment')}
+                                  >
+                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                      <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">A</Badge>
+                                      Assessment
+                                    </h4>
+                                    <div className="flex items-center">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                        onClick={(e) => {
+                                          // Stop propagation to prevent toggling when clicking copy
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(action.content.soap?.assessment || "");
+                                          toast({
+                                            title: "Copied",
+                                            description: "Assessment section copied to clipboard",
+                                          });
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3 mr-1" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                      >
+                                        {sections.assessment ? (
+                                          <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {sections.assessment && (
+                                    <div 
+                                      className="p-3 text-blue-50 text-sm"
+                                      dangerouslySetInnerHTML={{ __html: action.content.soap.assessment }}
+                                    />
+                                  )}
+                                </div>
+
+                                {/* Plan */}
+                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                  <div 
+                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                    onClick={() => toggleSection('plan')}
+                                  >
+                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                      <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">P</Badge>
+                                      Plan
+                                    </h4>
+                                    <div className="flex items-center">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                        onClick={(e) => {
+                                          // Stop propagation to prevent toggling when clicking copy
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(action.content.soap?.plan || "");
+                                          toast({
+                                            title: "Copied",
+                                            description: "Plan section copied to clipboard",
+                                          });
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3 mr-1" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                      >
+                                        {sections.plan ? (
+                                          <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {sections.plan && (
+                                    <div 
+                                      className="p-3 text-blue-50 text-sm"
+                                      dangerouslySetInnerHTML={{ __html: action.content.soap.plan }}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                  {actions.filter(action => action.type === "soap" && action.content.soap).length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <Clipboard className="h-12 w-12 text-blue-700/50 mb-3" />
+                      <h3 className="text-lg font-medium text-blue-50 mb-1">
+                        No SOAP Notes Yet
+                      </h3>
+                      <p className="text-blue-300 max-w-md text-sm">
+                        Select one or more transcripts and generate SOAP notes.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Clipboard className="h-16 w-16 text-blue-700/50 mb-4" />
                 <h3 className="text-xl font-medium text-blue-50 mb-2">
-                  No SOAP Notes Yet
+                  No Case Actions Yet
                 </h3>
                 <p className="text-blue-300 max-w-md">
-                  Record your case notes and generate SOAP notes from a
-                  recording.
+                  Record your case notes to create transcripts and generate SOAP notes.
                 </p>
               </div>
             )}
@@ -905,13 +1474,33 @@ export function CurrentCaseContent() {
         {/* Case Summary Card */}
         {actions.length > 0 && (
           <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
-            <CardHeader className="border-b border-blue-800/30 bg-blue-900/20">
-              <CardTitle className="text-blue-50 flex items-center">
-                <Stethoscope className="h-5 w-5 mr-2 text-blue-300" />
-                Case Summary
-              </CardTitle>
+            <CardHeader 
+              className="border-b border-blue-800/30 bg-blue-900/20 cursor-pointer"
+              onClick={() => {
+                // Add state for case summary collapse
+                setCaseSummaryCollapsed(!caseSummaryCollapsed);
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-blue-50 flex items-center">
+                  <Stethoscope className="h-5 w-5 mr-2 text-blue-300" />
+                  Case Summary
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                >
+                  {caseSummaryCollapsed ? (
+                    <ChevronDown className="h-5 w-5" />
+                  ) : (
+                    <ChevronUp className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="p-6">
+            {!caseSummaryCollapsed && (
+              <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-blue-900/30 backdrop-blur-sm border-blue-800/20 rounded-xl p-4 shadow-md shadow-blue-950/20">
                   <div className="flex items-center">
@@ -924,7 +1513,7 @@ export function CurrentCaseContent() {
                   </div>
                   <div className="mt-3">
                     <span className="text-2xl font-bold text-blue-50">
-                      {formatTime(actions.length * 60)}
+                      {formatTime(actions.filter(action => action.type === "recording").length * 60)}
                     </span>
                     <p className="text-xs text-blue-300/90 mt-1">
                       Total recording duration
@@ -936,14 +1525,15 @@ export function CurrentCaseContent() {
                     <div className="rounded-full bg-blue-700/30 p-2 mr-2">
                       <FileText className="h-5 w-5 text-blue-200" />
                     </div>
-                    <span className="text-xs text-blue-300/90">Recordings</span>
+                    <span className="text-xs text-blue-300/90">Case Actions</span>
                   </div>
                   <div className="mt-3">
                     <span className="text-2xl font-bold text-blue-50">
                       {actions.length}
                     </span>
                     <p className="text-xs text-blue-300/90 mt-1">
-                      Total recordings made
+                      <span className="font-medium">{actions.filter(action => action.type === "recording").length}</span> transcripts,{" "}
+                      <span className="font-medium">{actions.filter(action => action.type === "soap").length}</span> SOAP notes
                     </p>
                   </div>
                 </div>
@@ -958,26 +1548,49 @@ export function CurrentCaseContent() {
                   </div>
                   <div className="mt-3">
                     <div className="flex items-center">
-                      <span className="text-2xl font-bold text-blue-50">
-                        {soapNotes ? "Complete" : "Pending"}
-                      </span>
-                      <Badge
-                        className={`ml-2 ${soapNotes ? "bg-green-800/40 text-green-300" : "bg-amber-800/40 text-amber-300"} border-blue-700/30`}
-                      >
-                        {soapNotes ? "100%" : "0%"}
-                      </Badge>
+                      {actions.filter(action => action.type === "soap").length > 0 ? (
+                        <>
+                          <span className="text-2xl font-bold text-blue-50">
+                            Complete
+                          </span>
+                          <Badge className="ml-2 bg-green-800/40 text-green-300 border-blue-700/30">
+                            {actions.filter(action => action.type === "soap").length} generated
+                          </Badge>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-2xl font-bold text-blue-50">
+                            Pending
+                          </span>
+                          <Badge className="ml-2 bg-amber-800/40 text-amber-300 border-blue-700/30">
+                            0 generated
+                          </Badge>
+                        </>
+                      )}
                     </div>
                     <Progress
-                      value={soapNotes ? 100 : 0}
+                      value={actions.filter(action => action.type === "soap").length > 0 ? 100 : 0}
                       className="h-2 mt-2"
                     />
                   </div>
                 </div>
               </div>
             </CardContent>
+            )}
           </Card>
         )}
       </div>
+      
+      {/* SOAP Notes Editor Modal */}
+      {editingSoapId && editingSoapData && (
+        <SoapNotesEditor
+          soapNotes={editingSoapData.action.content.soap!}
+          transcript={editingSoapData.transcript}
+          onClose={handleCloseSoapEditor}
+          onUpdate={handleUpdateSoapNotes}
+          actionId={editingSoapId}
+        />
+      )}
     </div>
   );
 }
