@@ -134,7 +134,7 @@ export async function fetchCases(
       assignedToName: item.assigned_to_name,
       patientId: item.patient_id,
       patientName: item.patient_name,
-      createdAt: item.created_at,
+      createdAt: item.createdAt,
       updatedAt: item.updated_at,
     }));
 

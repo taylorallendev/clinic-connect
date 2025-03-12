@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { DeepgramContextProvider } from "@/context/DeepgramContextProvider";
 import { MicrophoneContextProvider } from "@/context/MicrophoneContextProvider";
+import { EmailButtonProvider } from "../context/EmailButtonContext";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -35,12 +36,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <main className="min-h-screen w-screen flex flex-col">
+            <EmailButtonProvider>
             <MicrophoneContextProvider>
               <DeepgramContextProvider>
                 <div className="flex flex-col">{children}</div>
                 <Toaster />
               </DeepgramContextProvider>
             </MicrophoneContextProvider>
+            </EmailButtonProvider>``
           </main>
         </ThemeProvider>
       </body>

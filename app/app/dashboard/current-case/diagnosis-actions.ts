@@ -252,7 +252,7 @@ export async function getDifferentialDiagnosesByCase(caseId: number) {
       .from("differential_diagnoses")
       .select()
       .eq("case_id", caseId)
-      .order("created_at");
+      .order("createdAt");
 
     if (error) {
       console.error("Error getting differential diagnoses:", error);

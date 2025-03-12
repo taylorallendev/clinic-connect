@@ -114,8 +114,8 @@ export async function getAppointments({
       .select('id', { count: 'exact', head: true });
     
     // If we have cases, fetch the related patient info
-    let appointments = [];
     
+   let appointments = [];
     console.log('Raw cases data:', casesData);
     
     if (casesData && casesData.length > 0) {

@@ -8,18 +8,6 @@ const templateFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.enum(["soap", "summary", "email", "structured"]),
   content: z.string().min(1, "Content is required"),
-  schema: z
-    .array(
-      z.object({
-        key: z.string(),
-        label: z.string(),
-        type: z.enum(["text", "textarea"]),
-        required: z.boolean().default(false),
-        placeholder: z.string().optional(),
-        description: z.string().optional(),
-      })
-    )
-    .optional(),
 });
 
 type TemplateFormValues = z.infer<typeof templateFormSchema>;
@@ -41,24 +29,13 @@ export async function createTemplate(values: TemplateFormValues) {
     const validatedFields = templateFormSchema.parse(values);
     console.log("Validated template fields:", validatedFields);
 
-    // Make sure schema is properly formatted for storage
-    let schemaValue = null;
-    if (
-      validatedFields.schema &&
-      Array.isArray(validatedFields.schema) &&
-      validatedFields.schema.length > 0
-    ) {
-      schemaValue = validatedFields.schema;
-    }
-
     const { data: result, error } = await supabase
       .from("templates")
       .insert({
         name: validatedFields.name,
         type: validatedFields.type,
         content: validatedFields.content,
-        schema: schemaValue,
-        created_by: user.id,
+        createdBy: user.id,
       })
       .select()
       .single();
@@ -77,7 +54,6 @@ export async function createTemplate(values: TemplateFormValues) {
     if (error instanceof z.ZodError) {
       return { error: error.errors[0].message };
     }
-    // Show more details about the error
     return {
       error: "Failed to create template. Please try again.",
       details: error instanceof Error ? error.message : String(error),
@@ -98,23 +74,12 @@ export async function updateTemplate(id: number, values: TemplateFormValues) {
 
     const validatedFields = templateFormSchema.parse(values);
 
-    // Make sure schema is properly formatted for storage
-    let schemaValue = null;
-    if (
-      validatedFields.schema &&
-      Array.isArray(validatedFields.schema) &&
-      validatedFields.schema.length > 0
-    ) {
-      schemaValue = validatedFields.schema;
-    }
-
     const { error } = await supabase
       .from("templates")
       .update({
         name: validatedFields.name,
         type: validatedFields.type,
         content: validatedFields.content,
-        schema: schemaValue,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -179,7 +144,7 @@ export async function getTemplates(type?: string) {
     }
 
     // Execute the query with ordering
-    const { data: templates, error } = await query.order("created_at");
+    const { data: templates, error } = await query.order("createdAt");
 
     if (error) {
       console.error("Template fetch error:", error);
@@ -222,5 +187,113 @@ export async function getTemplateById(id: number) {
   } catch (error) {
     console.error("Failed to fetch template:", error);
     return { error: "Failed to fetch template." };
+  }
+}
+
+export type Template = {
+  id: number;
+  name: string;
+  type: string;
+  content: string;
+  createdAt: string;
+  createdBy: string;
+  updated_at?: string;
+}
+
+export async function getEmailTemplates() {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: "Unauthorized" } as const;
+    }
+
+    const { data: templates, error } = await supabase
+      .from("templates")
+      .select()
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error("Email template fetch error:", error);
+      return { error: error.message } as const;
+    }
+
+    return { 
+      templates: templates as Template[],
+      error: null
+    };
+  } catch (error) {
+    console.error("Failed to fetch email templates:", error);
+    return { 
+      templates: null,
+      error: "Failed to fetch email templates." 
+    };
+  }
+}
+
+/**
+ * Adds default SOAP template to the database if it doesn't exist
+ * This ensures that there's always a SOAP template available
+ */
+export async function ensureDefaultTemplates() {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: "Unauthorized" };
+    }
+
+    // Check if SOAP template already exists
+    const { data: existingTemplates, error: checkError } = await supabase
+      .from("templates")
+      .select("id")
+      .eq("type", "soap")
+      .limit(1);
+
+    if (checkError) {
+      console.error("Error checking for SOAP template:", checkError);
+      return { error: checkError.message };
+    }
+
+    // If no SOAP template exists, create one
+    if (!existingTemplates || existingTemplates.length === 0) {
+      const { data: newTemplate, error: createError } = await supabase
+        .from("templates")
+        .insert({
+          name: "SOAP Notes",
+          type: "soap",
+          content: `Generate comprehensive SOAP notes from the provided transcriptions.
+
+Subjective: Summarize the patient history and owner's description of the problem.
+Objective: Document physical examination findings, vital signs, and test results.
+Assessment: Provide clinical assessment and differential diagnoses.
+Plan: Outline the treatment plan, medications, and follow-up recommendations.`,
+          createdBy: user.id,
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error("Error creating SOAP template:", createError);
+        return { error: createError.message };
+      }
+
+      console.log("Created default SOAP template:", newTemplate);
+      return { success: true, template: newTemplate };
+    }
+
+    return { success: true, message: "SOAP template already exists" };
+  } catch (error) {
+    console.error("Error ensuring default templates:", error);
+    return { 
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error" 
+    };
   }
 }

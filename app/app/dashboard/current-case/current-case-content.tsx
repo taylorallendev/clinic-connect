@@ -6,13 +6,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/components/ui/use-toast";
 import { useCaseStore } from "@/store/use-case-store";
-import { createCase, generateSoapNotes, updateCase, getCase, diagnoseDatabaseSchema } from "./actions";
+import { 
+  createCase, 
+  updateCase, 
+  getCase, 
+  diagnoseDatabaseSchema,
+  generateContentFromTemplate 
+} from "./actions";
 import { caseFormSchema } from "./case-form";
 import { ClientSideDate } from "./client-side-dates";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,14 +48,8 @@ import {
 import {
   Mic,
   MicOff,
-  Play,
-  Pause,
   FileText,
-  Calendar,
   Clock,
-  CheckCircle2,
-  AlertCircle,
-  Stethoscope,
   Clipboard,
   ClipboardCheck,
   Loader2,
@@ -60,16 +59,25 @@ import {
   ChevronUp,
   Copy,
   Edit,
-  Maximize2,
-  CornerLeftUp,
-  CornerRightDown,
   ChevronsUp,
   ChevronsDown,
+  Stethoscope,
+  Mail,
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { SoapNotesEditor } from "@/components/ui/soap-notes-editor";
+import { useEmailButton } from "@/context/EmailButtonContext";
+import { simpleSendEmail } from "./email-actions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { getEmailTemplates, ensureDefaultTemplates } from "../template-actions";
 
 declare global {
   interface Window {
@@ -91,7 +99,9 @@ interface SpeechRecognitionEvent {
         transcript: string;
       };
       isFinal?: boolean;
-    } & { length: number };
+      length: number;
+    };
+    length: number;
   };
 }
 
@@ -133,17 +143,18 @@ export function CurrentCaseContent() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingSoap, setIsGeneratingSoap] = useState(false);
-  const [soapNotes, setSoapNotes] = useState<SoapResponse | null>(null);
   const [isEditMode, setIsEditMode] = useState(true);
   const [savedCaseData, setSavedCaseData] = useState<FormValues | null>(null);
   const router = useRouter();
-  const [recognition, setRecognition] = useState(null);
+  const [recognition, setRecognition] = useState<SpeechRecognitionType | null>(null);
   const [transcriptText, setTranscriptText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   
   // Add state for expanded transcripts and SOAP sections
   const [expandedTranscripts, setExpandedTranscripts] = useState<Record<string, boolean>>({});
   const [expandedSoapSections, setExpandedSoapSections] = useState<Record<string, Record<string, boolean>>>({});
+  const [expandedSoaps, setExpandedSoaps] = useState<Record<string, boolean>>({});
+  const [selectedSoapIds, setSelectedSoapIds] = useState<string[]>([]);
   const [editingSoapId, setEditingSoapId] = useState<string | null>(null);
   const [editingSoapData, setEditingSoapData] = useState<{action: CaseAction, transcript: string} | null>(null);
   const [caseSummaryCollapsed, setCaseSummaryCollapsed] = useState<boolean>(false);
@@ -173,6 +184,7 @@ export function CurrentCaseContent() {
     });
   }, [actions, expandedSoapSections]);
   
+
   // Function to toggle all sections for a SOAP note
   const toggleAllSections = (actionId: string, expand: boolean) => {
     setExpandedSoapSections(prev => ({
@@ -195,6 +207,25 @@ export function CurrentCaseContent() {
         transcript: action.content.transcript || ""
       });
     }
+  };
+  
+  // Function to toggle SOAP expansion
+  const toggleSoapExpanded = (actionId: string) => {
+    setExpandedSoaps(prev => ({
+      ...prev,
+      [actionId]: !prev[actionId]
+    }));
+  };
+  
+  // Function to toggle SOAP selection
+  const toggleSoapSelection = (actionId: string) => {
+    setSelectedSoapIds(prev => {
+      if (prev.includes(actionId)) {
+        return prev.filter(id => id !== actionId);
+      } else {
+        return [...prev, actionId];
+      }
+    });
   };
   
   // Function to close the SOAP editor
@@ -318,7 +349,6 @@ export function CurrentCaseContent() {
     const loadCaseData = async () => {
       if (currentCaseId) {
         try {
-          // You would need to implement this server action
           const result = await getCase(parseInt(currentCaseId));
 
           if (result.success && result.data) {
@@ -329,8 +359,8 @@ export function CurrentCaseContent() {
                 .toISOString()
                 .slice(0, 16),
               assignedTo: result.data.assignedTo || "",
-              visibility: result.data.visibility,
               type: result.data.type,
+              status: result.data.status || "ongoing"
             };
 
             // Update form with existing data
@@ -534,53 +564,108 @@ export function CurrentCaseContent() {
     }
   };
 
-  // Handle generating SOAP notes for a specific recording
-  const handleGenerateSoap = async (actionId: string, transcript: string) => {
+  // State for template selector
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [availableTemplates, setAvailableTemplates] = useState<Array<{id: number; name: string; type: string}>>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+
+  // Fetch available templates on mount
+  const fetchTemplates = async () => {
+    setIsLoadingTemplates(true);
+    try {
+      // First ensure the SOAP template exists
+      await ensureDefaultTemplates();
+      
+      // Then fetch all templates
+      const result = await getEmailTemplates();
+      if (result.templates) {
+        setAvailableTemplates(result.templates);
+      } else if (result.error) {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load templates",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  // Load templates when component mounts
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+  
+  // Handle generating content from a template for a specific recording
+  const handleGenerateFromTemplate = async (actionId: string, transcript: string) => {
     if (isGeneratingSoap) return;
+    
+    if (!selectedTemplateId) {
+      toast({
+        title: "No Template Selected",
+        description: "Please select a template first.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsGeneratingSoap(true);
     try {
-      // Call the server action to generate SOAP notes
-      const result = await generateSoapNotes([transcript]);
+      // Call the server action to generate content from the template
+      const result = await generateContentFromTemplate([transcript], { templateId: parseInt(selectedTemplateId) });
 
-      if (result.success && result.soapNotes) {
-        // Update the action with the generated SOAP notes
-        const updatedAction = actions.find((action) => action.id === actionId);
-
-        if (updatedAction) {
-          // Create a properly typed SOAP response
-          const soapData: SoapResponse = {
-            subjective: result.soapNotes.subjective || "",
-            objective: result.soapNotes.objective || "",
-            assessment: result.soapNotes.assessment || "",
-            plan: result.soapNotes.plan || "",
-          };
-
-          // Update the action with properly typed data
-          useCaseStore.getState().updateCaseAction(actionId, {
-            ...updatedAction,
+      if (result.success && result.content) {
+        if (result.template.type === "soap_notes" && typeof result.content === "object") {
+          // Create SOAP action with full SOAP structure
+          const soapAction: CaseAction = {
+            id: crypto.randomUUID(),
+            type: "soap",
             content: {
-              ...updatedAction.content,
-              soap: soapData,
+              transcript: transcript,
+              soap: {
+                subjective: result.content.subjective || "",
+                objective: result.content.objective || "",
+                assessment: result.content.assessment || "",
+                plan: result.content.plan || "",
+              },
             },
-          });
-
-          // Update the SOAP notes in local state with properly typed data
-          setSoapNotes(soapData);
+            timestamp: Date.now(),
+          };
+          
+          // Add the new action
+          useCaseStore.getState().addCaseAction(soapAction);
+        } else {
+          // For other template types, create a simpler action
+          const generatedAction: CaseAction = {
+            id: crypto.randomUUID(),
+            type: "soap",
+            content: {
+              transcript: transcript,
+              soap: {
+                subjective: `Generated using template: ${result.template.name}`,
+                objective: "",
+                assessment: "",
+                plan: typeof result.content === "string" ? result.content : JSON.stringify(result.content, null, 2)
+              },
+            },
+            timestamp: Date.now(),
+          };
+          
+          // Add the new action
+          useCaseStore.getState().addCaseAction(generatedAction);
         }
-
-        toast({
-          title: "SOAP notes generated",
-          description: "SOAP notes have been generated successfully.",
-        });
       } else {
-        throw new Error(result.error || "Failed to generate SOAP notes");
+        throw new Error(result.error || "Failed to generate content from template");
       }
     } catch (error) {
-      console.error("Error generating SOAP notes:", error);
+      console.error("Error generating content from template:", error);
       toast({
         title: "Error",
-        description: "Failed to generate SOAP notes",
+        description: "Failed to generate content",
         variant: "destructive",
       });
     } finally {
@@ -588,11 +673,20 @@ export function CurrentCaseContent() {
     }
   };
   
-  // Handle generating SOAP notes from multiple selected transcripts
-  const handleGenerateMultipleSoap = async () => {
+  // Handle generating content from multiple selected transcripts
+  const handleGenerateFromMultiple = async () => {
     const selectedRecordingIds = useCaseStore.getState().selectedRecordings;
     
     if (selectedRecordingIds.length === 0 || isGeneratingSoap) return;
+    
+    if (!selectedTemplateId) {
+      toast({
+        title: "No Template Selected",
+        description: "Please select a template first.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsGeneratingSoap(true);
     try {
@@ -613,64 +707,207 @@ export function CurrentCaseContent() {
         throw new Error("No valid transcripts selected");
       }
       
-      // Log the number of transcripts being processed and their content for debugging
-      console.log(`Processing ${transcripts.length} transcripts for SOAP notes generation`);
-      console.log('Transcript contents:', JSON.stringify(transcripts));
+      // Log the number of transcripts being processed
+      console.log(`Processing ${transcripts.length} transcripts for content generation`);
       
-      // Call the server action to generate SOAP notes from multiple transcripts
-      // The transcripts array is passed directly to ensure all content is processed
-      const result = await generateSoapNotes(transcripts);
+      // Create a combined transcript with clear separation between selections
+      const combinedTranscript = selectedRecordings.map((recording, index) => 
+        `Recording ${index + 1} (${new Date(recording.timestamp).toLocaleString()}):\n${recording.content.transcript}`
+      ).join('\n\n---\n\n');
       
-      if (result.success && result.soapNotes) {
-        // Create a properly typed SOAP response
-        const soapData: SoapResponse = {
-          subjective: result.soapNotes.subjective || "",
-          objective: result.soapNotes.objective || "",
-          assessment: result.soapNotes.assessment || "",
-          plan: result.soapNotes.plan || "",
-        };
-        
-        // Create a combined transcript with clear separation between selections
-        const combinedTranscript = selectedRecordings.map((recording, index) => 
-          `Recording ${index + 1} (${new Date(recording.timestamp).toLocaleString()}):\n${recording.content.transcript}`
-        ).join('\n\n---\n\n');
-        
-        // Create a new SOAP action to store the generated notes
-        const soapAction: CaseAction = {
-          id: crypto.randomUUID(),
-          type: "soap",
-          content: {
-            transcript: combinedTranscript,
-            soap: soapData,
-          },
-          timestamp: Date.now(),
-        };
-        
-        // Add the new SOAP action to the case
-        useCaseStore.getState().addCaseAction(soapAction);
-        
-        // Update the SOAP notes in local state
-        setSoapNotes(soapData);
-        
-        // Clear the selected recordings
-        useCaseStore.getState().clearSelectedRecordings();
-        
-        toast({
-          title: "SOAP notes generated",
-          description: `SOAP notes generated from ${transcripts.length} selected transcripts.`,
-        });
+      // Call the server action to generate content from the template
+      const result = await generateContentFromTemplate(transcripts, { templateId: parseInt(selectedTemplateId) });
+      
+      if (result.success && result.content) {
+        if (result.template.type === "soap_notes" && typeof result.content === "object") {
+          // Create SOAP action with full SOAP structure
+          const soapAction: CaseAction = {
+            id: crypto.randomUUID(),
+            type: "soap",
+            content: {
+              transcript: combinedTranscript,
+              soap: {
+                subjective: result.content.subjective || "",
+                objective: result.content.objective || "",
+                assessment: result.content.assessment || "",
+                plan: result.content.plan || "",
+              },
+            },
+            timestamp: Date.now(),
+          };
+          
+          // Add the new action
+          useCaseStore.getState().addCaseAction(soapAction);
+        } else {
+          // For other template types, create a simpler action
+          const generatedAction: CaseAction = {
+            id: crypto.randomUUID(),
+            type: "soap",
+            content: {
+              transcript: combinedTranscript,
+              soap: {
+                subjective: `Generated using template: ${result.template.name}`,
+                objective: "",
+                assessment: "",
+                plan: typeof result.content === "string" ? result.content : JSON.stringify(result.content, null, 2)
+              },
+            },
+            timestamp: Date.now(),
+          };
+          
+          // Add the new action
+          useCaseStore.getState().addCaseAction(generatedAction);
+        }
       } else {
-        throw new Error(result.error || "Failed to generate SOAP notes");
+        throw new Error(result.error || "Failed to generate content from template");
       }
     } catch (error) {
-      console.error("Error generating SOAP notes from multiple transcripts:", error);
+      console.error("Error generating content from multiple transcripts:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate SOAP notes",
+        description: error instanceof Error ? error.message : "Failed to generate content",
         variant: "destructive",
       });
     } finally {
       setIsGeneratingSoap(false);
+    }
+  };
+
+
+  // When an action is selected:
+  const handleActionSelect = (actionId: string) => {
+    setSelectedActionId(actionId);
+    setShowEmailButton(true);
+  };
+
+  // When an action is deselected:
+  const handleActionDeselect = () => {
+    setSelectedActionId(null);
+    setShowEmailButton(false);
+  };
+
+  const [showEmailButton, setShowEmailButton] = useState(false);
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailFrom, setEmailFrom] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // No longer needed as templates are loaded on component mount
+
+  // Add email handling functions
+  const handleEmailClick = () => {
+    setShowEmailDialog(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedActionId || !emailTo || !emailFrom) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all email fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const selectedAction = actions.find(action => action.id === selectedActionId);
+      if (!selectedAction) throw new Error("Selected action not found");
+
+      // Format the content to be sent
+      let emailContent = "";
+      let subject = "Clinic Connect: Case Update";
+
+      // Add case information if available
+      if (savedCaseData) {
+        emailContent += `<h2>Case Information</h2>
+<p><strong>Name:</strong> ${savedCaseData.name}<br>
+<strong>Date:</strong> ${new Date(savedCaseData.dateTime).toLocaleString()}<br>
+<strong>Type:</strong> ${savedCaseData.type.replace('_', ' ')}<br>
+<strong>Status:</strong> ${savedCaseData.status || 'Ongoing'}</p>
+<hr>`;
+      }
+
+      // If the selected action is a recording
+      if (selectedAction.type === "recording") {
+        // Add the recording transcript with some formatting
+        if (selectedAction.content.transcript) {
+          subject = `Clinic Connect: Transcript for ${savedCaseData?.name || 'Case'}`;
+          emailContent += `<h2>Recording Transcript</h2>
+<p><strong>Date:</strong> ${new Date(selectedAction.timestamp).toLocaleString()}</p>
+<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${selectedAction.content.transcript}</pre>`;
+        }
+      } 
+      // If the selected action is a SOAP note or other generated content
+      else if (selectedAction.type === "soap") {
+        subject = `Clinic Connect: ${savedCaseData?.name || 'Case'} - Notes`;
+        
+        // First add the transcript if available
+        if (selectedAction.content.transcript) {
+          emailContent += `<h2>Recording</h2>
+<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${selectedAction.content.transcript}</pre>
+<hr>`;
+        }
+
+        // Then add the SOAP note content with formatting
+        if (selectedAction.content.soap) {
+          const soap = selectedAction.content.soap;
+          
+          emailContent += `<h2>Generated Notes (${new Date(selectedAction.timestamp).toLocaleString()})</h2>`;
+          
+          // For standard SOAP notes
+          if (soap.subjective.trim() && 
+              soap.objective.trim() && 
+              soap.assessment.trim() && 
+              soap.plan.trim() && 
+              !soap.subjective.startsWith('Generated using template:')) {
+            
+            emailContent += `<h3>Subjective</h3>
+<div>${soap.subjective}</div>
+
+<h3>Objective</h3>
+<div>${soap.objective}</div>
+
+<h3>Assessment</h3>
+<div>${soap.assessment}</div>
+
+<h3>Plan</h3>
+<div>${soap.plan}</div>`;
+          } 
+          // For other template-based content
+          else if (soap.plan.trim()) {
+            // Use the plan field to store the content for non-SOAP templates
+            emailContent += `<div>${soap.plan}</div>`;
+          }
+        }
+      }
+
+      // Send the email with direct content
+      const result = await simpleSendEmail(emailTo, subject, emailContent, emailFrom);
+
+      if (result.success) {
+        toast({
+          title: "Email Sent",
+          description: "The email has been sent successfully",
+        });
+        setShowEmailDialog(false);
+        
+        // Clear the form
+        setEmailTo("");
+        setEmailFrom("");
+      } else {
+        throw new Error(result.error || "Failed to send email");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -1047,51 +1284,107 @@ export function CurrentCaseContent() {
                 <ClipboardCheck className="h-5 w-5 mr-2 text-blue-300" />
                 Case Actions
               </CardTitle>
-              {actions.filter(action => action.type === "recording").length > 0 && (
+              {actions.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Check if there are any selected recordings
-                      const selectedCount = useCaseStore.getState().selectedRecordings.length;
+                      // Check for recordings
+                      const selectedRecordingsCount = useCaseStore.getState().selectedRecordings.length;
                       const recordingsCount = actions.filter(action => action.type === "recording").length;
                       
-                      if (selectedCount > 0) {
-                        // Clear all selected recordings if some are selected
+                      // Check for SOAP notes
+                      const selectedSoapCount = selectedSoapIds.length;
+                      const soapCount = actions.filter(action => action.type === "soap").length;
+                      
+                      // If any recordings or SOAP notes are selected, clear all selections
+                      if (selectedRecordingsCount > 0 || selectedSoapCount > 0) {
+                        // Clear all selections
                         useCaseStore.getState().clearSelectedRecordings();
+                        setSelectedSoapIds([]);
+                        // Hide email button
+                        handleActionDeselect();
                       } else {
-                        // Select all recordings if none are selected
+                        // Select all actions (both recordings and SOAP notes)
+                        
+                        // Select all recordings
                         const recordingIds = actions
                           .filter(action => action.type === "recording")
                           .map(action => action.id);
                         recordingIds.forEach(id => {
                           useCaseStore.getState().toggleRecordingSelection(id);
                         });
+                        
+                        // Select all SOAP notes
+                        const soapIds = actions
+                          .filter(action => action.type === "soap")
+                          .map(action => action.id);
+                        setSelectedSoapIds(soapIds);
+                        
+                        // Show email button with the first action if available
+                        if (actions.length > 0) {
+                          handleActionSelect(actions[0].id);
+                        }
                       }
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
                   >
-                    {useCaseStore.getState().selectedRecordings.length > 0 ? "Clear Selection" : "Select All"}
+                    {useCaseStore.getState().selectedRecordings.length > 0 || selectedSoapIds.length > 0 
+                      ? "Clear Selection" 
+                      : "Select All"
+                    }
                   </Button>
-                  <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={handleGenerateMultipleSoap}
-                    disabled={isGeneratingSoap || useCaseStore.getState().selectedRecordings.length === 0}
-                  >
-                    {isGeneratingSoap ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Generate SOAP Notes
-                      </>
-                    )}
-                  </Button>
+                  
+                  {/* Template Selector */}
+                  {actions.filter(action => action.type === "recording").length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={selectedTemplateId}
+                        onValueChange={setSelectedTemplateId}
+                      >
+                        <SelectTrigger className="w-[180px] bg-blue-900/20 border-blue-700/30 text-blue-50">
+                          <SelectValue placeholder="Select Template" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-blue-900 border-blue-700">
+                          {isLoadingTemplates ? (
+                            <SelectItem value="loading" disabled>
+                              Loading templates...
+                            </SelectItem>
+                          ) : availableTemplates.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No templates available
+                            </SelectItem>
+                          ) : (
+                            availableTemplates.map((template) => (
+                              <SelectItem key={template.id} value={template.id.toString()}>
+                                {template.name} ({template.type})
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={handleGenerateFromMultiple}
+                        disabled={isGeneratingSoap || useCaseStore.getState().selectedRecordings.length === 0 || !selectedTemplateId}
+                      >
+                        {isGeneratingSoap ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Generate
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1099,385 +1392,511 @@ export function CurrentCaseContent() {
           <CardContent className="p-6">
             {actions.length > 0 ? (
               <div className="space-y-4">
-                {/* Recordings */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-blue-50">Transcripts</h3>
-                  {actions
-                    .filter(action => action.type === "recording")
-                    .map((action: CaseAction, index) => {
-                      const isSelected = useCaseStore.getState().selectedRecordings.includes(action.id);
-                      const isTranscriptExpanded = expandedTranscripts[action.id] || false;
-                      
-                      const toggleExpanded = () => {
-                        setExpandedTranscripts(prev => ({
-                          ...prev,
-                          [action.id]: !prev[action.id]
-                        }));
-                      };
-                      
-                      return (
-                        <Card
-                          key={action.id}
-                          className={`bg-blue-900/20 border-blue-700/30 ${
-                            isSelected ? "ring-2 ring-blue-400" : ""
-                          }`}
-                        >
-                          <CardHeader className="p-4 pb-2">
-                            <div className="flex justify-between items-center w-full">
-                              <div className="flex items-center gap-2 flex-1">
-                                <label
-                                  htmlFor={`recording-${action.id}`}
-                                  className="text-blue-50 font-medium cursor-pointer"
-                                >
-                                  Recording {index + 1}
-                                </label>
-                                <Badge className="bg-blue-700/50 text-blue-100 border-0">
-                                  Transcript
-                                </Badge>
-                                <span className="text-xs text-blue-300 ml-1">
-                                  <ClientSideDate timestamp={action.timestamp} />
-                                </span>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  id={`recording-${action.id}`}
-                                  checked={isSelected}
-                                  onChange={() => {
-                                    useCaseStore.getState().toggleRecordingSelection(action.id);
-                                  }}
-                                  className="h-4 w-4 rounded border-blue-700 text-blue-600 focus:ring-blue-500 mr-3"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={toggleExpanded}
-                                  className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
-                                >
-                                  {isTranscriptExpanded ? (
-                                    <ChevronUp className="h-5 w-5" />
-                                  ) : (
-                                    <ChevronDown className="h-5 w-5" />
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                            {!isTranscriptExpanded && (
-                              <div 
-                                className="text-blue-50/80 text-sm mt-2 cursor-pointer line-clamp-1"
-                                onClick={toggleExpanded}
-                              >
-                                {action.content.transcript}
-                              </div>
-                            )}
-                          </CardHeader>
-                          {isTranscriptExpanded && (
-                            <CardContent className="p-4 pt-0">
-                              <div
-                                className="text-blue-50 text-sm mt-2 whitespace-pre-line"
-                                onClick={() => {
-                                  // Toggle the recording selection when clicked
-                                  useCaseStore.getState().toggleRecordingSelection(action.id);
-                                }}
-                              >
-                                {action.content.transcript}
-                              </div>
-                            </CardContent>
-                          )}
-                        </Card>
-                      );
-                    })}
-                </div>
 
-                {/* SOAP Notes */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-blue-50">SOAP Notes</h3>
-                  {actions
-                    .filter(action => action.type === "soap" && action.content.soap)
-                    .map((action: CaseAction, index) => (
-                      <Card key={action.id} className="bg-blue-900/20 border-blue-700/30">
-                        <CardHeader className="p-4 pb-0">
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                              <Badge className="bg-green-700/50 text-green-100 border-0">
-                                SOAP Notes
-                              </Badge>
-                              <span className="text-xs text-blue-300">
-                                <ClientSideDate timestamp={action.timestamp} />
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {/* Combined expand/collapse button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  // Check if all sections are currently expanded
-                                  const allExpanded = Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded);
-                                  // Toggle to opposite state
-                                  toggleAllSections(action.id, !allExpanded);
-                                }}
-                                className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
-                                title={Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded) ? "Collapse all sections" : "Expand all sections"}
-                              >
-                                {Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded) ? (
-                                  <>
-                                    <ChevronsUp className="h-3 w-3 mr-1" />
-                                    Collapse
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronsDown className="h-3 w-3 mr-1" />
-                                    Expand
-                                  </>
+                {/* Separate Transcriptions and Generations sections */}
+                <div className="space-y-6">
+                  {/* Transcriptions Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-blue-50 border-b border-blue-800/30 pb-2">Transcriptions</h3>
+                    {actions.filter(action => action.type === "recording").length > 0 ? (
+                      actions
+                        .filter(action => action.type === "recording")
+                        .map((action: CaseAction, index) => {
+                          const isSelected = useCaseStore.getState().selectedRecordings.includes(action.id);
+                          const isTranscriptExpanded = expandedTranscripts[action.id] || false;
+                          
+                          const toggleExpanded = () => {
+                            setExpandedTranscripts(prev => ({
+                              ...prev,
+                              [action.id]: !prev[action.id]
+                            }));
+                          };
+                          
+                          return (
+                            <Card
+                              key={action.id}
+                              className={`bg-blue-900/20 border-blue-700/30 ${
+                                isSelected ? "ring-2 ring-blue-400" : ""
+                              }`}
+                            >
+                              <CardHeader className="p-4 pb-2">
+                                <div className="flex justify-between items-center w-full">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <label
+                                      htmlFor={`recording-${action.id}`}
+                                      className="text-blue-50 font-medium cursor-pointer"
+                                    >
+                                      Recording {index + 1}
+                                    </label>
+                                    <Badge className="bg-blue-700/50 text-blue-100 border-0">
+                                      Transcript
+                                    </Badge>
+                                    <span className="text-xs text-blue-300 ml-1">
+                                      <ClientSideDate timestamp={action.timestamp} />
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      id={`recording-${action.id}`}
+                                      checked={isSelected}
+                                      onChange={() => {
+                                        useCaseStore.getState().toggleRecordingSelection(action.id);
+                                        // Show/hide email button based on selection
+                                        if (!isSelected) {
+                                          handleActionSelect(action.id);
+                                        } else {
+                                          handleActionDeselect();
+                                        }
+                                      }}
+                                      className="h-4 w-4 rounded border-blue-700 text-blue-600 focus:ring-blue-500 mr-3"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={toggleExpanded}
+                                      className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                                    >
+                                      {isTranscriptExpanded ? (
+                                        <ChevronUp className="h-5 w-5" />
+                                      ) : (
+                                        <ChevronDown className="h-5 w-5" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                                {!isTranscriptExpanded && (
+                                  <div 
+                                    className="text-blue-50/80 text-sm mt-2 cursor-pointer line-clamp-1"
+                                    onClick={toggleExpanded}
+                                  >
+                                    {action.content.transcript}
+                                  </div>
                                 )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditSoap(action)}
-                                className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
-                                title="Edit SOAP notes"
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          {action.content.soap && (() => {
-                              // Get current section states
-                              const sections = expandedSoapSections[action.id] || {
-                                subjective: true,
-                                objective: true,
-                                assessment: true,
-                                plan: true
-                              };
-                              
-                              // Toggle function for sections
-                              const toggleSection = (section: string) => {
-                                setExpandedSoapSections(prev => ({
-                                  ...prev,
-                                  [action.id]: {
-                                    ...prev[action.id],
-                                    [section]: !prev[action.id]?.[section]
-                                  }
-                                }));
-                              };
-                              
-                              return (
-                                <div className="space-y-3">
-                                  {/* Subjective */}
-                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                  <div 
-                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                    onClick={() => toggleSection('subjective')}
+                              </CardHeader>
+                              {isTranscriptExpanded && (
+                                <CardContent className="p-4 pt-0">
+                                  <div
+                                    className="text-blue-50 text-sm mt-2 whitespace-pre-line"
+                                    onClick={() => {
+                                      // Toggle the recording selection when clicked
+                                      useCaseStore.getState().toggleRecordingSelection(action.id);
+                                      // Show/hide email button based on selection
+                                      if (!isSelected) {
+                                        handleActionSelect(action.id);
+                                      } else {
+                                        handleActionDeselect();
+                                      }
+                                    }}
                                   >
-                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
-                                      <Badge className="bg-blue-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">S</Badge>
-                                      Subjective
-                                    </h4>
-                                    <div className="flex items-center">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
-                                        onClick={(e) => {
-                                          // Stop propagation to prevent toggling when clicking copy
-                                          e.stopPropagation();
-                                          navigator.clipboard.writeText(action.content.soap?.subjective || "");
-                                          toast({
-                                            title: "Copied",
-                                            description: "Subjective section copied to clipboard",
-                                          });
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3 mr-1" />
-                                        Copy
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
-                                      >
-                                        {sections.subjective ? (
-                                          <ChevronUp className="h-4 w-4" />
-                                        ) : (
-                                          <ChevronDown className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </div>
+                                    {action.content.transcript}
                                   </div>
-                                  {sections.subjective && (
-                                    <div 
-                                      className="p-3 text-blue-50 text-sm"
-                                      dangerouslySetInnerHTML={{ __html: action.content.soap.subjective }}
-                                    />
-                                  )}
-                                </div>
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <Clipboard className="h-12 w-12 text-blue-700/50 mb-3" />
+                        <h3 className="text-lg font-medium text-blue-50 mb-1">
+                          No Transcriptions Yet
+                        </h3>
+                        <p className="text-blue-300 max-w-md text-sm">
+                          Record your case notes to create transcripts.
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                                {/* Objective */}
-                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                  <div 
-                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                    onClick={() => toggleSection('objective')}
-                                  >
-                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
-                                      <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">O</Badge>
-                                      Objective
-                                    </h4>
-                                    <div className="flex items-center">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
-                                        onClick={(e) => {
-                                          // Stop propagation to prevent toggling when clicking copy
-                                          e.stopPropagation();
-                                          navigator.clipboard.writeText(action.content.soap?.objective || "");
-                                          toast({
-                                            title: "Copied",
-                                            description: "Objective section copied to clipboard",
-                                          });
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3 mr-1" />
-                                        Copy
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
-                                      >
-                                        {sections.objective ? (
-                                          <ChevronUp className="h-4 w-4" />
-                                        ) : (
-                                          <ChevronDown className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </div>
+                  {/* Generations Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-blue-50 border-b border-blue-800/30 pb-2">Generations</h3>
+                    {actions.filter(action => action.type === "soap").length > 0 ? (
+                      actions
+                        .filter(action => action.type === "soap" && action.content.soap)
+                        .map((action: CaseAction, index) => {
+                          const isSoapSelected = selectedSoapIds.includes(action.id);
+                          const isSoapExpanded = expandedSoaps[action.id] || false;
+                          
+                          // Try to parse the SOAP note from plan if it's a string containing JSON
+                          let parsedSoap = action.content.soap;
+                          
+                          // Check if plan field contains JSON structure with SOAP fields
+                          if (action.content.soap?.plan && typeof action.content.soap.plan === 'string') {
+                            try {
+                              // Check if the plan looks like it contains JSON
+                              if (action.content.soap.plan.includes('"subjective":') || 
+                                  action.content.soap.plan.includes('"objective":') ||
+                                  action.content.soap.plan.includes('"assessment":') ||
+                                  action.content.soap.plan.includes('"plan":')) {
+                                const parsedPlan = JSON.parse(action.content.soap.plan);
+                                
+                                // If it successfully parsed and has SOAP structure, use it
+                                if (parsedPlan && 
+                                    typeof parsedPlan === 'object' && 
+                                    (parsedPlan.subjective || parsedPlan.objective || 
+                                     parsedPlan.assessment || parsedPlan.plan)) {
+                                  parsedSoap = parsedPlan;
+                                }
+                              }
+                            } catch (e) {
+                              console.error("Failed to parse SOAP JSON from plan field:", e);
+                            }
+                          }
+                          
+                          // Determine if this is a SOAP note or another template type
+                          const isSoapFormat = parsedSoap && 
+                                              parsedSoap.subjective &&
+                                              parsedSoap.objective &&
+                                              parsedSoap.assessment &&
+                                              parsedSoap.plan &&
+                                              !parsedSoap.subjective.startsWith('Generated using template:');
+                          
+                          // Get template name from content if available
+                          const templateName = parsedSoap?.subjective?.startsWith('Generated using template:') 
+                            ? parsedSoap.subjective.replace('Generated using template:', '').trim()
+                            : "SOAP Notes";
+                          return (
+                            <Card 
+                              key={action.id} 
+                              className={`bg-blue-900/20 border-blue-700/30 ${
+                                isSoapSelected ? "ring-2 ring-green-400" : ""
+                              }`}
+                            >
+                              <CardHeader className="p-4 pb-2">
+                                <div className="flex justify-between items-center w-full">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <label
+                                      htmlFor={`soap-${action.id}`}
+                                      className="text-blue-50 font-medium cursor-pointer"
+                                    >
+                                      {templateName} {index + 1}
+                                    </label>
+                                    <Badge className={`${isSoapFormat ? "bg-green-700/50 text-green-100" : "bg-purple-700/50 text-purple-100"} border-0`}>
+                                      {isSoapFormat ? "SOAP" : "Template"}
+                                    </Badge>
+                                    <span className="text-xs text-blue-300 ml-1">
+                                      <ClientSideDate timestamp={action.timestamp} />
+                                    </span>
                                   </div>
-                                  {sections.objective && (
-                                    <div 
-                                      className="p-3 text-blue-50 text-sm"
-                                      dangerouslySetInnerHTML={{ __html: action.content.soap.objective }}
+                                  <div className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      id={`soap-${action.id}`}
+                                      checked={isSoapSelected}
+                                      onChange={() => {
+                                        toggleSoapSelection(action.id);
+                                        if (!isSoapSelected) {
+                                          handleActionSelect(action.id);
+                                        } else {
+                                          handleActionDeselect();
+                                        }
+                                      }}
+                                      className="h-4 w-4 rounded border-green-700 text-green-600 focus:ring-green-500 mr-3"
                                     />
-                                  )}
-                                </div>
-
-                                {/* Assessment */}
-                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                  <div 
-                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                    onClick={() => toggleSection('assessment')}
-                                  >
-                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
-                                      <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">A</Badge>
-                                      Assessment
-                                    </h4>
-                                    <div className="flex items-center">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
-                                        onClick={(e) => {
-                                          // Stop propagation to prevent toggling when clicking copy
-                                          e.stopPropagation();
-                                          navigator.clipboard.writeText(action.content.soap?.assessment || "");
-                                          toast({
-                                            title: "Copied",
-                                            description: "Assessment section copied to clipboard",
-                                          });
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3 mr-1" />
-                                        Copy
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
-                                      >
-                                        {sections.assessment ? (
-                                          <ChevronUp className="h-4 w-4" />
-                                        ) : (
-                                          <ChevronDown className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleSoapExpanded(action.id)}
+                                      className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                                    >
+                                      {isSoapExpanded ? (
+                                        <ChevronUp className="h-5 w-5" />
+                                      ) : (
+                                        <ChevronDown className="h-5 w-5" />
+                                      )}
+                                    </Button>
                                   </div>
-                                  {sections.assessment && (
-                                    <div 
-                                      className="p-3 text-blue-50 text-sm"
-                                      dangerouslySetInnerHTML={{ __html: action.content.soap.assessment }}
-                                    />
-                                  )}
                                 </div>
+                              </CardHeader>
+                              {isSoapExpanded && (
+                                <CardContent className="p-4">
+                                  {action.content.soap && (
+                                    isSoapFormat ? (
+                                      <div className="space-y-3">
+                                        <div className="flex items-center justify-end gap-1 mb-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              // Check if all sections are currently expanded
+                                              const allExpanded = Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded);
+                                              // Toggle to opposite state
+                                              toggleAllSections(action.id, !allExpanded);
+                                            }}
+                                            className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
+                                            title={Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded) ? "Collapse all sections" : "Expand all sections"}
+                                          >
+                                            {Object.values(expandedSoapSections[action.id] || {}).every(expanded => expanded) ? (
+                                              <>
+                                                <ChevronsUp className="h-3 w-3 mr-1" />
+                                                Collapse
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ChevronsDown className="h-3 w-3 mr-1" />
+                                                Expand
+                                              </>
+                                            )}
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleEditSoap(action)}
+                                            className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
+                                            title="Edit SOAP notes"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            Edit
+                                          </Button>
+                                        </div>
+                                        
+                                        {/* Subjective */}
+                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                          <div 
+                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            onClick={() => toggleAllSections(action.id, !expandedSoapSections[action.id].subjective)}
+                                          >
+                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                              <Badge className="bg-blue-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">S</Badge>
+                                              Subjective
+                                            </h4>
+                                            <div className="flex items-center">
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigator.clipboard.writeText(parsedSoap?.subjective || "");
+                                                  toast({
+                                                    title: "Copied",
+                                                    description: "Subjective section copied to clipboard",
+                                                  });
+                                                }}
+                                              >
+                                                <Copy className="h-3 w-3 mr-1" />
+                                                Copy
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                              >
+                                                {expandedSoapSections[action.id].subjective ? (
+                                                  <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                  <ChevronDown className="h-4 w-4" />
+                                                )}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          {expandedSoapSections[action.id].subjective && (
+                                            <div 
+                                              className="p-3 text-blue-50 text-sm"
+                                              dangerouslySetInnerHTML={{ __html: parsedSoap?.subjective || "" }}
+                                            />
+                                          )}
+                                        </div>
 
-                                {/* Plan */}
-                                <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                  <div 
-                                    className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                    onClick={() => toggleSection('plan')}
-                                  >
-                                    <h4 className="text-blue-100 flex items-center text-sm font-medium">
-                                      <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">P</Badge>
-                                      Plan
-                                    </h4>
-                                    <div className="flex items-center">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 text-xs text-blue-400 hover:text-blue-300"
-                                        onClick={(e) => {
-                                          // Stop propagation to prevent toggling when clicking copy
-                                          e.stopPropagation();
-                                          navigator.clipboard.writeText(action.content.soap?.plan || "");
-                                          toast({
-                                            title: "Copied",
-                                            description: "Plan section copied to clipboard",
-                                          });
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3 mr-1" />
-                                        Copy
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
-                                      >
-                                        {sections.plan ? (
-                                          <ChevronUp className="h-4 w-4" />
-                                        ) : (
-                                          <ChevronDown className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  {sections.plan && (
-                                    <div 
-                                      className="p-3 text-blue-50 text-sm"
-                                      dangerouslySetInnerHTML={{ __html: action.content.soap.plan }}
-                                    />
+                                        {/* Objective */}
+                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                          <div 
+                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            onClick={() => toggleAllSections(action.id, !expandedSoapSections[action.id].objective)}
+                                          >
+                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                              <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">O</Badge>
+                                              Objective
+                                            </h4>
+                                            <div className="flex items-center">
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigator.clipboard.writeText(parsedSoap?.objective || "");
+                                                  toast({
+                                                    title: "Copied",
+                                                    description: "Objective section copied to clipboard",
+                                                  });
+                                                }}
+                                              >
+                                                <Copy className="h-3 w-3 mr-1" />
+                                                Copy
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                              >
+                                                {expandedSoapSections[action.id].objective ? (
+                                                  <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                  <ChevronDown className="h-4 w-4" />
+                                                )}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          {expandedSoapSections[action.id].objective && (
+                                            <div 
+                                              className="p-3 text-blue-50 text-sm"
+                                              dangerouslySetInnerHTML={{ __html: parsedSoap?.objective || "" }}
+                                            />
+                                          )}
+                                        </div>
+
+                                        {/* Assessment */}
+                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                          <div 
+                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            onClick={() => toggleAllSections(action.id, !expandedSoapSections[action.id].assessment)}
+                                          >
+                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                              <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">A</Badge>
+                                              Assessment
+                                            </h4>
+                                            <div className="flex items-center">
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigator.clipboard.writeText(parsedSoap?.assessment || "");
+                                                  toast({
+                                                    title: "Copied",
+                                                    description: "Assessment section copied to clipboard",
+                                                  });
+                                                }}
+                                              >
+                                                <Copy className="h-3 w-3 mr-1" />
+                                                Copy
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                              >
+                                                {expandedSoapSections[action.id].assessment ? (
+                                                  <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                  <ChevronDown className="h-4 w-4" />
+                                                )}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          {expandedSoapSections[action.id].assessment && (
+                                            <div 
+                                              className="p-3 text-blue-50 text-sm"
+                                              dangerouslySetInnerHTML={{ __html: parsedSoap?.assessment || "" }}
+                                            />
+                                          )}
+                                        </div>
+
+                                        {/* Plan */}
+                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                          <div 
+                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            onClick={() => toggleAllSections(action.id, !expandedSoapSections[action.id].plan)}
+                                          >
+                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                              <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">P</Badge>
+                                              Plan
+                                            </h4>
+                                            <div className="flex items-center">
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigator.clipboard.writeText(parsedSoap?.plan || "");
+                                                  toast({
+                                                    title: "Copied",
+                                                    description: "Plan section copied to clipboard",
+                                                  });
+                                                }}
+                                              >
+                                                <Copy className="h-3 w-3 mr-1" />
+                                                Copy
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                              >
+                                                {expandedSoapSections[action.id].plan ? (
+                                                  <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                  <ChevronDown className="h-4 w-4" />
+                                                )}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          {expandedSoapSections[action.id].plan && (
+                                            <div 
+                                              className="p-3 text-blue-50 text-sm"
+                                              dangerouslySetInnerHTML={{ __html: parsedSoap?.plan || "" }}
+                                            />
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-3">
+                                        <div className="flex items-center justify-end gap-1 mb-2">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(parsedSoap?.plan || "");
+                                              toast({
+                                                title: "Copied",
+                                                description: "Content copied to clipboard",
+                                              });
+                                            }}
+                                          >
+                                            <Copy className="h-3 w-3 mr-1" />
+                                            Copy
+                                          </Button>
+                                        </div>
+                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                          <div className="p-3 text-blue-50 text-sm whitespace-pre-wrap">
+                                            {parsedSoap?.plan || ""}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
                                   )}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </CardContent>
-                      </Card>
-                    ))}
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <Clipboard className="h-12 w-12 text-blue-700/50 mb-3" />
+                        <h3 className="text-lg font-medium text-blue-50 mb-1">
+                          No Generations Yet
+                        </h3>
+                        <p className="text-blue-300 max-w-md text-sm">
+                          Select one or more transcripts and generate SOAP notes.
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                  {actions.filter(action => action.type === "soap" && action.content.soap).length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-6 text-center">
-                      <Clipboard className="h-12 w-12 text-blue-700/50 mb-3" />
-                      <h3 className="text-lg font-medium text-blue-50 mb-1">
-                        No SOAP Notes Yet
+                  {actions.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Clipboard className="h-16 w-16 text-blue-700/50 mb-4" />
+                      <h3 className="text-xl font-medium text-blue-50 mb-2">
+                        No Case Actions Yet
                       </h3>
-                      <p className="text-blue-300 max-w-md text-sm">
-                        Select one or more transcripts and generate SOAP notes.
+                      <p className="text-blue-300 max-w-md">
+                        Record your case notes to create transcripts and generate SOAP notes.
                       </p>
                     </div>
                   )}
@@ -1617,6 +2036,89 @@ export function CurrentCaseContent() {
           actionId={editingSoapId}
         />
       )}
+
+      {/* Add the floating email button */}
+      {showEmailButton && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button
+            onClick={handleEmailClick}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Mail className="h-4 w-4" />
+            Email
+          </Button>
+        </div>
+      )}
+
+      {/* Add email dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md bg-blue-950 border-blue-800">
+          <DialogHeader>
+            <DialogTitle className="text-blue-50">Send Email</DialogTitle>
+            <DialogDescription className="text-blue-200">
+              Send the selected case action by email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="from" className="text-sm font-medium text-blue-200">
+                From Email
+              </label>
+              <Input
+                id="from"
+                type="email"
+                value={emailFrom}
+                onChange={(e) => setEmailFrom(e.target.value)}
+                placeholder="clinic@example.com"
+                className="bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="to" className="text-sm font-medium text-blue-200">
+                To Email
+              </label>
+              <Input
+                id="to"
+                type="email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="owner@example.com"
+                className="bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowEmailDialog(false);
+              }}
+              className="text-blue-200 hover:text-blue-100 hover:bg-blue-800/30"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleSendEmail}
+              disabled={isSendingEmail || !emailTo || !emailFrom}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isSendingEmail ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

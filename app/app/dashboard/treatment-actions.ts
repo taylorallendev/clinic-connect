@@ -262,7 +262,7 @@ export async function getTreatmentTasksByCase(caseId: number) {
       .from("treatment_tasks")
       .select()
       .eq("case_id", caseId)
-      .order("created_at");
+      .order("createdAt");
 
     if (error) {
       console.error("Error getting treatment tasks:", error);
@@ -306,7 +306,7 @@ export async function getPendingTreatmentTasks(limit = 10) {
       )
       .eq("assigned_to", user.id)
       .not("status", "eq", "completed")
-      .order("created_at")
+      .order("createdAt")
       .limit(limit);
 
     if (error) {

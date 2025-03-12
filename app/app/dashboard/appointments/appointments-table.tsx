@@ -39,7 +39,7 @@ interface AppointmentData {
 
 interface AppointmentsTableProps {
   initialData: {
-    appointments: AppointmentData[];
+  appointments: AppointmentData[];
     totalCount: number;
     page: number;
     pageSize: number;
@@ -155,17 +155,17 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
-        return 'bg-green-500 hover:bg-green-600'
+        return 'bg-green-500/80 hover:bg-green-500'
       case 'ongoing':
-        return 'bg-blue-500 hover:bg-blue-600'
+        return 'bg-blue-500/80 hover:bg-blue-500'
       case 'exported':
-        return 'bg-purple-500 hover:bg-purple-600'
+        return 'bg-purple-500/80 hover:bg-purple-500'
       case 'reviewed':
-        return 'bg-yellow-500 hover:bg-yellow-600'
+        return 'bg-yellow-500/80 hover:bg-yellow-500'
       case 'scheduled':
-        return 'bg-gray-500 hover:bg-gray-600'
+        return 'bg-gray-500/80 hover:bg-gray-500'
       default:
-        return 'bg-gray-500 hover:bg-gray-600'
+        return 'bg-gray-500/80 hover:bg-gray-500'
     }
   }
 
@@ -186,14 +186,14 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
           <Button 
             variant={viewMode === 'all' ? "default" : "outline"} 
             onClick={() => setViewMode('all')}
-            className={viewMode === 'all' ? "bg-blue-600 hover:bg-blue-700" : ""}
+            className={viewMode === 'all' ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
           >
             All Appointments
           </Button>
           <Button 
             variant={viewMode === 'case-management' ? "default" : "outline"} 
             onClick={() => setViewMode('case-management')}
-            className={viewMode === 'case-management' ? "bg-blue-600 hover:bg-blue-700" : ""}
+            className={viewMode === 'case-management' ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
           >
             Case Management
           </Button>
@@ -206,9 +206,9 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
       </div>
 
       {viewMode === 'all' ? (
-        <Card className="shadow-lg">
-          <CardHeader className="bg-blue-950 text-white">
-            <CardTitle className="text-2xl font-bold">All Appointments</CardTitle>
+        <Card className="bg-gradient-to-br from-blue-950 to-indigo-950 border-blue-800/30">
+          <CardHeader className="border-b border-blue-800/30">
+            <CardTitle className="text-2xl font-bold text-blue-50">All Appointments</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             {/* Controls */}
@@ -219,7 +219,7 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                   placeholder="Search appointments..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full sm:w-64"
+                  className="w-full sm:w-64 bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50"
                 />
                 <Button type="submit" variant="outline" size="icon">
                   <SearchIcon className="h-4 w-4" />
@@ -287,40 +287,44 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-blue-800/30">
+                    <TableHead className="text-blue-200">Date</TableHead>
+                    <TableHead className="text-blue-200">Time</TableHead>
+                    <TableHead className="text-blue-200">Patient</TableHead>
+                    <TableHead className="text-blue-200">Provider</TableHead>
+                    <TableHead className="text-blue-200">Type</TableHead>
+                    <TableHead className="text-blue-200">Status</TableHead>
+                    <TableHead className="text-blue-200 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {appointments.length > 0 ? (
                     appointments.map((appointment) => (
-                      <TableRow key={appointment.id}>
-                        <TableCell>{appointment.date}</TableCell>
-                        <TableCell>{appointment.time}</TableCell>
-                        <TableCell>
+                      <TableRow key={appointment.id} className="border-blue-800/30 hover:bg-blue-900/20">
+                        <TableCell className="text-blue-100">{appointment.date}</TableCell>
+                        <TableCell className="text-blue-100">{appointment.time}</TableCell>
+                        <TableCell className="text-blue-100">
                           {appointment.patients ? appointment.patients.name : 'Unknown Patient'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-blue-100">
                           {appointment.users ? appointment.users.name : 'Unassigned'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-blue-100">
                           <Badge variant="outline" className="capitalize">
                             {appointment.type?.replace('_', ' ') || 'General'}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-blue-100">
                           <Badge className={`${getStatusColor(appointment.status)} text-white capitalize`}>
                             {appointment.status?.replace('_', ' ') || 'Scheduled'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm">
+                        <TableCell className="text-blue-100 text-right">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="bg-blue-600/80 hover:bg-blue-600 text-white"
+                          >
                             View
                           </Button>
                         </TableCell>
@@ -328,7 +332,7 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-6">
+                      <TableCell colSpan={7} className="text-center py-6 text-blue-200">
                         No appointments found for the selected criteria.
                       </TableCell>
                     </TableRow>
