@@ -13,8 +13,9 @@ export const caseFormSchema = z.object({
   name: z.string().min(1, "Case name is required"),
   dateTime: z.string().min(1, "Date and time is required"),
   assignedTo: z.string(),
-  visibility: z.enum(["public", "private"]),
   type: z.enum(["checkup", "emergency", "surgery", "follow_up"]),
+  // Use exact status values from Supabase database
+  status: z.enum(["ongoing", "completed", "reviewed", "exported", "scheduled"]).default("ongoing"),
 });
 
 export type CaseFormValues = z.infer<typeof caseFormSchema>;
@@ -56,11 +57,11 @@ export function useCaseForm(onCaseCreated?: (caseId: number) => void) {
   const form = useForm<CaseFormValues>({
     resolver: zodResolver(caseFormSchema),
     defaultValues: {
-      visibility: "private",
       type: "checkup",
       dateTime: new Date().toISOString().slice(0, 16),
       assignedTo: "", // This will be filled by the user
       name: "", // This will be filled by the user
+      status: "ongoing", // Default status from Supabase
     },
   });
 

@@ -49,13 +49,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, []);
 
   const navigation = [
-    { name: "Dashboard", icon: Home, href: "/app/dashboard" },
     {
       name: "Appointments",
       icon: Calendar,
       href: "/app/dashboard/appointments",
     },
-    { name: "Patients", icon: Users, href: "/app/dashboard/patients" },
     {
       name: "Current Case",
       icon: FileText,

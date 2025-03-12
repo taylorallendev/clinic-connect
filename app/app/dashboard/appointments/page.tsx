@@ -9,29 +9,18 @@ export const revalidate = 0
 
 async function AppointmentsContent() {
   try {
-    console.log("Page: Starting to fetch appointments for initial load");
+    // Get current date in YYYY-MM-DD format for default filtering
+    const today = new Date();
+    const dateFilter = today.toISOString().split('T')[0];
     
-    // First try with empty filters to get all appointments
+    // Load appointments with today's date as default filter
     let initialData = await getAppointments({ 
       page: 0, 
-      pageSize: 10
+      pageSize: 20, // Show more cases by default
+      dateFilter,
+      timestamp: Date.now(), // Add this to bust cache
+      forceRefresh: true // Force direct database query
     });
-    
-    console.log(`Page: Loaded ${initialData.appointments.length} appointments with no filter`);
-    
-    // If no results, try with today's date as fallback
-    if (initialData.appointments.length === 0) {
-      const today = new Date().toISOString().split('T')[0];
-      console.log(`Page: No appointments found, trying with today's date: ${today}`);
-      
-      initialData = await getAppointments({ 
-        page: 0, 
-        pageSize: 10,
-        dateFilter: today 
-      });
-      
-      console.log(`Page: Loaded ${initialData.appointments.length} appointments for today`);
-    }
     
     return <AppointmentsTable initialData={initialData} />;
   } catch (error) {
@@ -52,7 +41,7 @@ async function AppointmentsContent() {
 
 export default function AppointmentsPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container max-w-7xl mx-auto px-4 py-6">
       <Suspense fallback={<AppointmentsSkeleton />}>
         <AppointmentsContent />
       </Suspense>

@@ -13,10 +13,10 @@ export async function middleware(request: NextRequest) {
   // Get the pathname from the URL
   const { pathname } = request.nextUrl;
 
-  // If user is signed in and trying to access the landing page or auth pages, redirect to dashboard
+  // If user is signed in and trying to access the landing page or auth pages, redirect to appointments
   if (session) {
     if (pathname === "/" || pathname.startsWith("/(auth-pages)")) {
-      return NextResponse.redirect(new URL("/app/dashboard", request.url));
+      return NextResponse.redirect(new URL("/app/dashboard/appointments", request.url));
     }
   }
 

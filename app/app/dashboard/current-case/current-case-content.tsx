@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/components/ui/use-toast";
 import { useCaseStore } from "@/store/use-case-store";
-import { createCase, generateSoapNotes, updateCase, getCase } from "./actions";
+import { createCase, generateSoapNotes, updateCase, getCase, diagnoseDatabaseSchema } from "./actions";
 import { caseFormSchema } from "./case-form";
 import { ClientSideDate } from "./client-side-dates";
 import { Button } from "@/components/ui/button";
@@ -232,7 +232,6 @@ export function CurrentCaseContent() {
       name: "",
       dateTime: new Date().toISOString().slice(0, 16),
       assignedTo: "",
-      visibility: "private",
       type: "checkup",
     },
   });
@@ -680,6 +679,31 @@ export function CurrentCaseContent() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-blue-50">Current Case</h1>
         <div className="flex items-center gap-3">
+          {/* Database diagnosis button */}
+          <Button 
+            variant="ghost"
+            className="text-green-100 hover:bg-green-800/30 hover:text-green-50"
+            onClick={async () => {
+              try {
+                await diagnoseDatabaseSchema();
+                toast({
+                  title: "Diagnosis Complete",
+                  description: "Check browser console for database schema details"
+                });
+              } catch (err) {
+                console.error("Diagnosis failed:", err);
+                toast({
+                  title: "Diagnosis Failed",
+                  description: "Check browser console for errors",
+                  variant: "destructive"
+                });
+              }
+            }}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Diagnose DB
+          </Button>
+                
           {/* Reset button moved to the left */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -709,7 +733,6 @@ export function CurrentCaseContent() {
                       name: "",
                       dateTime: new Date().toISOString().slice(0, 16),
                       assignedTo: "",
-                      visibility: "private",
                       type: "checkup",
                     });
                     
@@ -759,7 +782,6 @@ export function CurrentCaseContent() {
                 name: "",
                 dateTime: new Date().toISOString().slice(0, 16),
                 assignedTo: "",
-                visibility: "private",
                 type: "checkup",
               });
               
@@ -878,13 +900,14 @@ export function CurrentCaseContent() {
                       )}
                     />
 
+                    
                     <FormField
                       control={form.control}
-                      name="visibility"
+                      name="status"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-blue-200">
-                            Visibility
+                            Status
                           </FormLabel>
                           <Select
                             onValueChange={field.onChange}
@@ -892,12 +915,14 @@ export function CurrentCaseContent() {
                           >
                             <FormControl>
                               <SelectTrigger className="bg-blue-900/20 border-blue-700/30 text-blue-50 focus:ring-blue-500">
-                                <SelectValue placeholder="Select visibility" />
+                                <SelectValue placeholder="Select status" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="bg-blue-900 border-blue-700 text-blue-50">
-                              <SelectItem value="private">Private</SelectItem>
-                              <SelectItem value="public">Public</SelectItem>
+                              <SelectItem value="ongoing">Ongoing</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="reviewed">Reviewed</SelectItem>
+                              <SelectItem value="exported">Exported</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage className="text-red-300" />
@@ -940,12 +965,13 @@ export function CurrentCaseContent() {
                       </p>
                     </div>
 
+
                     <div>
                       <h3 className="text-sm font-medium text-blue-300 mb-1">
-                        Visibility
+                        Status
                       </h3>
-                      <p className="text-blue-50 text-lg capitalize">
-                        {savedCaseData.visibility}
+                      <p className="text-blue-50 text-lg">
+                        {savedCaseData.status ? savedCaseData.status.replace('_', ' ') : 'SCHEDULED'}
                       </p>
                     </div>
                   </div>

@@ -8,6 +8,7 @@ export interface CaseStatusCounts {
   completed: number;
   reviewed: number;
   exported: number;
+  scheduled: number;
 }
 
 // Update this interface to match your actual status values
@@ -38,6 +39,7 @@ export async function getCaseTypeStats(): Promise<CaseStatusCounts> {
       completed: 0,
       reviewed: 0,
       exported: 0,
+      scheduled: 0,
     };
 
     // Count total cases
@@ -56,6 +58,8 @@ export async function getCaseTypeStats(): Promise<CaseStatusCounts> {
         counts.reviewed++;
       else if (status === "exported" || status === "Exported")
         counts.exported++;
+      else if (status === "scheduled" || status === "Scheduled")
+        counts.scheduled++;
     });
     console.log(counts);
     return counts;
@@ -68,6 +72,7 @@ export async function getCaseTypeStats(): Promise<CaseStatusCounts> {
       completed: 0,
       reviewed: 0,
       exported: 0,
+      scheduled: 0,
     };
   }
 }

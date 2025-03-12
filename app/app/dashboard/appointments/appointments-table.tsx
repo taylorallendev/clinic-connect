@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,9 +9,12 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
 import { Pagination } from "@/components/ui/pagination"
-import { CalendarIcon, SearchIcon } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CalendarIcon, SearchIcon, RefreshCw, Plus, CheckCircle, PlusCircle, PlayCircle } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 interface AppointmentData {
   id: string;
@@ -44,29 +47,36 @@ interface AppointmentsTableProps {
 }
 
 export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<AppointmentData[]>(initialData.appointments)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(initialData.page)
   const [totalCount, setTotalCount] = useState(initialData.totalCount)
   const [pageSize, setPageSize] = useState(initialData.pageSize)
   const [date, setDate] = useState<Date | null>(() => {
-    // If the initialData was filtered by date, we should set that as the default date
+    // Always set today's date as default
     try {
-      // Determine if there's a date filter based on having appointments and today's date
-      if (initialData.appointments && initialData.appointments.length > 0) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return today;
-      }
-      return null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
     } catch (e) {
       console.error("Error setting initial date:", e);
       return null;
     }
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<'all' | 'case-management'>('all')
+  const [activeTab, setActiveTab] = useState('upcoming')
 
   const totalPages = Math.ceil(totalCount / pageSize)
+  
+  // Effect to load appointments with today's date on component mount
+  useEffect(() => {
+    // If we have no appointments yet, fetch with today's date
+    if (date && initialData.appointments.length === 0) {
+      fetchAppointments(0, pageSize, "", format(date, "yyyy-MM-dd"));
+    }
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,269 +102,555 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
   }
 
   const fetchAppointments = async (pageNum: number, size: number, query: string, dateFilter: string) => {
+    setIsLoading(true)
     try {
-      setIsLoading(true)
-      console.log('Fetching appointments with params:', {
-        page: pageNum,
-        pageSize: size,
-        searchQuery: query,
-        dateFilter
-      });
-      
-      // Use server action instead of fetch API to avoid cross-domain/CORS issues
-      const response = await fetch("/api/appointments", {
-        method: "POST",
+      const url = '/api/appointments'
+      const res = await fetch(url, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          // Add cache control to prevent caching issues
-          "Cache-Control": "no-cache, no-store"
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           page: pageNum,
           pageSize: size,
           searchQuery: query,
-          dateFilter
+          dateFilter: dateFilter,
+          timestamp: Date.now(), // Add timestamp to bust cache
         }),
-        // Add these options to prevent caching issues
-        cache: "no-store",
-        next: { revalidate: 0 }
-      });
+      })
 
-      // Get response details for debugging
-      console.log('Response status:', response.status);
-      
-      // If not OK, try to get error details
-      if (!response.ok) {
-        let errorDetail = "Failed to fetch appointments";
-        try {
-          const errorData = await response.json();
-          errorDetail = errorData.error || errorDetail;
-        } catch (parseError) {
-          console.error('Could not parse error response:', parseError);
-        }
-        throw new Error(errorDetail);
+      if (!res.ok) {
+        throw new Error('Failed to fetch appointments')
       }
 
-      // Parse response data
-      let data;
-      try {
-        data = await response.json();
-        console.log('Received appointments data:', {
-          appointmentsCount: data.appointments?.length || 0,
-          totalCount: data.totalCount,
-          page: data.page
-        });
-      } catch (parseError) {
-        console.error('Error parsing response JSON:', parseError);
-        throw new Error('Invalid response format');
-      }
+      const data = await res.json()
+      setAppointments(data.appointments)
+      setTotalCount(data.totalCount)
+      setPage(pageNum)
       
-      // Update state with received data
-      setAppointments(data.appointments || []);
-      setTotalCount(data.totalCount || 0);
-      setPage(data.page || 0);
+      // Show toast confirming data refresh
+      if (query || dateFilter) {
+        toast({
+          title: "Appointments filtered",
+          description: `Showing ${data.appointments.length} appointments`,
+        })
+      } else {
+        toast({
+          title: "Appointments refreshed",
+          description: `Showing ${data.appointments.length} appointments`,
+        })
+      }
     } catch (error) {
-      console.error("Error fetching appointments:", error);
-      // Set empty data on error
-      setAppointments([]);
-      setTotalCount(0);
+      console.error('Error fetching appointments:', error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments",
+        variant: "destructive",
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
-  const statusColors = {
-    scheduled: "bg-blue-100 text-blue-800",
-    confirmed: "bg-blue-100 text-blue-800",
-    in_progress: "bg-yellow-100 text-yellow-800",
-    ongoing: "bg-yellow-100 text-yellow-800", 
-    completed: "bg-green-100 text-green-800",
-    reviewed: "bg-purple-100 text-purple-800",
-    exported: "bg-gray-100 text-gray-800",
-    cancelled: "bg-red-100 text-red-800",
-    draft: "bg-gray-100 text-gray-800",
-    noshow: "bg-red-100 text-red-800"
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'bg-green-500 hover:bg-green-600'
+      case 'ongoing':
+        return 'bg-blue-500 hover:bg-blue-600'
+      case 'exported':
+        return 'bg-purple-500 hover:bg-purple-600'
+      case 'reviewed':
+        return 'bg-yellow-500 hover:bg-yellow-600'
+      case 'scheduled':
+        return 'bg-gray-500 hover:bg-gray-600'
+      default:
+        return 'bg-gray-500 hover:bg-gray-600'
+    }
   }
+
+  // Filter appointments by status for the case management view
+  const filterAppointmentsByStatus = (status: string) => {
+    return appointments.filter(apt => apt.status.toLowerCase() === status.toLowerCase());
+  }
+
+  const upcomingAppointments = filterAppointmentsByStatus('scheduled');
+  const ongoingAppointments = filterAppointmentsByStatus('ongoing');
+  const completedAppointments = filterAppointmentsByStatus('completed');
+  const exportedAppointments = filterAppointmentsByStatus('exported');
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Appointments</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline">Export</Button>
-          <Button onClick={() => window.location.href = "/app/dashboard/current-case"}>New Appointment</Button>
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          <Button 
+            variant={viewMode === 'all' ? "default" : "outline"} 
+            onClick={() => setViewMode('all')}
+            className={viewMode === 'all' ? "bg-blue-600 hover:bg-blue-700" : ""}
+          >
+            All Appointments
+          </Button>
+          <Button 
+            variant={viewMode === 'case-management' ? "default" : "outline"} 
+            onClick={() => setViewMode('case-management')}
+            className={viewMode === 'case-management' ? "bg-blue-600 hover:bg-blue-700" : ""}
+          >
+            Case Management
+          </Button>
         </div>
+        
+        <Button className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          New Appointment
+        </Button>
       </div>
-      
-      <Card>
-        <CardHeader className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              {totalCount} {totalCount === 1 ? 'Appointment' : 'Appointments'} {date && `for ${format(date, "MMMM d, yyyy")}`}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <div className="relative">
-                  <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search appointments..."
-                    className="w-[250px] pl-8"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
+
+      {viewMode === 'all' ? (
+        <Card className="shadow-lg">
+          <CardHeader className="bg-blue-950 text-white">
+            <CardTitle className="text-2xl font-bold">All Appointments</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              {/* Search Form */}
+              <form onSubmit={handleSearch} className="flex items-center space-x-2 w-full sm:w-auto">
+                <Input
+                  placeholder="Search appointments..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full sm:w-64"
+                />
+                <Button type="submit" variant="outline" size="icon">
+                  <SearchIcon className="h-4 w-4" />
+                </Button>
+              </form>
+              
+              <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-start">
+                {/* Date Picker */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal w-full sm:w-auto",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      {date ? format(date, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={date}
+                      selected={date || undefined}
                       onSelect={handleDateSelect}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
-                <Button type="submit" size="icon" className="shrink-0">
-                  <SearchIcon className="h-4 w-4" />
-                  <span className="sr-only">Search</span>
+                
+                {/* Refresh Button */}
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => fetchAppointments(page, pageSize, search, date ? format(date, "yyyy-MM-dd") : "")}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </Button>
-                {(search || date) && (
-                  <Button type="button" variant="ghost" onClick={handleClearFilters}>
-                    Clear
-                  </Button>
-                )}
-              </form>
+                
+                {/* Clear Filters */}
+                <Button 
+                  variant="secondary"
+                  onClick={handleClearFilters}
+                  className="hidden sm:block"
+                >
+                  Clear Filters
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Provider</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <TableRow key={`loading-${i}`}>
-                    <TableCell><div className="h-4 w-20 bg-gray-200 animate-pulse rounded"></div></TableCell>
-                    <TableCell><div className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div></TableCell>
-                    <TableCell><div className="h-4 w-32 bg-gray-200 animate-pulse rounded"></div></TableCell>
-                    <TableCell><div className="h-4 w-32 bg-gray-200 animate-pulse rounded"></div></TableCell>
-                    <TableCell><div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div></TableCell>
-                    <TableCell><div className="h-6 w-20 bg-gray-200 animate-pulse rounded"></div></TableCell>
-                    <TableCell className="text-right"><div className="h-8 w-16 bg-gray-200 animate-pulse rounded ml-auto"></div></TableCell>
+            
+            {/* Mobile Clear Filters Button */}
+            <div className="sm:hidden mb-4">
+              <Button 
+                variant="secondary"
+                onClick={handleClearFilters}
+                className="w-full"
+              >
+                Clear Filters
+              </Button>
+            </div>
+            
+            {/* Appointments Table */}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Patient</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              ) : !appointments || appointments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No appointments found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                appointments.map((appointment) => {
-                  if (!appointment) return null;
-                  
-                  try {
-                    return (
-                      <TableRow key={appointment.id || 'unknown'}>
+                </TableHeader>
+                <TableBody>
+                  {appointments.length > 0 ? (
+                    appointments.map((appointment) => (
+                      <TableRow key={appointment.id}>
+                        <TableCell>{appointment.date}</TableCell>
+                        <TableCell>{appointment.time}</TableCell>
                         <TableCell>
-                          {appointment.date ? 
-                            (() => {
-                              try {
-                                return format(new Date(appointment.date), "MMM d, yyyy")
-                              } catch (error) {
-                                return appointment.date
-                              }
-                            })() : 
-                            "N/A"}
-                        </TableCell>
-                        <TableCell>{appointment.time || "N/A"}</TableCell>
-                        <TableCell>
-                          {appointment.patients?.name || 
-                           (appointment.patients?.first_name && appointment.patients?.last_name ? 
-                             `${appointment.patients.first_name} ${appointment.patients.last_name}` : 
-                             "Unknown Patient")}
+                          {appointment.patients ? appointment.patients.name : 'Unknown Patient'}
                         </TableCell>
                         <TableCell>
-                          {appointment.users?.name || 
-                           (appointment.users?.first_name && appointment.users?.last_name ? 
-                             `${appointment.users.first_name} ${appointment.users.last_name}` : 
-                             "Unassigned")}
+                          {appointment.users ? appointment.users.name : 'Unassigned'}
                         </TableCell>
-                        <TableCell>{appointment.type || "General"}</TableCell>
                         <TableCell>
-                          {appointment.status ? (
-                            <Badge className={cn(statusColors[(appointment.status || "").toLowerCase()] || "bg-gray-100")}>
-                              {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-gray-100">Unknown</Badge>
-                          )}
+                          <Badge variant="outline" className="capitalize">
+                            {appointment.type?.replace('_', ' ') || 'General'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(appointment.status)} text-white capitalize`}>
+                            {appointment.status?.replace('_', ' ') || 'Scheduled'}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => window.location.href = `/app/dashboard/current-case?id=${appointment.id}`}
-                          >
+                          <Button variant="outline" size="sm">
                             View
                           </Button>
                         </TableCell>
                       </TableRow>
-                    );
-                  } catch (error) {
-                    console.error('Error rendering appointment row:', error, appointment);
-                    return null;
-                  }
-                }).filter(Boolean)
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, totalCount)} of {totalCount}
-          </div>
-          <Pagination>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 0 || isLoading}
-            >
-              Previous
-            </Button>
-            <div className="flex items-center mx-2">
-              Page {page + 1} of {totalPages}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-6">
+                        No appointments found for the selected criteria.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page >= totalPages - 1 || isLoading}
-            >
-              Next
-            </Button>
-          </Pagination>
-        </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination className="mt-6 justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 0 || isLoading}
+                >
+                  Previous
+                </Button>
+                <span className="mx-4">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= totalPages - 1 || isLoading}
+                >
+                  Next
+                </Button>
+              </Pagination>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-lg">
+          <CardHeader className="bg-blue-950 text-white">
+            <CardTitle className="text-2xl font-bold">Case Management</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Date Navigation */}
+            <div className="flex justify-between items-center mb-6">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date || undefined}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => {
+                  if (date) {
+                    const prevDay = new Date(date);
+                    prevDay.setDate(prevDay.getDate() - 1);
+                    handleDateSelect(prevDay);
+                  }
+                }}>
+                  Previous Day
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  handleDateSelect(today);
+                }}>
+                  Today
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  if (date) {
+                    const nextDay = new Date(date);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    handleDateSelect(nextDay);
+                  }
+                }}>
+                  Next Day
+                </Button>
+              </div>
+            </div>
+            
+            {/* Case Management Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid grid-cols-4 mb-6">
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="ongoing">Ongoing</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="exported">Exported</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="upcoming">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {upcomingAppointments.length > 0 ? (
+                        upcomingAppointments.map((appointment) => (
+                          <TableRow key={appointment.id}>
+                            <TableCell>{appointment.time}</TableCell>
+                            <TableCell>
+                              {appointment.patients ? appointment.patients.name : 'Unknown Patient'}
+                            </TableCell>
+                            <TableCell>
+                              {appointment.users ? appointment.users.name : 'Unassigned'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {appointment.type?.replace('_', ' ') || 'General'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="bg-blue-600 hover:bg-blue-700"
+                                asChild
+                              >
+                                <Link href={`/app/dashboard/current-case?id=${appointment.id}`}>
+                                  <PlusCircle className="h-4 w-4 mr-1" />
+                                  Create Case
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            No upcoming appointments for this date.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="ongoing">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ongoingAppointments.length > 0 ? (
+                        ongoingAppointments.map((appointment) => (
+                          <TableRow key={appointment.id}>
+                            <TableCell>{appointment.time}</TableCell>
+                            <TableCell>
+                              {appointment.patients ? appointment.patients.name : 'Unknown Patient'}
+                            </TableCell>
+                            <TableCell>
+                              {appointment.users ? appointment.users.name : 'Unassigned'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {appointment.type?.replace('_', ' ') || 'General'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="bg-blue-600 hover:bg-blue-700"
+                                asChild
+                              >
+                                <Link href={`/app/dashboard/current-case?id=${appointment.id}`}>
+                                  <PlayCircle className="h-4 w-4 mr-1" />
+                                  Resume Case
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            No ongoing cases for this date.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="completed">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {completedAppointments.length > 0 ? (
+                        completedAppointments.map((appointment) => (
+                          <TableRow key={appointment.id}>
+                            <TableCell>{appointment.time}</TableCell>
+                            <TableCell>
+                              {appointment.patients ? appointment.patients.name : 'Unknown Patient'}
+                            </TableCell>
+                            <TableCell>
+                              {appointment.users ? appointment.users.name : 'Unassigned'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {appointment.type?.replace('_', ' ') || 'General'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="bg-green-600 hover:bg-green-700"
+                                asChild
+                              >
+                                <Link href={`/app/dashboard/current-case?id=${appointment.id}`}>
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  View Case
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            No completed cases for this date.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="exported">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {exportedAppointments.length > 0 ? (
+                        exportedAppointments.map((appointment) => (
+                          <TableRow key={appointment.id}>
+                            <TableCell>{appointment.time}</TableCell>
+                            <TableCell>
+                              {appointment.patients ? appointment.patients.name : 'Unknown Patient'}
+                            </TableCell>
+                            <TableCell>
+                              {appointment.users ? appointment.users.name : 'Unassigned'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {appointment.type?.replace('_', ' ') || 'General'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="bg-purple-600 hover:bg-purple-700"
+                                asChild
+                              >
+                                <Link href={`/app/dashboard/current-case?id=${appointment.id}`}>
+                                  View Records
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            No exported cases for this date.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

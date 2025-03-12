@@ -30,15 +30,15 @@ import { getTemplateById } from "../template-actions";
  * @property {string} name - Name of the case (required)
  * @property {string} dateTime - Date and time of the case (required, ISO format string)
  * @property {string} assignedTo - ID of the user the case is assigned to
- * @property {enum} visibility - Whether the case is public or private
  * @property {enum} type - The type of case (checkup, emergency, surgery, follow_up)
  */
 const createCaseSchema = z.object({
   name: z.string().min(1),
   dateTime: z.string().min(1),
   assignedTo: z.string(),
-  visibility: z.enum(["public", "private"]),
   type: z.enum(["checkup", "emergency", "surgery", "follow_up"]),
+  // Use exact status values from Supabase database
+  status: z.enum(["ongoing", "completed", "reviewed", "exported", "scheduled"]).default("ongoing"),
 });
 
 /**
@@ -114,10 +114,207 @@ const createCaseWithActionsSchema = createCaseSchema.extend({
  *   }]
  * });
  */
+
+/**
+ * Exports a case to the debug log to help troubleshoot issues with case creation
+ * This function directly queries the Supabase DB and logs details to help diagnose issues
+ */
+/**
+ * Diagnoses database schema issues
+ * This function helps troubleshoot schema problems by directly querying table structures
+ */
+export async function diagnoseDatabaseSchema() {
+  try {
+    console.log("===== DATABASE SCHEMA DIAGNOSIS =====");
+    const supabase = await createClient();
+    
+    // Check patients table
+    console.log("1. Checking patients table schema...");
+    const { data: patientInfo, error: patientError } = await supabase
+      .from("patients")
+      .select("*")
+      .limit(1);
+    
+    if (patientError) {
+      console.error("Error accessing patients table:", patientError);
+    } else if (patientInfo && patientInfo.length > 0) {
+      console.log("Patients table columns:", Object.keys(patientInfo[0]));
+      console.log("Patient sample data:", JSON.stringify(patientInfo[0], null, 2));
+    } else {
+      console.log("Patients table exists but is empty");
+      
+      // Try to get column info through a different method
+      try {
+        const { data: firstInsertTest, error: insertError } = await supabase
+          .from("patients")
+          .insert({
+            name: "TEST_PATIENT_DELETE_ME",
+            // We'll try without specifying other fields to see what errors we get
+          })
+          .select();
+          
+        if (insertError) {
+          console.log("Patient test insert error:", insertError);
+          // This will tell us which fields are required
+        }
+      } catch (e) {
+        console.error("Test insert failed:", e);
+      }
+    }
+    
+    // Check cases table and status enum values
+    console.log("\n2. Checking cases table and status options...");
+    const { data: caseInfo, error: caseError } = await supabase
+      .from("cases")
+      .select("*")
+      .limit(1);
+    
+    if (caseError) {
+      console.error("Error accessing cases table:", caseError);
+    } else if (caseInfo && caseInfo.length > 0) {
+      console.log("Cases table columns:", Object.keys(caseInfo[0]));
+      console.log("Case sample data:", JSON.stringify(caseInfo[0], null, 2));
+      
+      // If there's a status field, try to understand the possible values
+      if (caseInfo[0].status) {
+        console.log("Current status value example:", caseInfo[0].status);
+      }
+    } else {
+      console.log("Cases table exists but is empty");
+      
+      // Try inserting cases with different status values to find valid ones
+      const statusValuesToTry = ["scheduled", "SCHEDULED", "in_progress", "IN_PROGRESS", "completed", "COMPLETED"];
+      
+      for (const statusValue of statusValuesToTry) {
+        try {
+          console.log(`Testing status value: "${statusValue}"`);
+          const { data: testData, error: testError } = await supabase
+            .from("cases")
+            .insert({
+              name: "TEST_CASE_DELETE_ME",
+              dateTime: new Date().toISOString(),
+              visibility: "private",
+              type: "checkup",
+              status: statusValue,
+            })
+            .select();
+            
+          if (testError) {
+            console.log(`Status "${statusValue}" error:`, testError.message);
+          } else {
+            console.log(`Status "${statusValue}" SUCCESS! Valid value.`);
+            // Delete the test case
+            await supabase.from("cases").delete().eq("name", "TEST_CASE_DELETE_ME");
+            break; // We found a working value
+          }
+        } catch (e) {
+          console.error(`Test for status "${statusValue}" failed:`, e);
+        }
+      }
+    }
+    
+    // Check patient-case relationship
+    console.log("\n3. Checking patient-case relationship...");
+    // Find a case with a patient
+    const { data: caseWithPatient, error: casePatientError } = await supabase
+      .from("cases")
+      .select("id, name, patientId")
+      .not("patientId", "is", null)
+      .limit(1);
+      
+    if (casePatientError) {
+      console.error("Error checking case-patient relationship:", casePatientError);
+    } else if (caseWithPatient && caseWithPatient.length > 0) {
+      console.log("Found case with patient:", caseWithPatient[0]);
+      
+      // Check if we can get the patient
+      if (caseWithPatient[0].patientId) {
+        const { data: patientData, error: patientError } = await supabase
+          .from("patients")
+          .select("*")
+          .eq("id", caseWithPatient[0].patientId)
+          .single();
+          
+        if (patientError) {
+          console.error("Error fetching linked patient:", patientError);
+        } else {
+          console.log("Linked patient data:", patientData);
+        }
+      }
+    } else {
+      console.log("No cases with patient IDs found");
+    }
+    
+    // Check all patients
+    const { data: allPatients, error: allPatientsError } = await supabase
+      .from("patients")
+      .select("*")
+      .limit(5);
+      
+    if (allPatientsError) {
+      console.error("Error fetching patients:", allPatientsError);
+    } else {
+      console.log("All patients (up to 5):", allPatients);
+    }
+
+    console.log("===== DATABASE SCHEMA DIAGNOSIS COMPLETE =====");
+    return { success: true };
+  } catch (error) {
+    console.error("Schema diagnosis failed:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+export async function debugCase(caseId: number) {
+  try {
+    console.log("* DEBUG CASE *: Starting debug for case ID", caseId);
+    const supabase = await createClient();
+    
+    // Fetch the case
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("*")
+      .eq("id", caseId)
+      .single();
+    
+    if (caseError) {
+      console.error("* DEBUG CASE *: Error fetching case:", caseError);
+      return { success: false, error: caseError.message };
+    }
+    
+    if (!caseData) {
+      console.error("* DEBUG CASE *: Case not found in database");
+      return { success: false, error: "Case not found" };
+    }
+    
+    console.log("* DEBUG CASE *: Case data from DB:", JSON.stringify(caseData, null, 2));
+    
+    // List all cases in the database (limit to recent)
+    const { data: allCases, error: allCasesError } = await supabase
+      .from("cases")
+      .select("id, name, dateTime, type")
+      .order("id", { ascending: false })
+      .limit(10);
+    
+    if (allCasesError) {
+      console.error("* DEBUG CASE *: Error fetching all cases:", allCasesError);
+    } else {
+      console.log("* DEBUG CASE *: Recent cases in database:", JSON.stringify(allCases, null, 2));
+    }
+    
+    return { success: true, caseData };
+  } catch (error) {
+    console.error("* DEBUG CASE *: Exception in debugCase:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
 export async function createCase(
   data: z.infer<typeof createCaseWithActionsSchema>
 ) {
   try {
+    console.log("createCase called with data:", JSON.stringify(data, null, 2));
+    console.log("====================== CASE CREATION START ======================");
+    
     // Authenticate the user making the request
     const supabase = await createClient();
     const {
@@ -125,21 +322,145 @@ export async function createCase(
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.error("Authentication failed - no user found");
       throw new Error("Unauthorized");
     }
+    
+    console.log("User authenticated successfully:", user.id);
 
     // Validate input data against the schema
     const parsedData = createCaseWithActionsSchema.parse(data);
 
-    // Create the case first
+    // Use the case name directly as the patient name
+    const patientName = parsedData.name;
+    console.log(`Using case name as patient name: ${patientName}`);
+    
+    // Check if a patient with this name already exists
+    const { data: existingPatients, error: patientSearchError } = await supabase
+      .from("patients")
+      .select("id, name")
+      .ilike("name", patientName);
+    
+    if (patientSearchError) {
+      console.error("Error searching for patient:", patientSearchError);
+    }
+    
+    let patientId = null;
+    
+    // If patient doesn't exist, create one
+    if (!existingPatients || existingPatients.length === 0) {
+      console.log(`Creating new patient: ${patientName}`);
+      
+      // Create a patient object with the required fields based on the error message
+      const patientObj = {
+        name: patientName,
+        // Adding dateOfBirth field which is required according to the error message
+        dateOfBirth: new Date().toISOString().split('T')[0]
+      };
+      
+      console.log("Creating simplified patient with only name:", JSON.stringify(patientObj, null, 2));
+      
+      // Insert the patient with minimal required fields
+      const { data: newPatient, error: newPatientError } = await supabase
+        .from("patients")
+        .insert(patientObj)
+        .select()
+        .single();
+      
+      if (newPatientError) {
+        console.error("Failed to create patient:", newPatientError);
+      } else if (newPatient) {
+        patientId = newPatient.id;
+        console.log(`Created new patient with ID: ${patientId}`);
+      }
+    } else {
+      // Use existing patient
+      patientId = existingPatients[0].id;
+      console.log(`Using existing patient with ID: ${patientId}`);
+    }
+    
+    // Log case data before saving
+    console.log("Preparing to create case with data:", {
+      name: parsedData.name,
+      dateTime: new Date(parsedData.dateTime).toISOString(),
+      visibility: parsedData.visibility,
+      type: parsedData.type,
+      status: "scheduled",
+      patientId: patientId
+    });
+    
+    // Check the column names in the cases table to determine the correct patient ID column name
+    const { data: tableInfo, error: tableError } = await supabase
+      .from('cases')
+      .select('*')
+      .limit(1);
+      
+    let columnStructure;
+    if (tableInfo && tableInfo.length > 0) {
+      columnStructure = tableInfo[0];
+      console.log("DB Table structure - case columns:", Object.keys(columnStructure));
+    } else {
+      console.log("Could not get case table structure:", tableError);
+      // Create a fallback schema with standard fields to avoid errors
+      columnStructure = { 
+        id: 1, 
+        name: "fallback", 
+        dateTime: new Date(), 
+        visibility: "private",
+        type: "checkup",
+        status: "ongoing",
+        patientId: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      console.log("Using fallback case schema");
+    }
+    
+    // Create the case and link it to the patient using the correct column name
+    // We'll determine if we should use patient_id (snake_case) or patientId (camelCase)
+    const columnName = Object.keys(columnStructure).includes('patient_id') 
+      ? 'patient_id' 
+      : 'patientId';
+    
+    console.log(`Using column name '${columnName}' for patient reference`);
+    
+    // Get the table columns to determine what fields to include
+    console.log("Available columns for cases table:", Object.keys(columnStructure));
+    
+    // Create base case data without optional fields
+    const caseData: any = {
+      name: parsedData.name,
+      dateTime: new Date(parsedData.dateTime).toISOString(),
+      visibility: parsedData.visibility,
+      type: parsedData.type,
+    };
+
+    // Add status from form input if the field exists 
+    if (Object.keys(columnStructure).includes('status')) {
+      // Use exact Supabase status values
+      caseData.status = parsedData.status || "ongoing";
+      
+      // Log status value
+      console.log(`Using status value: ${caseData.status}`);
+    }
+    
+    // Only add assignedTo if it exists in the schema
+    if (Object.keys(columnStructure).includes('assignedTo')) {
+      caseData.assignedTo = parsedData.assignedTo;
+    } else if (Object.keys(columnStructure).includes('assigned_to')) {
+      caseData.assigned_to = parsedData.assignedTo;
+    }
+    
+    // Set the patient ID using the dynamically determined column name, if it exists
+    if (Object.keys(columnStructure).includes(columnName)) {
+      caseData[columnName] = patientId;
+    }
+    
+    console.log("Creating case with data:", JSON.stringify(caseData, null, 2));
+    
     const { data: newCase, error: caseError } = await supabase
       .from("cases")
-      .insert({
-        name: parsedData.name,
-        dateTime: new Date(parsedData.dateTime).toISOString(),
-        visibility: parsedData.visibility,
-        type: parsedData.type,
-      })
+      .insert(caseData)
       .select()
       .single();
 
@@ -149,6 +470,15 @@ export async function createCase(
         success: false,
         error: caseError.message,
       };
+    }
+    
+    console.log("Case created successfully:", newCase);
+    
+    // Double check the patient ID was set correctly
+    console.log(`IMPORTANT: Case created with patient ID: ${newCase.patientId || "NULL"}`);
+    
+    if (!newCase.patientId) {
+      console.warn("WARNING: Case was created but patient ID was not set!");
     }
 
     const caseId = newCase.id;
@@ -187,8 +517,22 @@ export async function createCase(
       }
     }
 
-    // Revalidate the dashboard path to update the UI
+    // Revalidate paths to update the UI
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/appointments");
+    revalidatePath("/api/appointments");  // Add API path to ensure cache is invalidated
+    
+    console.log("Revalidated paths after creating case");
+
+    // Debug the case we just created to see what actually went into the database
+    const debugResult = await debugCase(newCase.id);
+    
+    console.log("====================== CASE CREATION COMPLETE ======================");
+    console.log(`Case created with ID: ${newCase.id}`);
+    
+    // Fetch all cases for comparison
+    const allCases = await supabase.from('cases').select('id, name, dateTime').order('id', { ascending: false }).limit(5);
+    console.log("Recent cases in database:", JSON.stringify(allCases.data, null, 2));
 
     // Return success and the newly created case
     return { success: true, data: newCase };
@@ -1574,6 +1918,7 @@ export async function getRecentCases(limit = 5) {
 /**
  * Schema for updating an existing case
  */
+// Make sure updateCaseSchema includes the same fields as createCaseSchema
 const updateCaseSchema = createCaseSchema.extend({
   id: z.number(),
   actions: z.array(caseActionSchema).optional(),
@@ -1600,18 +1945,173 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
     // Validate input data against the schema
     const parsedData = updateCaseSchema.parse(data);
 
-    // Update the case
+    // First, check if the name has changed
+    const { data: currentCase, error: getCurrentError } = await supabase
+      .from("cases")
+      .select("name, patientId")
+      .eq("id", parsedData.id)
+      .single();
+    
+    if (getCurrentError) {
+      console.error("Failed to get current case:", getCurrentError);
+      return {
+        success: false,
+        error: getCurrentError.message,
+      };
+    }
+    
+    // Only update patient if the name has changed
+    let patientId = currentCase.patientId;
+    
+    if (currentCase.name !== parsedData.name) {
+      // Use the case name directly as the patient name
+      const patientName = parsedData.name;
+      console.log(`Updating patient name to: ${patientName}`);
+      
+      // Check if a patient with this name already exists
+      const { data: existingPatients, error: patientSearchError } = await supabase
+        .from("patients")
+        .select("id, name")
+        .ilike("name", patientName);
+      
+      if (patientSearchError) {
+        console.error("Error searching for patient:", patientSearchError);
+      }
+      
+      // If patient doesn't exist, create one
+      if (!existingPatients || existingPatients.length === 0) {
+        console.log(`Creating new patient during case update: ${patientName}`);
+        
+        // Create default patient data
+        const patientData = {
+          name: patientName,
+          dateOfBirth: new Date().toISOString().split('T')[0], // Today as default
+          ownerName: "Unknown Owner", // Default owner name
+          species: "Unknown", // Default species
+          breed: "Unknown", // Default breed
+        };
+        
+        // Insert the patient into the database
+        const { data: newPatient, error: newPatientError } = await supabase
+          .from("patients")
+          .insert({
+            name: patientData.name,
+            // Include dateOfBirth which is required
+            dateOfBirth: new Date().toISOString().split('T')[0],
+            // Only include metadata if needed
+            metadata: JSON.stringify({
+              species: patientData.species,
+              breed: patientData.breed,
+              owner: {
+                name: patientData.ownerName,
+              },
+            }),
+          })
+          .select()
+          .single();
+        
+        if (newPatientError) {
+          console.error("Failed to create patient during case update:", newPatientError);
+        } else if (newPatient) {
+          patientId = newPatient.id;
+          console.log(`Created new patient with ID: ${patientId}`);
+        }
+      } else {
+        // Use existing patient
+        patientId = existingPatients[0].id;
+        console.log(`Using existing patient with ID: ${patientId}`);
+      }
+    }
+    
+    // Log the update data before sending
+    console.log("Updating case with data:", {
+      id: parsedData.id,
+      name: parsedData.name,
+      dateTime: new Date(parsedData.dateTime).toISOString(),
+      visibility: parsedData.visibility,
+      type: parsedData.type,
+      patientId: patientId
+    });
+    
+    // Check the column names in the cases table to determine the correct patient ID column name
+    const { data: tableInfo, error: tableInfoError } = await supabase
+      .from('cases')
+      .select('*')
+      .limit(1);
+      
+    if (tableInfo && tableInfo.length > 0) {
+      console.log("DB Table structure - case columns:", Object.keys(tableInfo[0]));
+    } else {
+      console.log("Could not get case table structure:", tableInfoError);
+    }
+    
+    // Determine if we should use patient_id (snake_case) or patientId (camelCase)
+    const columnName = tableInfo && tableInfo.length > 0 && Object.keys(tableInfo[0]).includes('patient_id') 
+      ? 'patient_id' 
+      : 'patientId';
+    
+    console.log(`Using column name '${columnName}' for patient reference during update`);
+    
+    // Check the table structure to see what columns are available
+    const { data: caseTableInfo, error: caseTableInfoError } = await supabase
+      .from('cases')
+      .select('*')
+      .limit(1);
+      
+    // Create a columnStructure variable either from the query or fallback
+    let columnStructure;
+    if (caseTableInfo && caseTableInfo.length > 0) {
+      columnStructure = caseTableInfo[0];
+      console.log("Available columns for update:", Object.keys(columnStructure));
+    } else {
+      console.error("Error getting case table structure:", caseTableInfoError);
+      // Create a fallback schema with standard fields to avoid errors
+      columnStructure = { 
+        id: 1, 
+        name: "fallback", 
+        dateTime: new Date(), 
+        visibility: "private",
+        type: "checkup",
+        status: "ongoing",
+        patientId: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      console.log("Using fallback case schema for update");
+    }
+    
+    // Create base update data
+    const updateData: any = {
+      name: parsedData.name,
+      dateTime: new Date(parsedData.dateTime).toISOString(),
+      visibility: parsedData.visibility,
+      type: parsedData.type,
+    };
+    
+    // Add status if field exists - always use lowercase
+    if (Object.keys(columnStructure).includes('status')) {
+      updateData.status = parsedData.status || "ongoing";
+      console.log(`Updating status to: ${updateData.status}`);
+    }
+    
+    // Set the patient ID using the dynamically determined column name
+    if (Object.keys(columnStructure).includes(columnName)) {
+      updateData[columnName] = patientId;
+    }
+    
+    console.log("Updating case with data:", JSON.stringify(updateData, null, 2));
+    
+    // Update the case with the potentially new patient ID
     const { data: updatedCase, error: caseError } = await supabase
       .from("cases")
-      .update({
-        name: parsedData.name,
-        dateTime: new Date(parsedData.dateTime).toISOString(),
-        visibility: parsedData.visibility,
-        type: parsedData.type,
-      })
+      .update(updateData)
       .eq("id", parsedData.id)
       .select()
       .single();
+      
+    if (updatedCase) {
+      console.log("Case updated successfully:", updatedCase);
+    }
 
     if (caseError) {
       console.error("Failed to update case:", caseError);
@@ -1621,9 +2121,11 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       };
     }
 
-    // Revalidate the dashboard path to update the UI
+    // Revalidate the dashboard and appointments paths to update the UI
     revalidatePath("/dashboard");
-    revalidatePath(`/dashboard/case/${parsedData.id}`);
+    revalidatePath("/dashboard/appointments");
+    revalidatePath("/api/appointments");  // Add API path to ensure cache is invalidated
+    revalidatePath(`/dashboard/current-case/${parsedData.id}`);
 
     // Return success and the updated case
     return { success: true, data: updatedCase };
@@ -1644,6 +2146,8 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
  */
 export async function getCase(caseId: number) {
   try {
+    console.log(`getCase called with ID: ${caseId}`);
+    
     // Authenticate the user making the request
     const supabase = await createClient();
     const {
@@ -1651,10 +2155,12 @@ export async function getCase(caseId: number) {
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.log("Authentication failed in getCase");
       return { success: false, error: "Unauthorized" };
     }
 
     // Fetch the case from the database
+    console.log(`Fetching case with ID: ${caseId}`);
     const { data: caseData, error } = await supabase
       .from("cases")
       .select("*")
@@ -1670,24 +2176,37 @@ export async function getCase(caseId: number) {
     }
 
     if (!caseData) {
+      console.log(`No case found with ID: ${caseId}`);
       return {
         success: false,
         error: "Case not found",
       };
     }
+    
+    console.log("Case found:", caseData);
 
+    // Build a response based on available fields
+    const responseData: any = {
+      id: caseData.id,
+      name: caseData.name,
+    };
+    
+    // Add other fields only if they exist
+    if (caseData.dateTime) responseData.dateTime = caseData.dateTime;
+    if (caseData.visibility) responseData.visibility = caseData.visibility;
+    if (caseData.type) responseData.type = caseData.type;
+    
+    // Handle assignedTo with different possible field names
+    if (caseData.assignedTo) responseData.assignedTo = caseData.assignedTo;
+    else if (caseData.assigned_to) responseData.assignedTo = caseData.assigned_to;
+    else responseData.assignedTo = "";
+    
+    console.log("Returning case data:", JSON.stringify(responseData, null, 2));
+    
     // Return success and the case data
     return {
       success: true,
-      data: {
-        id: caseData.id,
-        name: caseData.name,
-        dateTime: caseData.dateTime,
-        visibility: caseData.visibility,
-        type: caseData.type,
-        assignedTo: caseData.assigned_to || "",
-        // Add any other fields you need
-      },
+      data: responseData,
     };
   } catch (error) {
     console.error("Failed to fetch case:", error);
