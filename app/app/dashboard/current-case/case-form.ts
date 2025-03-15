@@ -15,7 +15,10 @@ export const caseFormSchema = z.object({
   assignedTo: z.string(),
   type: z.enum(["checkup", "emergency", "surgery", "follow_up"]),
   // Use exact status values from Supabase database
-  status: z.enum(["ongoing", "completed", "reviewed", "exported", "scheduled"]).default("ongoing"),
+  status: z
+    .enum(["ongoing", "completed", "reviewed", "exported", "scheduled"])
+    .default("ongoing"),
+  visibility: z.enum(["private", "public"]).default("private"),
 });
 
 export type CaseFormValues = z.infer<typeof caseFormSchema>;
@@ -62,6 +65,7 @@ export function useCaseForm(onCaseCreated?: (caseId: number) => void) {
       assignedTo: "", // This will be filled by the user
       name: "", // This will be filled by the user
       status: "ongoing", // Default status from Supabase
+      visibility: "private", // Add default visibility
     },
   });
 
@@ -87,6 +91,7 @@ export function useCaseForm(onCaseCreated?: (caseId: number) => void) {
 
       const result = await createCase({
         ...values,
+        visibility: values.visibility || "private",
         actions,
       });
 
@@ -196,12 +201,23 @@ export function useCaseForm(onCaseCreated?: (caseId: number) => void) {
           const combinedTranscript = transcriptions.join("\n\n---\n\n");
 
           // Cast the soapNotes to the expected SoapResponse type
-          const soapResponse: SoapResponse = {
-            subjective: result.soapNotes.subjective,
-            objective: result.soapNotes.objective,
-            assessment: result.soapNotes.assessment,
-            plan: result.soapNotes.plan,
-          };
+          const soapResponse: SoapResponse =
+            typeof result.soapNotes === "object" && result.soapNotes !== null
+              ? {
+                  subjective: result.soapNotes.subjective || "",
+                  objective: result.soapNotes.objective || "",
+                  assessment: result.soapNotes.assessment || "",
+                  plan: result.soapNotes.plan || "",
+                }
+              : {
+                  subjective: "",
+                  objective: "",
+                  assessment: "",
+                  plan:
+                    typeof result.soapNotes === "string"
+                      ? result.soapNotes
+                      : "",
+                };
 
           // Generate a unique ID for the new action
           const actionId = crypto.randomUUID();

@@ -1,10 +1,16 @@
-'use client'
+"use client";
 
 import { Edit2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getTemplates, createTemplate, getEmailTemplates, Template } from "../../app/dashboard/template-actions";
+import {
+  getTemplates,
+  createTemplate,
+  getEmailTemplates,
+  Template,
+  deleteTemplate,
+} from "../../app/dashboard/template-actions";
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -54,7 +60,7 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
 
   async function onSubmit(values: z.infer<typeof templateFormSchema>) {
     const result = await createTemplate(values);
-    
+
     if (result.error) {
       toast.error(result.error);
     } else {
@@ -75,7 +81,9 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">Create New Template</DialogTitle>
+          <DialogTitle className="text-blue-50">
+            Create New Template
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -86,10 +94,10 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
                 <FormItem>
                   <FormLabel className="text-blue-200">Name</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       className="bg-blue-900/30 border-blue-800/30 text-blue-50"
-                      placeholder="Template name" 
+                      placeholder="Template name"
                     />
                   </FormControl>
                   <FormMessage className="text-red-400" />
@@ -102,7 +110,10 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-blue-200">Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50">
                         <SelectValue placeholder="Select a type" />
@@ -126,18 +137,18 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
                 <FormItem>
                   <FormLabel className="text-blue-200">Content</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      {...field} 
+                    <Textarea
+                      {...field}
                       className="bg-blue-900/30 border-blue-800/30 text-blue-50"
-                      placeholder="Template content" 
+                      placeholder="Template content"
                     />
                   </FormControl>
                   <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
               Create Template
@@ -164,12 +175,12 @@ export function TemplateSelector({ onSelect, trigger }: TemplateSelectorProps) {
     async function loadEmailTemplates() {
       const result = await getEmailTemplates();
       setLoading(false);
-      
+
       if (result.error) {
         setError(result.error);
         return;
       }
-      
+
       if (result.templates) {
         setTemplates(result.templates);
       }
@@ -192,7 +203,9 @@ export function TemplateSelector({ onSelect, trigger }: TemplateSelectorProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">Select Email Template</DialogTitle>
+          <DialogTitle className="text-blue-50">
+            Select Email Template
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto">
           {loading ? (
@@ -234,15 +247,34 @@ export function TemplatesList() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<number | null>(null);
 
   async function loadTemplates() {
     const result = await getTemplates();
-    if ('error' in result) {
-      setError(result.error || 'An unknown error occurred');
+    if ("error" in result) {
+      setError(result.error || "An unknown error occurred");
     } else if (result.templates) {
       setTemplates(result.templates);
     }
     setLoading(false);
+  }
+
+  async function handleDeleteTemplate(id: number) {
+    setIsDeleting(true);
+    setDeleteTemplateId(id);
+
+    const result = await deleteTemplate(id);
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Template deleted successfully");
+      loadTemplates(); // Reload templates after deletion
+    }
+
+    setIsDeleting(false);
+    setDeleteTemplateId(null);
   }
 
   useEffect(() => {
@@ -265,7 +297,7 @@ export function TemplatesList() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {templates.map((template) => (
-          <Card 
+          <Card
             key={template.id}
             className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 hover:bg-blue-900/30 transition-colors"
           >
@@ -273,13 +305,13 @@ export function TemplatesList() {
               <CardTitle className="text-lg font-medium text-blue-50">
                 {template.name}
               </CardTitle>
-              <Badge 
+              <Badge
                 className={
-                  template.type === 'soap' 
+                  template.type === "soap"
                     ? "bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30"
-                  : template.type === 'email'
-                    ? "bg-purple-500/20 text-purple-200 hover:bg-purple-500/30"
-                    : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
+                    : template.type === "email"
+                      ? "bg-purple-500/20 text-purple-200 hover:bg-purple-500/30"
+                      : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
                 }
               >
                 {template.type.toUpperCase()}
@@ -305,8 +337,14 @@ export function TemplatesList() {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 text-blue-300 hover:text-red-400 hover:bg-red-500/10"
+                    onClick={() => handleDeleteTemplate(template.id)}
+                    disabled={isDeleting && deleteTemplateId === template.id}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {isDeleting && deleteTemplateId === template.id ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-dotted border-current opacity-70" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -316,4 +354,4 @@ export function TemplatesList() {
       </div>
     </div>
   );
-} 
+}

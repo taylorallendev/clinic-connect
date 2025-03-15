@@ -38,7 +38,10 @@ const createCaseSchema = z.object({
   assignedTo: z.string(),
   type: z.enum(["checkup", "emergency", "surgery", "follow_up"]),
   // Use exact status values from Supabase database
-  status: z.enum(["ongoing", "completed", "reviewed", "exported", "scheduled"]).default("ongoing"),
+  status: z
+    .enum(["ongoing", "completed", "reviewed", "exported", "scheduled"])
+    .default("ongoing"),
+  visibility: z.enum(["private", "public"]).default("private"), // Add visibility field
 });
 
 /**
@@ -127,22 +130,25 @@ export async function diagnoseDatabaseSchema() {
   try {
     console.log("===== DATABASE SCHEMA DIAGNOSIS =====");
     const supabase = await createClient();
-    
+
     // Check patients table
     console.log("1. Checking patients table schema...");
     const { data: patientInfo, error: patientError } = await supabase
       .from("patients")
       .select("*")
       .limit(1);
-    
+
     if (patientError) {
       console.error("Error accessing patients table:", patientError);
     } else if (patientInfo && patientInfo.length > 0) {
       console.log("Patients table columns:", Object.keys(patientInfo[0]));
-      console.log("Patient sample data:", JSON.stringify(patientInfo[0], null, 2));
+      console.log(
+        "Patient sample data:",
+        JSON.stringify(patientInfo[0], null, 2)
+      );
     } else {
       console.log("Patients table exists but is empty");
-      
+
       // Try to get column info through a different method
       try {
         const { data: firstInsertTest, error: insertError } = await supabase
@@ -152,7 +158,7 @@ export async function diagnoseDatabaseSchema() {
             // We'll try without specifying other fields to see what errors we get
           })
           .select();
-          
+
         if (insertError) {
           console.log("Patient test insert error:", insertError);
           // This will tell us which fields are required
@@ -161,30 +167,37 @@ export async function diagnoseDatabaseSchema() {
         console.error("Test insert failed:", e);
       }
     }
-    
+
     // Check cases table and status enum values
     console.log("\n2. Checking cases table and status options...");
     const { data: caseInfo, error: caseError } = await supabase
       .from("cases")
       .select("*")
       .limit(1);
-    
+
     if (caseError) {
       console.error("Error accessing cases table:", caseError);
     } else if (caseInfo && caseInfo.length > 0) {
       console.log("Cases table columns:", Object.keys(caseInfo[0]));
       console.log("Case sample data:", JSON.stringify(caseInfo[0], null, 2));
-      
+
       // If there's a status field, try to understand the possible values
       if (caseInfo[0].status) {
         console.log("Current status value example:", caseInfo[0].status);
       }
     } else {
       console.log("Cases table exists but is empty");
-      
+
       // Try inserting cases with different status values to find valid ones
-      const statusValuesToTry = ["scheduled", "SCHEDULED", "in_progress", "IN_PROGRESS", "completed", "COMPLETED"];
-      
+      const statusValuesToTry = [
+        "scheduled",
+        "SCHEDULED",
+        "in_progress",
+        "IN_PROGRESS",
+        "completed",
+        "COMPLETED",
+      ];
+
       for (const statusValue of statusValuesToTry) {
         try {
           console.log(`Testing status value: "${statusValue}"`);
@@ -198,13 +211,16 @@ export async function diagnoseDatabaseSchema() {
               status: statusValue,
             })
             .select();
-            
+
           if (testError) {
             console.log(`Status "${statusValue}" error:`, testError.message);
           } else {
             console.log(`Status "${statusValue}" SUCCESS! Valid value.`);
             // Delete the test case
-            await supabase.from("cases").delete().eq("name", "TEST_CASE_DELETE_ME");
+            await supabase
+              .from("cases")
+              .delete()
+              .eq("name", "TEST_CASE_DELETE_ME");
             break; // We found a working value
           }
         } catch (e) {
@@ -212,7 +228,7 @@ export async function diagnoseDatabaseSchema() {
         }
       }
     }
-    
+
     // Check patient-case relationship
     console.log("\n3. Checking patient-case relationship...");
     // Find a case with a patient
@@ -221,12 +237,15 @@ export async function diagnoseDatabaseSchema() {
       .select("id, name, patientId")
       .not("patientId", "is", null)
       .limit(1);
-      
+
     if (casePatientError) {
-      console.error("Error checking case-patient relationship:", casePatientError);
+      console.error(
+        "Error checking case-patient relationship:",
+        casePatientError
+      );
     } else if (caseWithPatient && caseWithPatient.length > 0) {
       console.log("Found case with patient:", caseWithPatient[0]);
-      
+
       // Check if we can get the patient
       if (caseWithPatient[0].patientId) {
         const { data: patientData, error: patientError } = await supabase
@@ -234,7 +253,7 @@ export async function diagnoseDatabaseSchema() {
           .select("*")
           .eq("id", caseWithPatient[0].patientId)
           .single();
-          
+
         if (patientError) {
           console.error("Error fetching linked patient:", patientError);
         } else {
@@ -244,13 +263,13 @@ export async function diagnoseDatabaseSchema() {
     } else {
       console.log("No cases with patient IDs found");
     }
-    
+
     // Check all patients
     const { data: allPatients, error: allPatientsError } = await supabase
       .from("patients")
       .select("*")
       .limit(5);
-      
+
     if (allPatientsError) {
       console.error("Error fetching patients:", allPatientsError);
     } else {
@@ -261,7 +280,10 @@ export async function diagnoseDatabaseSchema() {
     return { success: true };
   } catch (error) {
     console.error("Schema diagnosis failed:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 
@@ -269,43 +291,52 @@ export async function debugCase(caseId: number) {
   try {
     console.log("* DEBUG CASE *: Starting debug for case ID", caseId);
     const supabase = await createClient();
-    
+
     // Fetch the case
     const { data: caseData, error: caseError } = await supabase
       .from("cases")
       .select("*")
       .eq("id", caseId)
       .single();
-    
+
     if (caseError) {
       console.error("* DEBUG CASE *: Error fetching case:", caseError);
       return { success: false, error: caseError.message };
     }
-    
+
     if (!caseData) {
       console.error("* DEBUG CASE *: Case not found in database");
       return { success: false, error: "Case not found" };
     }
-    
-    console.log("* DEBUG CASE *: Case data from DB:", JSON.stringify(caseData, null, 2));
-    
+
+    console.log(
+      "* DEBUG CASE *: Case data from DB:",
+      JSON.stringify(caseData, null, 2)
+    );
+
     // List all cases in the database (limit to recent)
     const { data: allCases, error: allCasesError } = await supabase
       .from("cases")
       .select("id, name, dateTime, type")
       .order("id", { ascending: false })
       .limit(10);
-    
+
     if (allCasesError) {
       console.error("* DEBUG CASE *: Error fetching all cases:", allCasesError);
     } else {
-      console.log("* DEBUG CASE *: Recent cases in database:", JSON.stringify(allCases, null, 2));
+      console.log(
+        "* DEBUG CASE *: Recent cases in database:",
+        JSON.stringify(allCases, null, 2)
+      );
     }
-    
+
     return { success: true, caseData };
   } catch (error) {
     console.error("* DEBUG CASE *: Exception in debugCase:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 export async function createCase(
@@ -313,8 +344,10 @@ export async function createCase(
 ) {
   try {
     console.log("createCase called with data:", JSON.stringify(data, null, 2));
-    console.log("====================== CASE CREATION START ======================");
-    
+    console.log(
+      "====================== CASE CREATION START ======================"
+    );
+
     // Authenticate the user making the request
     const supabase = await createClient();
     const {
@@ -325,7 +358,7 @@ export async function createCase(
       console.error("Authentication failed - no user found");
       throw new Error("Unauthorized");
     }
-    
+
     console.log("User authenticated successfully:", user.id);
 
     // Validate input data against the schema
@@ -334,39 +367,42 @@ export async function createCase(
     // Use the case name directly as the patient name
     const patientName = parsedData.name;
     console.log(`Using case name as patient name: ${patientName}`);
-    
+
     // Check if a patient with this name already exists
     const { data: existingPatients, error: patientSearchError } = await supabase
       .from("patients")
       .select("id, name")
       .ilike("name", patientName);
-    
+
     if (patientSearchError) {
       console.error("Error searching for patient:", patientSearchError);
     }
-    
+
     let patientId = null;
-    
+
     // If patient doesn't exist, create one
     if (!existingPatients || existingPatients.length === 0) {
       console.log(`Creating new patient: ${patientName}`);
-      
+
       // Create a patient object with the required fields based on the error message
       const patientObj = {
         name: patientName,
         // Adding dateOfBirth field which is required according to the error message
-        dateOfBirth: new Date().toISOString().split('T')[0]
+        dateOfBirth: new Date().toISOString().split("T")[0],
       };
-      
-      console.log("Creating simplified patient with only name:", JSON.stringify(patientObj, null, 2));
-      
+
+      console.log(
+        "Creating simplified patient with only name:",
+        JSON.stringify(patientObj, null, 2)
+      );
+
       // Insert the patient with minimal required fields
       const { data: newPatient, error: newPatientError } = await supabase
         .from("patients")
         .insert(patientObj)
         .select()
         .single();
-      
+
       if (newPatientError) {
         console.error("Failed to create patient:", newPatientError);
       } else if (newPatient) {
@@ -378,7 +414,7 @@ export async function createCase(
       patientId = existingPatients[0].id;
       console.log(`Using existing patient with ID: ${patientId}`);
     }
-    
+
     // Log case data before saving
     console.log("Preparing to create case with data:", {
       name: parsedData.name,
@@ -386,47 +422,53 @@ export async function createCase(
       visibility: parsedData.visibility,
       type: parsedData.type,
       status: "scheduled",
-      patientId: patientId
+      patientId: patientId,
     });
-    
+
     // Check the column names in the cases table to determine the correct patient ID column name
     const { data: tableInfo, error: tableError } = await supabase
-      .from('cases')
-      .select('*')
+      .from("cases")
+      .select("*")
       .limit(1);
-      
+
     let columnStructure;
     if (tableInfo && tableInfo.length > 0) {
       columnStructure = tableInfo[0];
-      console.log("DB Table structure - case columns:", Object.keys(columnStructure));
+      console.log(
+        "DB Table structure - case columns:",
+        Object.keys(columnStructure)
+      );
     } else {
       console.log("Could not get case table structure:", tableError);
       // Create a fallback schema with standard fields to avoid errors
-      columnStructure = { 
-        id: 1, 
-        name: "fallback", 
-        dateTime: new Date(), 
+      columnStructure = {
+        id: 1,
+        name: "fallback",
+        dateTime: new Date(),
         visibility: "private",
         type: "checkup",
         status: "ongoing",
         patientId: null,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       console.log("Using fallback case schema");
     }
-    
+
     // Create the case and link it to the patient using the correct column name
     // We'll determine if we should use patient_id (snake_case) or patientId (camelCase)
-    const columnName = Object.keys(columnStructure).includes('patient_id') 
-      ? 'patient_id' 
-      : 'patientId';
-    
+    const columnName = Object.keys(columnStructure).includes("patient_id")
+      ? "patient_id"
+      : "patientId";
+
     console.log(`Using column name '${columnName}' for patient reference`);
-    
+
     // Get the table columns to determine what fields to include
-    console.log("Available columns for cases table:", Object.keys(columnStructure));
-    
+    console.log(
+      "Available columns for cases table:",
+      Object.keys(columnStructure)
+    );
+
     // Create base case data without optional fields
     const caseData: any = {
       name: parsedData.name,
@@ -435,29 +477,29 @@ export async function createCase(
       type: parsedData.type,
     };
 
-    // Add status from form input if the field exists 
-    if (Object.keys(columnStructure).includes('status')) {
+    // Add status from form input if the field exists
+    if (Object.keys(columnStructure).includes("status")) {
       // Use exact Supabase status values
       caseData.status = parsedData.status || "ongoing";
-      
+
       // Log status value
       console.log(`Using status value: ${caseData.status}`);
     }
-    
+
     // Only add assignedTo if it exists in the schema
-    if (Object.keys(columnStructure).includes('assignedTo')) {
+    if (Object.keys(columnStructure).includes("assignedTo")) {
       caseData.assignedTo = parsedData.assignedTo;
-    } else if (Object.keys(columnStructure).includes('assigned_to')) {
+    } else if (Object.keys(columnStructure).includes("assigned_to")) {
       caseData.assigned_to = parsedData.assignedTo;
     }
-    
+
     // Set the patient ID using the dynamically determined column name, if it exists
     if (Object.keys(columnStructure).includes(columnName)) {
       caseData[columnName] = patientId;
     }
-    
+
     console.log("Creating case with data:", JSON.stringify(caseData, null, 2));
-    
+
     const { data: newCase, error: caseError } = await supabase
       .from("cases")
       .insert(caseData)
@@ -471,12 +513,14 @@ export async function createCase(
         error: caseError.message,
       };
     }
-    
+
     console.log("Case created successfully:", newCase);
-    
+
     // Double check the patient ID was set correctly
-    console.log(`IMPORTANT: Case created with patient ID: ${newCase.patientId || "NULL"}`);
-    
+    console.log(
+      `IMPORTANT: Case created with patient ID: ${newCase.patientId || "NULL"}`
+    );
+
     if (!newCase.patientId) {
       console.warn("WARNING: Case was created but patient ID was not set!");
     }
@@ -484,55 +528,65 @@ export async function createCase(
     const caseId = newCase.id;
     console.log("Created case with ID:", caseId);
 
-    // If there are case actions, insert them one by one with error handling
+    // If there are case actions, store them directly in the cases table
     if (parsedData.actions && parsedData.actions.length > 0) {
-      console.log(`Attempting to insert ${parsedData.actions.length} actions`);
+      console.log(`Storing ${parsedData.actions.length} actions in case_actions column`);
 
-      for (const action of parsedData.actions) {
-        try {
-          // Format the action data for database insertion
-          const { error: actionError } = await supabase
-            .from("case_actions")
-            .insert({
-              case_id: caseId,
-              type: action.type,
-              content: action.content.transcript || "",
-              metadata: {
-                soap: action.content.soap,
-                clientId: action.id,
-                timestamp: action.timestamp,
-              },
-              performed_by: user.id,
-            });
+      try {
+        // Format actions for storage in the case_actions column
+        const formattedActions = parsedData.actions.map(action => ({
+          id: action.id,
+          type: action.type,
+          content: {
+            transcript: action.content?.transcript || "",
+            soap: action.content?.soap
+          },
+          timestamp: action.timestamp
+        }));
+        
+        // Update the case with the actions
+        const { error: updateError } = await supabase
+          .from("cases")
+          .update({
+            case_actions: formattedActions
+          })
+          .eq("id", caseId);
 
-          if (actionError) {
-            console.error("Error inserting action:", actionError);
-          } else {
-            console.log(`Successfully inserted action of type ${action.type}`);
-          }
-        } catch (actionError) {
-          console.error("Error inserting action:", actionError);
-          // Allow the process to continue even if one action fails
+        if (updateError) {
+          console.error("Error storing case actions:", updateError);
+        } else {
+          console.log(`Successfully stored ${formattedActions.length} actions in case_actions column`);
         }
+      } catch (actionError) {
+        console.error("Error storing case actions:", actionError);
       }
     }
 
     // Revalidate paths to update the UI
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/appointments");
-    revalidatePath("/api/appointments");  // Add API path to ensure cache is invalidated
-    
+    revalidatePath("/api/appointments"); // Add API path to ensure cache is invalidated
+
     console.log("Revalidated paths after creating case");
 
     // Debug the case we just created to see what actually went into the database
     const debugResult = await debugCase(newCase.id);
-    
-    console.log("====================== CASE CREATION COMPLETE ======================");
+
+    console.log(
+      "====================== CASE CREATION COMPLETE ======================"
+    );
     console.log(`Case created with ID: ${newCase.id}`);
-    
+
     // Fetch all cases for comparison
-    const allCases = await supabase.from('cases').select('id, name, dateTime').order('id', { ascending: false }).limit(5);
-    console.log("Recent cases in database:", JSON.stringify(allCases.data, null, 2));
+    const allCases = await supabase
+      .from("cases")
+      .select("id, name, dateTime")
+      .order("id", { ascending: false })
+      .limit(5);
+    console.log(
+      "Recent cases in database:",
+      JSON.stringify(allCases.data, null, 2)
+    );
 
     // Return success and the newly created case
     return { success: true, data: newCase };
@@ -579,26 +633,55 @@ export async function saveCaseAction(caseId: number, action: ClientCaseAction) {
     // Validate the action data against the schema
     const parsedAction = caseActionSchema.parse(action);
 
-    // Insert the action into the database
-    const { error } = await supabase.from("case_actions").insert({
-      case_id: caseId,
-      type: parsedAction.type,
-      content: parsedAction.content.transcript || "",
-      metadata: {
-        soap: parsedAction.content.soap,
-        clientId: parsedAction.id,
-        timestamp: parsedAction.timestamp,
-      },
-      performed_by: user.id,
-    });
-
-    if (error) {
-      console.error("Failed to save case action:", error);
+    // First, fetch the current case to get existing actions
+    const { data: currentCase, error: fetchError } = await supabase
+      .from("cases")
+      .select("case_actions")
+      .eq("id", caseId)
+      .single();
+      
+    if (fetchError) {
+      console.error("Failed to fetch current case actions:", fetchError);
       return {
         success: false,
-        error: error.message,
+        error: fetchError.message,
       };
     }
+    
+    // Format the new action
+    const formattedAction = {
+      id: parsedAction.id,
+      type: parsedAction.type,
+      content: {
+        transcript: parsedAction.content?.transcript || "",
+        soap: parsedAction.content?.soap
+      },
+      timestamp: parsedAction.timestamp
+    };
+    
+    // Combine existing actions with the new one
+    const existingActions = currentCase.case_actions || [];
+    const updatedActions = [...existingActions, formattedAction];
+    
+    console.log(`Adding 1 action to existing ${existingActions.length} actions for case ${caseId}`);
+    
+    // Update the case with the combined actions
+    const { error: updateError } = await supabase
+      .from("cases")
+      .update({
+        case_actions: updatedActions
+      })
+      .eq("id", caseId);
+
+    if (updateError) {
+      console.error("Failed to save case action:", updateError);
+      return {
+        success: false,
+        error: updateError.message,
+      };
+    }
+    
+    console.log("Successfully added action to case_actions column");
 
     // Revalidate the case page to update the UI
     revalidatePath(`/dashboard/cases/${caseId}`);
@@ -643,13 +726,13 @@ export interface SoapNotes {
 
 /**
  * Generates structured output from transcriptions using AI based on a template
- * 
+ *
  * This function uses OpenAI's GPT-4o model to analyze one or more transcriptions and generate
  * structured output according to the provided template type. The output format is determined
  * by the template type and content.
  *
  * @param {string|string[]} transcriptions - The text transcription(s) to analyze
- * @param {object} templateData - Data about the template to use 
+ * @param {object} templateData - Data about the template to use
  * @param {number} templateData.templateId - ID of the template to use
  * @returns {Promise<object>} Object with success status and either the generated content or error message
  */
@@ -672,10 +755,12 @@ export async function generateContentFromTemplate(
     const transcriptionArray = Array.isArray(transcriptions)
       ? transcriptions
       : [transcriptions];
-    
+
     // Log for debugging purposes
-    console.log(`Server received ${transcriptionArray.length} transcripts for template generation`);
-    
+    console.log(
+      `Server received ${transcriptionArray.length} transcripts for template generation`
+    );
+
     // Combine multiple transcriptions with clear separators
     const combinedTranscription = transcriptionArray
       .map((t, i) => `Recording ${i + 1}:\n${t}`)
@@ -704,18 +789,19 @@ export async function generateContentFromTemplate(
 
       // Create a zod schema from the dynamic schema
       const templateSchema = z.object(dynamicSchema);
-      
+
       // Generate the structured output using the template schema
-      const promptPrefix = transcriptionArray.length > 1 
-        ? `Create COMPREHENSIVE structured output from the following ${transcriptionArray.length} transcriptions. 
+      const promptPrefix =
+        transcriptionArray.length > 1
+          ? `Create COMPREHENSIVE structured output from the following ${transcriptionArray.length} transcriptions. 
 IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete clinical picture.
 Each transcription contains different parts of the patient information.
 
 ${combinedTranscription}`
-        : `Create structured output from the following transcription: 
+          : `Create structured output from the following transcription: 
 
 ${combinedTranscription}`;
-      
+
       const result = await generateObject({
         model: openai("gpt-4o"),
         schema: templateSchema,
@@ -744,30 +830,31 @@ Do not include any explanatory text, markdown formatting, or code blocks.`,
           "You are an assistant that creates structured documentation from transcriptions. Your task is to compile comprehensive clinical notes that incorporate ALL information provided across ALL transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         content: result.object,
         template: {
           id: template.id,
           name: template.name,
-          type: template.type
-        }
+          type: template.type,
+        },
       };
     }
 
     // For SOAP templates, use the template content as instructions
     if (template.type === "soap") {
       // Create a more explicit prompt when multiple transcripts are involved
-      const promptPrefix = transcriptionArray.length > 1 
-        ? `Create COMPREHENSIVE SOAP notes from the following ${transcriptionArray.length} transcriptions. 
+      const promptPrefix =
+        transcriptionArray.length > 1
+          ? `Create COMPREHENSIVE SOAP notes from the following ${transcriptionArray.length} transcriptions. 
 IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete clinical picture.
 Each transcription contains different parts of the patient information.
 
 ${combinedTranscription}`
-        : `Create SOAP notes from the following transcription: 
+          : `Create SOAP notes from the following transcription: 
 
 ${combinedTranscription}`;
-      
+
       const result = await generateObject<SoapNotes>({
         model: openai("gpt-4o"),
         schema: soapNotesSchema,
@@ -790,28 +877,29 @@ Do not include any explanatory text, markdown formatting, or code blocks.`,
           "You are a veterinary assistant that creates SOAP notes from transcriptions. Your task is to compile comprehensive clinical notes that incorporate ALL information provided across ALL transcriptions. Format each section in markdown, but ensure your ENTIRE response is a valid JSON object that can be parsed with JSON.parse().",
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         content: result.object,
         template: {
           id: template.id,
           name: template.name,
-          type: template.type
-        }
+          type: template.type,
+        },
       };
     }
 
     // For summary or free-form templates
     if (template.type === "summary" || template.type === "email") {
-      const promptPrefix = transcriptionArray.length > 1 
-        ? `Create content from the following ${transcriptionArray.length} transcriptions based on the template. 
+      const promptPrefix =
+        transcriptionArray.length > 1
+          ? `Create content from the following ${transcriptionArray.length} transcriptions based on the template. 
 IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete narrative.
 
 ${combinedTranscription}`
-        : `Create content from the following transcription based on the template: 
+          : `Create content from the following transcription based on the template: 
 
 ${combinedTranscription}`;
-      
+
       const { text } = await generateText({
         model: openai("gpt-4o"),
         prompt: `${promptPrefix}
@@ -826,21 +914,21 @@ Create content that follows the template instructions and format. Provide well-f
           "You are a veterinary assistant that creates content from transcriptions according to templates. Your task is to compile comprehensive content that incorporates ALL information provided across ALL transcriptions. Format your output in markdown.",
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         content: text,
         template: {
           id: template.id,
           name: template.name,
-          type: template.type
-        }
+          type: template.type,
+        },
       };
     }
 
     // Default case - just return an error for unsupported template types
     return {
       success: false,
-      error: `Unsupported template type: ${template.type}`
+      error: `Unsupported template type: ${template.type}`,
     };
   } catch (error) {
     console.error("Failed to generate content from template:", error);
@@ -890,17 +978,20 @@ export async function generateSoapNotes(
   try {
     // If a template ID is provided, use the general content generation function
     if (templateData?.templateId) {
-      const result = await generateContentFromTemplate(transcriptions, templateData);
+      const result = await generateContentFromTemplate(
+        transcriptions,
+        templateData
+      );
       if (result.success && result.content) {
         // If it's a SOAP template, the content will already be in SOAP format
         if (result.template.type === "soap") {
           return { success: true, soapNotes: result.content };
         }
-        
+
         // For other template types, we don't support conversion to SOAP
-        return { 
-          success: false, 
-          error: `Template type '${result.template.type}' is not compatible with SOAP notes generation` 
+        return {
+          success: false,
+          error: `Template type '${result.template.type}' is not compatible with SOAP notes generation`,
         };
       }
       return { success: false, error: result.error };
@@ -921,25 +1012,26 @@ export async function generateSoapNotes(
     const transcriptionArray = Array.isArray(transcriptions)
       ? transcriptions
       : [transcriptions];
-    
+
     // Combine multiple transcriptions with clear separators
     const combinedTranscription = transcriptionArray
       .map((t, i) => `Recording ${i + 1}:\n${t}`)
       .join("\n\n---\n\n");
-    
-    console.log('Generating SOAP notes with AI...');
-    
+
+    console.log("Generating SOAP notes with AI...");
+
     // Create a more explicit prompt when multiple transcripts are involved
-    const promptPrefix = transcriptionArray.length > 1 
-      ? `Create COMPREHENSIVE SOAP notes from the following ${transcriptionArray.length} transcriptions. 
+    const promptPrefix =
+      transcriptionArray.length > 1
+        ? `Create COMPREHENSIVE SOAP notes from the following ${transcriptionArray.length} transcriptions. 
 IMPORTANT: You MUST integrate information from ALL transcriptions to create a complete clinical picture.
 Each transcription contains different parts of the patient information.
 
 ${combinedTranscription}`
-      : `Create SOAP notes from the following transcription: 
+        : `Create SOAP notes from the following transcription: 
 
 ${combinedTranscription}`;
-    
+
     const result = await generateObject<SoapNotes>({
       model: openai("gpt-4o"),
       schema: soapNotesSchema,
@@ -1093,39 +1185,40 @@ export async function saveActionsToCase(
       throw new Error("Unauthorized");
     }
 
-    // Create a promise for each action to insert
-    const actionPromises = actions.map((action) => {
-      // Validate the action data
-      const parsedAction = caseActionSchema.parse(action);
-
-      return supabase.from("case_actions").insert({
-        case_id: caseId,
-        type: parsedAction.type,
-        content: parsedAction.content.transcript || "",
-        metadata: {
-          soap: parsedAction.content.soap,
-          clientId: parsedAction.id,
-          timestamp: parsedAction.timestamp,
-        },
-        performed_by: user.id,
-      });
-    });
-
-    // Execute all inserts in parallel
-    const results = await Promise.all(actionPromises);
-
-    // Check if any inserts failed
-    const errors = results
-      .filter((result) => result.error)
-      .map((result) => result.error);
-    if (errors.length > 0) {
-      console.error("Some case actions failed to save:", errors);
+    console.log(`Storing ${actions.length} actions in case_actions column for case ${caseId}`);
+    
+    // Validate all actions against the schema
+    const validatedActions = actions.map(action => caseActionSchema.parse(action));
+    
+    // Format actions for storage in the case_actions column
+    const formattedActions = validatedActions.map(action => ({
+      id: action.id,
+      type: action.type,
+      content: {
+        transcript: action.content?.transcript || "",
+        soap: action.content?.soap
+      },
+      timestamp: action.timestamp
+    }));
+    
+    // Update the case with all actions at once
+    const { error } = await supabase
+      .from("cases")
+      .update({
+        case_actions: formattedActions
+      })
+      .eq("id", caseId);
+      
+    if (error) {
+      console.error("Failed to save case actions:", error);
       return {
         success: false,
-        error: "Some actions failed to save",
-        details: errors,
+        error: error.message,
       };
     }
+    
+    console.log(`Successfully stored ${formattedActions.length} actions in case_actions column`);
+    
 
     // Revalidate the case page to update the UI
     revalidatePath(`/dashboard/cases/${caseId}`);
@@ -2059,7 +2152,7 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       .select("name, patientId")
       .eq("id", parsedData.id)
       .single();
-    
+
     if (getCurrentError) {
       console.error("Failed to get current case:", getCurrentError);
       return {
@@ -2067,45 +2160,46 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
         error: getCurrentError.message,
       };
     }
-    
+
     // Only update patient if the name has changed
     let patientId = currentCase.patientId;
-    
+
     if (currentCase.name !== parsedData.name) {
       // Use the case name directly as the patient name
       const patientName = parsedData.name;
       console.log(`Updating patient name to: ${patientName}`);
-      
+
       // Check if a patient with this name already exists
-      const { data: existingPatients, error: patientSearchError } = await supabase
-        .from("patients")
-        .select("id, name")
-        .ilike("name", patientName);
-      
+      const { data: existingPatients, error: patientSearchError } =
+        await supabase
+          .from("patients")
+          .select("id, name")
+          .ilike("name", patientName);
+
       if (patientSearchError) {
         console.error("Error searching for patient:", patientSearchError);
       }
-      
+
       // If patient doesn't exist, create one
       if (!existingPatients || existingPatients.length === 0) {
         console.log(`Creating new patient during case update: ${patientName}`);
-        
+
         // Create default patient data
         const patientData = {
           name: patientName,
-          dateOfBirth: new Date().toISOString().split('T')[0], // Today as default
+          dateOfBirth: new Date().toISOString().split("T")[0], // Today as default
           ownerName: "Unknown Owner", // Default owner name
           species: "Unknown", // Default species
           breed: "Unknown", // Default breed
         };
-        
+
         // Insert the patient into the database
         const { data: newPatient, error: newPatientError } = await supabase
           .from("patients")
           .insert({
             name: patientData.name,
             // Include dateOfBirth which is required
-            dateOfBirth: new Date().toISOString().split('T')[0],
+            dateOfBirth: new Date().toISOString().split("T")[0],
             // Only include metadata if needed
             metadata: JSON.stringify({
               species: patientData.species,
@@ -2117,9 +2211,12 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
           })
           .select()
           .single();
-        
+
         if (newPatientError) {
-          console.error("Failed to create patient during case update:", newPatientError);
+          console.error(
+            "Failed to create patient during case update:",
+            newPatientError
+          );
         } else if (newPatient) {
           patientId = newPatient.id;
           console.log(`Created new patient with ID: ${patientId}`);
@@ -2130,7 +2227,7 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
         console.log(`Using existing patient with ID: ${patientId}`);
       }
     }
-    
+
     // Log the update data before sending
     console.log("Updating case with data:", {
       id: parsedData.id,
@@ -2138,56 +2235,67 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       dateTime: new Date(parsedData.dateTime).toISOString(),
       visibility: parsedData.visibility,
       type: parsedData.type,
-      patientId: patientId
+      patientId: patientId,
     });
-    
+
     // Check the column names in the cases table to determine the correct patient ID column name
     const { data: tableInfo, error: tableInfoError } = await supabase
-      .from('cases')
-      .select('*')
+      .from("cases")
+      .select("*")
       .limit(1);
-      
+
     if (tableInfo && tableInfo.length > 0) {
-      console.log("DB Table structure - case columns:", Object.keys(tableInfo[0]));
+      console.log(
+        "DB Table structure - case columns:",
+        Object.keys(tableInfo[0])
+      );
     } else {
       console.log("Could not get case table structure:", tableInfoError);
     }
-    
+
     // Determine if we should use patient_id (snake_case) or patientId (camelCase)
-    const columnName = tableInfo && tableInfo.length > 0 && Object.keys(tableInfo[0]).includes('patient_id') 
-      ? 'patient_id' 
-      : 'patientId';
-    
-    console.log(`Using column name '${columnName}' for patient reference during update`);
-    
+    const columnName =
+      tableInfo &&
+      tableInfo.length > 0 &&
+      Object.keys(tableInfo[0]).includes("patient_id")
+        ? "patient_id"
+        : "patientId";
+
+    console.log(
+      `Using column name '${columnName}' for patient reference during update`
+    );
+
     // Check the table structure to see what columns are available
     const { data: caseTableInfo, error: caseTableInfoError } = await supabase
-      .from('cases')
-      .select('*')
+      .from("cases")
+      .select("*")
       .limit(1);
-      
+
     // Create a columnStructure variable either from the query or fallback
     let columnStructure;
     if (caseTableInfo && caseTableInfo.length > 0) {
       columnStructure = caseTableInfo[0];
-      console.log("Available columns for update:", Object.keys(columnStructure));
+      console.log(
+        "Available columns for update:",
+        Object.keys(columnStructure)
+      );
     } else {
       console.error("Error getting case table structure:", caseTableInfoError);
       // Create a fallback schema with standard fields to avoid errors
-      columnStructure = { 
-        id: 1, 
-        name: "fallback", 
-        dateTime: new Date(), 
+      columnStructure = {
+        id: 1,
+        name: "fallback",
+        dateTime: new Date(),
         visibility: "private",
         type: "checkup",
         status: "ongoing",
         patientId: null,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       console.log("Using fallback case schema for update");
     }
-    
+
     // Create base update data
     const updateData: any = {
       name: parsedData.name,
@@ -2195,20 +2303,23 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       visibility: parsedData.visibility,
       type: parsedData.type,
     };
-    
+
     // Add status if field exists - always use lowercase
-    if (Object.keys(columnStructure).includes('status')) {
+    if (Object.keys(columnStructure).includes("status")) {
       updateData.status = parsedData.status || "ongoing";
       console.log(`Updating status to: ${updateData.status}`);
     }
-    
+
     // Set the patient ID using the dynamically determined column name
     if (Object.keys(columnStructure).includes(columnName)) {
       updateData[columnName] = patientId;
     }
-    
-    console.log("Updating case with data:", JSON.stringify(updateData, null, 2));
-    
+
+    console.log(
+      "Updating case with data:",
+      JSON.stringify(updateData, null, 2)
+    );
+
     // Update the case with the potentially new patient ID
     const { data: updatedCase, error: caseError } = await supabase
       .from("cases")
@@ -2216,7 +2327,7 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       .eq("id", parsedData.id)
       .select()
       .single();
-      
+
     if (updatedCase) {
       console.log("Case updated successfully:", updatedCase);
     }
@@ -2229,10 +2340,44 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       };
     }
 
+    // Handle case actions - if actions are provided in the update data, save them as well
+    if (parsedData.actions && parsedData.actions.length > 0) {
+      console.log(`Updating ${parsedData.actions.length} case actions`);
+
+      try {
+        // Format actions for storage in the case_actions column
+        const formattedActions = parsedData.actions.map(action => ({
+          id: action.id,
+          type: action.type,
+          content: {
+            transcript: action.content?.transcript || "",
+            soap: action.content?.soap
+          },
+          timestamp: action.timestamp
+        }));
+        
+        // Update the case with the actions
+        const { error: updateError } = await supabase
+          .from("cases")
+          .update({
+            case_actions: formattedActions
+          })
+          .eq("id", parsedData.id);
+
+        if (updateError) {
+          console.error("Error storing case actions during update:", updateError);
+        } else {
+          console.log(`Successfully stored ${formattedActions.length} actions in case_actions column`);
+        }
+      } catch (actionError) {
+        console.error("Error storing case actions during update:", actionError);
+      }
+    }
+
     // Revalidate the dashboard and appointments paths to update the UI
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/appointments");
-    revalidatePath("/api/appointments");  // Add API path to ensure cache is invalidated
+    revalidatePath("/api/appointments"); // Add API path to ensure cache is invalidated
     revalidatePath(`/dashboard/current-case/${parsedData.id}`);
 
     // Return success and the updated case
@@ -2255,7 +2400,7 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
 export async function getCase(caseId: number) {
   try {
     console.log(`getCase called with ID: ${caseId}`);
-    
+
     // Authenticate the user making the request
     const supabase = await createClient();
     const {
@@ -2290,7 +2435,7 @@ export async function getCase(caseId: number) {
         error: "Case not found",
       };
     }
-    
+
     console.log("Case found:", caseData);
 
     // Build a response based on available fields
@@ -2298,19 +2443,29 @@ export async function getCase(caseId: number) {
       id: caseData.id,
       name: caseData.name,
     };
-    
+
     // Add other fields only if they exist
     if (caseData.dateTime) responseData.dateTime = caseData.dateTime;
     if (caseData.visibility) responseData.visibility = caseData.visibility;
     if (caseData.type) responseData.type = caseData.type;
     
+    // Include case actions if available
+    if (caseData.case_actions) {
+      console.log(`Found ${caseData.case_actions.length} actions in case_actions column`);
+      responseData.actions = caseData.case_actions;
+    } else {
+      console.log("No actions found in case_actions column");
+      responseData.actions = [];
+    }
+
     // Handle assignedTo with different possible field names
     if (caseData.assignedTo) responseData.assignedTo = caseData.assignedTo;
-    else if (caseData.assigned_to) responseData.assignedTo = caseData.assigned_to;
+    else if (caseData.assigned_to)
+      responseData.assignedTo = caseData.assigned_to;
     else responseData.assignedTo = "";
-    
+
     console.log("Returning case data:", JSON.stringify(responseData, null, 2));
-    
+
     // Return success and the case data
     return {
       success: true,
