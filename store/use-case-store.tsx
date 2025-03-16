@@ -12,12 +12,39 @@ export interface SoapResponse {
 
 export interface CaseAction {
   id: string;
-  type: "recording" | "soap";
+  type: "soap" | "recording" | "unknown";
   content: {
     transcript?: string;
-    soap?: SoapResponse;
+    soap?: {
+      subjective: string;
+      objective: string;
+      assessment: string;
+      plan: string;
+    };
   };
   timestamp: number;
+}
+
+export interface AppointmentData {
+  id: string;
+  name: string;
+  date: string;
+  time: string;
+  type: string;
+  status: string;
+  patients: {
+    id: string;
+    name: string;
+    first_name: string;
+    last_name: string;
+  };
+  users: {
+    id: string;
+    name: string;
+    first_name: string;
+    last_name: string;
+  };
+  case_actions?: CaseAction[];
 }
 
 interface CaseState {
@@ -30,6 +57,7 @@ interface CaseState {
   connectionState: SOCKET_STATES;
   selectedRecordings: string[]; // Array of selected recording IDs
   currentCaseId: string | null;
+  loadedAppointment: AppointmentData | null;
 
   // Actions
   setIsRecording: (value: boolean) => void;
@@ -46,6 +74,7 @@ interface CaseState {
   toggleRecordingSelection: (actionId: string) => void;
   clearSelectedRecordings: () => void;
   setCurrentCaseId: (id: string | null) => void;
+  loadAppointmentData: (appointment: AppointmentData) => void;
 }
 
 // Initial dummy data
@@ -79,6 +108,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   connectionState: SOCKET_STATES.closed,
   selectedRecordings: [],
   currentCaseId: null,
+  loadedAppointment: null,
 
   // Actions
   setIsRecording: (value) => set({ isRecording: value }),
@@ -168,4 +198,14 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   },
 
   setCurrentCaseId: (id) => set({ currentCaseId: id }),
+  
+  // Load appointment data into the store
+  loadAppointmentData: (appointment) => {
+    set({
+      currentCaseId: appointment.id,
+      loadedAppointment: appointment,
+      // Initialize case actions from the appointment's case_actions
+      caseActions: appointment.case_actions || [],
+    });
+  },
 }));

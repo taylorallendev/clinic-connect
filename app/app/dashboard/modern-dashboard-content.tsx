@@ -17,20 +17,15 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUpcomingAppointments } from "./actions";
 
 // Add User interface
@@ -84,8 +79,10 @@ export function ModernDashboardContent({
   appointments: initialAppointments,
   user,
 }: ModernDashboardContentProps) {
-  const [isWelcomeSectionExpanded, setIsWelcomeSectionExpanded] = useState(true);
-  const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
+  const [isWelcomeSectionExpanded, setIsWelcomeSectionExpanded] =
+    useState(true);
+  const [appointments, setAppointments] =
+    useState<Appointment[]>(initialAppointments);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
 
   // Use the server-provided cases as initial state
@@ -135,32 +132,36 @@ export function ModernDashboardContent({
 
   // Filter cases by status
   const scheduledCases = cases.filter(
-    (caseItem) => caseItem.status === "Scheduled" || caseItem.status === "scheduled"
+    (caseItem) =>
+      caseItem.status === "Scheduled" || caseItem.status === "scheduled"
   );
   const ongoingCases = cases.filter(
-    (caseItem) => caseItem.status === "Ongoing" || caseItem.status === "ongoing" || 
-                 caseItem.status === "in_progress"
+    (caseItem) =>
+      caseItem.status === "Ongoing" ||
+      caseItem.status === "ongoing" ||
+      caseItem.status === "in_progress"
   );
   const completedCases = cases.filter(
-    (caseItem) => caseItem.status === "Completed" || caseItem.status === "completed"
+    (caseItem) =>
+      caseItem.status === "Completed" || caseItem.status === "completed"
   );
   const reviewedCases = cases.filter(
-    (caseItem) => caseItem.status === "Reviewed" || caseItem.status === "reviewed"
+    (caseItem) =>
+      caseItem.status === "Reviewed" || caseItem.status === "reviewed"
   );
   const exportedCases = cases.filter(
-    (caseItem) => caseItem.status === "Exported" || caseItem.status === "exported"
+    (caseItem) =>
+      caseItem.status === "Exported" || caseItem.status === "exported"
   );
 
   // Function to create a new case
   const handleCreateCase = (caseId: string) => {
     // Navigate to current case page with the case ID
     window.location.href = `/app/dashboard/current-case?id=${caseId}`;
-    
+
     // Update the case status to "Ongoing" in the UI
-    const updatedCases = cases.map(caseItem => 
-      caseItem.id === caseId 
-        ? { ...caseItem, status: "Ongoing" } 
-        : caseItem
+    const updatedCases = cases.map((caseItem) =>
+      caseItem.id === caseId ? { ...caseItem, status: "Ongoing" } : caseItem
     );
     setCases(updatedCases);
   };
@@ -213,9 +214,11 @@ export function ModernDashboardContent({
       <div className="grid grid-cols-1 gap-6 px-6 pb-6">
         {/* Collapsible Welcome Section */}
         <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
-          <div 
+          <div
             className="flex justify-between items-center px-6 py-4 cursor-pointer"
-            onClick={() => setIsWelcomeSectionExpanded(!isWelcomeSectionExpanded)}
+            onClick={() =>
+              setIsWelcomeSectionExpanded(!isWelcomeSectionExpanded)
+            }
           >
             <h2 className="text-2xl font-semibold text-blue-50">
               Hey, {getUserDisplayName()}! Glad to have you back 👋
@@ -304,7 +307,7 @@ export function ModernDashboardContent({
 
               <TabsContent value="upcoming" className="mt-0">
                 <div className="flex justify-end mb-4">
-                  <Button 
+                  <Button
                     onClick={handleCreateAppointment}
                     className="flex items-center gap-1"
                   >
@@ -325,7 +328,10 @@ export function ModernDashboardContent({
                   <TableBody>
                     {scheduledCases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-blue-300/90 py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-blue-300/90 py-8"
+                        >
                           No upcoming appointments found
                         </TableCell>
                       </TableRow>
@@ -333,8 +339,12 @@ export function ModernDashboardContent({
                       scheduledCases.map((caseItem) => (
                         <TableRow key={caseItem.id}>
                           <TableCell>
-                            <div className="font-medium text-blue-50">{caseItem.date}</div>
-                            <div className="text-sm text-blue-300/90">{caseItem.time}</div>
+                            <div className="font-medium text-blue-50">
+                              {caseItem.date}
+                            </div>
+                            <div className="text-sm text-blue-300/90">
+                              {caseItem.time}
+                            </div>
                           </TableCell>
                           <TableCell>{caseItem.patient}</TableCell>
                           <TableCell>{caseItem.type}</TableCell>
@@ -373,7 +383,10 @@ export function ModernDashboardContent({
                   <TableBody>
                     {ongoingCases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-blue-300/90 py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-blue-300/90 py-8"
+                        >
                           No ongoing appointments found
                         </TableCell>
                       </TableRow>
@@ -381,8 +394,12 @@ export function ModernDashboardContent({
                       ongoingCases.map((caseItem) => (
                         <TableRow key={caseItem.id}>
                           <TableCell>
-                            <div className="font-medium text-blue-50">{caseItem.date}</div>
-                            <div className="text-sm text-blue-300/90">{caseItem.time}</div>
+                            <div className="font-medium text-blue-50">
+                              {caseItem.date}
+                            </div>
+                            <div className="text-sm text-blue-300/90">
+                              {caseItem.time}
+                            </div>
                           </TableCell>
                           <TableCell>{caseItem.patient}</TableCell>
                           <TableCell>{caseItem.type}</TableCell>
@@ -421,7 +438,10 @@ export function ModernDashboardContent({
                   <TableBody>
                     {appointments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-blue-300/90 py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-blue-300/90 py-8"
+                        >
                           No recent appointments found
                         </TableCell>
                       </TableRow>
@@ -429,8 +449,12 @@ export function ModernDashboardContent({
                       appointments.slice(0, 5).map((appointment) => (
                         <TableRow key={appointment.id}>
                           <TableCell>
-                            <div className="font-medium text-blue-50">{appointment.date}</div>
-                            <div className="text-sm text-blue-300/90">{appointment.time}</div>
+                            <div className="font-medium text-blue-50">
+                              {appointment.date}
+                            </div>
+                            <div className="text-sm text-blue-300/90">
+                              {appointment.time}
+                            </div>
                           </TableCell>
                           <TableCell>{appointment.patient}</TableCell>
                           <TableCell>{appointment.type}</TableCell>
@@ -441,7 +465,9 @@ export function ModernDashboardContent({
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
-                              onClick={() => window.location.href = `/app/dashboard/current-case?id=${appointment.id}`}
+                              onClick={() =>
+                                (window.location.href = `/app/dashboard/current-case?id=${appointment.id}`)
+                              }
                               size="sm"
                               variant="outline"
                             >
@@ -487,7 +513,10 @@ export function ModernDashboardContent({
                   <TableBody>
                     {completedCases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-blue-300/90 py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-blue-300/90 py-8"
+                        >
                           No completed cases found
                         </TableCell>
                       </TableRow>
@@ -495,8 +524,12 @@ export function ModernDashboardContent({
                       completedCases.map((caseItem) => (
                         <TableRow key={caseItem.id}>
                           <TableCell>
-                            <div className="font-medium text-blue-50">{caseItem.date}</div>
-                            <div className="text-sm text-blue-300/90">{caseItem.time}</div>
+                            <div className="font-medium text-blue-50">
+                              {caseItem.date}
+                            </div>
+                            <div className="text-sm text-blue-300/90">
+                              {caseItem.time}
+                            </div>
                           </TableCell>
                           <TableCell>{caseItem.patient}</TableCell>
                           <TableCell>{caseItem.type}</TableCell>
@@ -507,7 +540,9 @@ export function ModernDashboardContent({
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
-                              onClick={() => window.location.href = `/app/dashboard/current-case?id=${caseItem.id}`}
+                              onClick={() =>
+                                (window.location.href = `/app/dashboard/current-case?id=${caseItem.id}`)
+                              }
                               size="sm"
                               variant="outline"
                             >
@@ -535,7 +570,10 @@ export function ModernDashboardContent({
                   <TableBody>
                     {reviewedCases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-blue-300/90 py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-blue-300/90 py-8"
+                        >
                           No reviewed cases found
                         </TableCell>
                       </TableRow>
@@ -543,8 +581,12 @@ export function ModernDashboardContent({
                       reviewedCases.map((caseItem) => (
                         <TableRow key={caseItem.id}>
                           <TableCell>
-                            <div className="font-medium text-blue-50">{caseItem.date}</div>
-                            <div className="text-sm text-blue-300/90">{caseItem.time}</div>
+                            <div className="font-medium text-blue-50">
+                              {caseItem.date}
+                            </div>
+                            <div className="text-sm text-blue-300/90">
+                              {caseItem.time}
+                            </div>
                           </TableCell>
                           <TableCell>{caseItem.patient}</TableCell>
                           <TableCell>{caseItem.type}</TableCell>
@@ -555,7 +597,9 @@ export function ModernDashboardContent({
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
-                              onClick={() => window.location.href = `/app/dashboard/current-case?id=${caseItem.id}`}
+                              onClick={() =>
+                                (window.location.href = `/app/dashboard/current-case?id=${caseItem.id}`)
+                              }
                               size="sm"
                               variant="outline"
                             >
@@ -583,7 +627,10 @@ export function ModernDashboardContent({
                   <TableBody>
                     {exportedCases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-blue-300/90 py-8">
+                        <TableCell
+                          colSpan={5}
+                          className="text-center text-blue-300/90 py-8"
+                        >
                           No exported cases found
                         </TableCell>
                       </TableRow>
@@ -591,8 +638,12 @@ export function ModernDashboardContent({
                       exportedCases.map((caseItem) => (
                         <TableRow key={caseItem.id}>
                           <TableCell>
-                            <div className="font-medium text-blue-50">{caseItem.date}</div>
-                            <div className="text-sm text-blue-300/90">{caseItem.time}</div>
+                            <div className="font-medium text-blue-50">
+                              {caseItem.date}
+                            </div>
+                            <div className="text-sm text-blue-300/90">
+                              {caseItem.time}
+                            </div>
                           </TableCell>
                           <TableCell>{caseItem.patient}</TableCell>
                           <TableCell>{caseItem.type}</TableCell>
@@ -603,7 +654,9 @@ export function ModernDashboardContent({
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
-                              onClick={() => window.location.href = `/app/dashboard/current-case?id=${caseItem.id}`}
+                              onClick={() =>
+                                (window.location.href = `/app/dashboard/current-case?id=${caseItem.id}`)
+                              }
                               size="sm"
                               variant="outline"
                             >

@@ -56,7 +56,7 @@ const createCaseSchema = z.object({
  */
 const caseActionSchema = z.object({
   id: z.string(),
-  type: z.enum(["recording", "soap"]),
+  type: z.enum(["recording", "soap", "unknown"]), // Add "unknown" to the allowed types
   content: z.object({
     transcript: z.string().optional(),
     soap: z
@@ -530,32 +530,36 @@ export async function createCase(
 
     // If there are case actions, store them directly in the cases table
     if (parsedData.actions && parsedData.actions.length > 0) {
-      console.log(`Storing ${parsedData.actions.length} actions in case_actions column`);
+      console.log(
+        `Storing ${parsedData.actions.length} actions in case_actions column`
+      );
 
       try {
         // Format actions for storage in the case_actions column
-        const formattedActions = parsedData.actions.map(action => ({
+        const formattedActions = parsedData.actions.map((action) => ({
           id: action.id,
           type: action.type,
           content: {
             transcript: action.content?.transcript || "",
-            soap: action.content?.soap
+            soap: action.content?.soap,
           },
-          timestamp: action.timestamp
+          timestamp: action.timestamp,
         }));
-        
+
         // Update the case with the actions
         const { error: updateError } = await supabase
           .from("cases")
           .update({
-            case_actions: formattedActions
+            case_actions: formattedActions,
           })
           .eq("id", caseId);
 
         if (updateError) {
           console.error("Error storing case actions:", updateError);
         } else {
-          console.log(`Successfully stored ${formattedActions.length} actions in case_actions column`);
+          console.log(
+            `Successfully stored ${formattedActions.length} actions in case_actions column`
+          );
         }
       } catch (actionError) {
         console.error("Error storing case actions:", actionError);
@@ -639,7 +643,7 @@ export async function saveCaseAction(caseId: number, action: ClientCaseAction) {
       .select("case_actions")
       .eq("id", caseId)
       .single();
-      
+
     if (fetchError) {
       console.error("Failed to fetch current case actions:", fetchError);
       return {
@@ -647,29 +651,31 @@ export async function saveCaseAction(caseId: number, action: ClientCaseAction) {
         error: fetchError.message,
       };
     }
-    
+
     // Format the new action
     const formattedAction = {
       id: parsedAction.id,
       type: parsedAction.type,
       content: {
         transcript: parsedAction.content?.transcript || "",
-        soap: parsedAction.content?.soap
+        soap: parsedAction.content?.soap,
       },
-      timestamp: parsedAction.timestamp
+      timestamp: parsedAction.timestamp,
     };
-    
+
     // Combine existing actions with the new one
     const existingActions = currentCase.case_actions || [];
     const updatedActions = [...existingActions, formattedAction];
-    
-    console.log(`Adding 1 action to existing ${existingActions.length} actions for case ${caseId}`);
-    
+
+    console.log(
+      `Adding 1 action to existing ${existingActions.length} actions for case ${caseId}`
+    );
+
     // Update the case with the combined actions
     const { error: updateError } = await supabase
       .from("cases")
       .update({
-        case_actions: updatedActions
+        case_actions: updatedActions,
       })
       .eq("id", caseId);
 
@@ -680,7 +686,7 @@ export async function saveCaseAction(caseId: number, action: ClientCaseAction) {
         error: updateError.message,
       };
     }
-    
+
     console.log("Successfully added action to case_actions column");
 
     // Revalidate the case page to update the UI
@@ -1185,30 +1191,34 @@ export async function saveActionsToCase(
       throw new Error("Unauthorized");
     }
 
-    console.log(`Storing ${actions.length} actions in case_actions column for case ${caseId}`);
-    
+    console.log(
+      `Storing ${actions.length} actions in case_actions column for case ${caseId}`
+    );
+
     // Validate all actions against the schema
-    const validatedActions = actions.map(action => caseActionSchema.parse(action));
-    
+    const validatedActions = actions.map((action) =>
+      caseActionSchema.parse(action)
+    );
+
     // Format actions for storage in the case_actions column
-    const formattedActions = validatedActions.map(action => ({
+    const formattedActions = validatedActions.map((action) => ({
       id: action.id,
       type: action.type,
       content: {
         transcript: action.content?.transcript || "",
-        soap: action.content?.soap
+        soap: action.content?.soap,
       },
-      timestamp: action.timestamp
+      timestamp: action.timestamp,
     }));
-    
+
     // Update the case with all actions at once
     const { error } = await supabase
       .from("cases")
       .update({
-        case_actions: formattedActions
+        case_actions: formattedActions,
       })
       .eq("id", caseId);
-      
+
     if (error) {
       console.error("Failed to save case actions:", error);
       return {
@@ -1216,9 +1226,10 @@ export async function saveActionsToCase(
         error: error.message,
       };
     }
-    
-    console.log(`Successfully stored ${formattedActions.length} actions in case_actions column`);
-    
+
+    console.log(
+      `Successfully stored ${formattedActions.length} actions in case_actions column`
+    );
 
     // Revalidate the case page to update the UI
     revalidatePath(`/dashboard/cases/${caseId}`);
@@ -2346,28 +2357,33 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
 
       try {
         // Format actions for storage in the case_actions column
-        const formattedActions = parsedData.actions.map(action => ({
+        const formattedActions = parsedData.actions.map((action) => ({
           id: action.id,
           type: action.type,
           content: {
             transcript: action.content?.transcript || "",
-            soap: action.content?.soap
+            soap: action.content?.soap,
           },
-          timestamp: action.timestamp
+          timestamp: action.timestamp,
         }));
-        
+
         // Update the case with the actions
         const { error: updateError } = await supabase
           .from("cases")
           .update({
-            case_actions: formattedActions
+            case_actions: formattedActions,
           })
           .eq("id", parsedData.id);
 
         if (updateError) {
-          console.error("Error storing case actions during update:", updateError);
+          console.error(
+            "Error storing case actions during update:",
+            updateError
+          );
         } else {
-          console.log(`Successfully stored ${formattedActions.length} actions in case_actions column`);
+          console.log(
+            `Successfully stored ${formattedActions.length} actions in case_actions column`
+          );
         }
       } catch (actionError) {
         console.error("Error storing case actions during update:", actionError);
@@ -2448,10 +2464,12 @@ export async function getCase(caseId: number) {
     if (caseData.dateTime) responseData.dateTime = caseData.dateTime;
     if (caseData.visibility) responseData.visibility = caseData.visibility;
     if (caseData.type) responseData.type = caseData.type;
-    
+
     // Include case actions if available
     if (caseData.case_actions) {
-      console.log(`Found ${caseData.case_actions.length} actions in case_actions column`);
+      console.log(
+        `Found ${caseData.case_actions.length} actions in case_actions column`
+      );
       responseData.actions = caseData.case_actions;
     } else {
       console.log("No actions found in case_actions column");

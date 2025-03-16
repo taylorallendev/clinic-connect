@@ -29,51 +29,35 @@ import {
   CheckCircle,
   PlusCircle,
   PlayCircle,
+  FileText,
+  Mic,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-
-interface AppointmentData {
-  id: string;
-  name: string;
-  date: string;
-  time: string;
-  type: string;
-  patients: {
-    id: string;
-    name: string;
-    first_name: string;
-    last_name: string;
-  };
-  users: {
-    id: string;
-    name: string;
-    first_name: string;
-    last_name: string;
-  };
-  status: string;
-}
+import { AppointmentSidebar } from "./appointment-sidebar";
+import { AppointmentData } from "@/store/use-case-store";
 
 interface AppointmentsTableProps {
-  initialData: {
-    appointments: AppointmentData[];
-    totalCount: number;
-    page: number;
-    pageSize: number;
-  };
+  appointments: AppointmentData[];
+  onSelectAppointment: (appointment: AppointmentData) => void;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  onPageChange: (page: number) => void;
 }
 
-export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
+export function AppointmentsTable({
+  appointments,
+  onSelectAppointment,
+  page,
+  pageSize,
+  totalCount,
+  onPageChange,
+}: AppointmentsTableProps) {
   const { toast } = useToast();
-  const [appointments, setAppointments] = useState<AppointmentData[]>(
-    initialData.appointments
-  );
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(initialData.page);
-  const [totalCount, setTotalCount] = useState(initialData.totalCount);
-  const [pageSize, setPageSize] = useState(initialData.pageSize);
   const [date, setDate] = useState<Date | null>(() => {
     // Always set today's date as default
     try {
@@ -89,19 +73,24 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
   const [viewMode, setViewMode] = useState<"all" | "case-management">("all");
   const [activeTab, setActiveTab] = useState("upcoming");
 
+  // Sidebar state
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentData | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Effect to load appointments with today's date on component mount
   useEffect(() => {
     // If we have no appointments yet, fetch with today's date
-    if (date && initialData.appointments.length === 0) {
+    if (date && appointments.length === 0) {
       fetchAppointments(0, pageSize, "", format(date, "yyyy-MM-dd"));
     }
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(0); // Reset to first page when search changes
+    onPageChange(0); // Reset to first page when search changes
     await fetchAppointments(
       0,
       pageSize,
@@ -110,10 +99,10 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
     );
   };
 
-  const handleDateSelect = async (newDate: Date | null) => {
-    setDate(newDate);
-    setPage(0); // Reset to first page when date changes
-    await fetchAppointments(
+  const handleDateSelect = (newDate: Date | undefined) => {
+    setDate(newDate || null);
+    onPageChange(0); // Reset to first page when date changes
+    fetchAppointments(
       0,
       pageSize,
       search,
@@ -133,7 +122,7 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
   const handleClearFilters = async () => {
     setSearch("");
     setDate(null);
-    setPage(0); // Reset to first page when filters are cleared
+    onPageChange(0); // Reset to first page when filters are cleared
     await fetchAppointments(0, pageSize, "", "");
   };
 
@@ -165,9 +154,8 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
       }
 
       const data = await res.json();
-      setAppointments(data.appointments);
-      setTotalCount(data.totalCount);
-      setPage(pageNum);
+      onSelectAppointment(data.appointments[0] || null);
+      onPageChange(pageNum);
 
       // Show toast confirming data refresh
       if (query || dateFilter) {
@@ -222,6 +210,16 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
   const completedAppointments = filterAppointmentsByStatus("completed");
   const exportedAppointments = filterAppointmentsByStatus("exported");
 
+  // Handle appointment selection and sidebar open/close
+  const handleViewAppointment = (appointment: AppointmentData) => {
+    setSelectedAppointment(appointment);
+    setIsSidebarOpen(true);
+  };
+
+  const handleCloseSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -249,11 +247,6 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
             Case Management
           </Button>
         </div>
-
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          New Appointment
-        </Button>
       </div>
 
       {viewMode === "all" ? (
@@ -405,6 +398,7 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                             variant="default"
                             size="sm"
                             className="bg-blue-600/80 hover:bg-blue-600 text-white"
+                            onClick={() => handleViewAppointment(appointment)}
                           >
                             View
                           </Button>
@@ -427,25 +421,11 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Pagination className="mt-6 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page === 0 || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="mx-4">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={page >= totalPages - 1 || isLoading}
-                >
-                  Next
-                </Button>
-              </Pagination>
+              <Pagination
+                currentPage={page + 1}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             )}
           </CardContent>
         </Card>
@@ -598,19 +578,31 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-blue-100 text-right">
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="bg-blue-600 hover:bg-blue-700"
-                                asChild
-                              >
-                                <Link
-                                  href={`/app/dashboard/current-case?id=${appointment.id}`}
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-blue-900/20 border-blue-700/30 text-blue-50 hover:bg-blue-800/40"
+                                  onClick={() =>
+                                    handleViewAppointment(appointment)
+                                  }
                                 >
-                                  <PlusCircle className="h-4 w-4 mr-1" />
-                                  Create Case
-                                </Link>
-                              </Button>
+                                  View
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                  asChild
+                                >
+                                  <Link
+                                    href={`/app/dashboard/current-case?id=${appointment.id}`}
+                                  >
+                                    <PlusCircle className="h-4 w-4 mr-1" />
+                                    Create Case
+                                  </Link>
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -633,18 +625,25 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Patient</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                      <TableRow className="border-blue-800/30">
+                        <TableHead className="text-blue-200">Time</TableHead>
+                        <TableHead className="text-blue-200">Patient</TableHead>
+                        <TableHead className="text-blue-200">
+                          Provider
+                        </TableHead>
+                        <TableHead className="text-blue-200">Type</TableHead>
+                        <TableHead className="text-blue-200 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {ongoingAppointments.length > 0 ? (
                         ongoingAppointments.map((appointment) => (
-                          <TableRow key={appointment.id}>
+                          <TableRow
+                            key={appointment.id}
+                            className="border-blue-800/30 hover:bg-blue-900/20"
+                          >
                             <TableCell>{appointment.time}</TableCell>
                             <TableCell>
                               {appointment.patients
@@ -732,7 +731,7 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                                 asChild
                               >
                                 <Link
-                                  href={`/app/dashboard/current-case?id=${appointment.id}`}
+                                  href={`/app/dashboard/case/${appointment.id}`}
                                 >
                                   <CheckCircle className="h-4 w-4 mr-1" />
                                   View Case
@@ -794,7 +793,7 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
                                 asChild
                               >
                                 <Link
-                                  href={`/app/dashboard/current-case?id=${appointment.id}`}
+                                  href={`/app/dashboard/case/${appointment.id}`}
                                 >
                                   View Records
                                 </Link>
@@ -816,6 +815,14 @@ export function AppointmentsTable({ initialData }: AppointmentsTableProps) {
             </Tabs>
           </CardContent>
         </Card>
+      )}
+
+      {selectedAppointment && (
+        <AppointmentSidebar
+          appointment={selectedAppointment}
+          isOpen={isSidebarOpen}
+          onClose={handleCloseSidebar}
+        />
       )}
     </div>
   );

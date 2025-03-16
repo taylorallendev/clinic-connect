@@ -1007,32 +1007,6 @@ export function CurrentCaseContent() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-blue-50">Current Case</h1>
         <div className="flex items-center gap-3">
-          {/* Database diagnosis button */}
-          <Button
-            variant="ghost"
-            className="text-green-100 hover:bg-green-800/30 hover:text-green-50"
-            onClick={async () => {
-              try {
-                await diagnoseDatabaseSchema();
-                toast({
-                  title: "Diagnosis Complete",
-                  description:
-                    "Check browser console for database schema details",
-                });
-              } catch (err) {
-                console.error("Diagnosis failed:", err);
-                toast({
-                  title: "Diagnosis Failed",
-                  description: "Check browser console for errors",
-                  variant: "destructive",
-                });
-              }
-            }}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Diagnose DB
-          </Button>
-
           {/* Reset button moved to the left */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
