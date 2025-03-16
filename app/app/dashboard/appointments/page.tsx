@@ -82,10 +82,6 @@ export default function AppointmentsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Appointments</h1>
-      </div>
-
       <div className="flex flex-col md:flex-row gap-4">
         <form onSubmit={handleSearch} className="flex-1">
           <div className="relative">

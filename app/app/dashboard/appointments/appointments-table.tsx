@@ -235,7 +235,7 @@ export function AppointmentsTable({
           >
             All Appointments
           </Button>
-          <Button
+          {/* <Button
             variant={viewMode === "case-management" ? "default" : "outline"}
             onClick={() => setViewMode("case-management")}
             className={
@@ -245,7 +245,7 @@ export function AppointmentsTable({
             }
           >
             Case Management
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -421,11 +421,33 @@ export function AppointmentsTable({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Pagination
-                currentPage={page + 1}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
+              <div className="flex justify-center mt-6">
+                <Pagination>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                    className="mr-2"
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center mx-2">
+                    Page {page + 1} of {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      handlePageChange(Math.min(totalPages - 1, page + 1))
+                    }
+                    disabled={page >= totalPages - 1}
+                    className="ml-2"
+                  >
+                    Next
+                  </Button>
+                </Pagination>
+              </div>
             )}
           </CardContent>
         </Card>
