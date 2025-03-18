@@ -4,25 +4,31 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 20 14.3% 4.1%;
+    --background: 210 20% 98%;
+    --foreground: 220 26% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
+    --card-foreground: 220 26% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
-    --primary: 24 9.8% 10%;
-    --primary-foreground: 60 9.1% 97.8%;
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 20 14.3% 4.1%;
+    --popover-foreground: 220 26% 14%;
+    --primary: 174 59% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 220 26% 14%;
+    --muted: 210 20% 91%;
+    --muted-foreground: 215 16% 51%;
+    --accent: 43 74% 66%;
+    --accent-foreground: 42 85% 15%;
+    --destructive: 12 76% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 50% 43%;
+    --success-foreground: 0 0% 100%;
+    --warning: 25 86% 49%;
+    --warning-foreground: 0 0% 100%;
+    --info: 214 62% 50%;
+    --info-foreground: 0 0% 100%;
+    --border: 210 20% 91%;
+    --input: 210 20% 91%;
+    --ring: 174 59% 39%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -39,12 +45,12 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+
   /* Custom style for template dropdown placeholder text */
   [data-placeholder].white-placeholder {
     color: white !important;
   }
-  
+
   /* Force white text for select trigger and value components */
   .bg-blue-600 .select-value,
   .bg-blue-600 [data-placeholder] {

@@ -101,15 +101,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-950 to-indigo-950">
+    <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <div className="flex w-64 flex-col border-r border-blue-800/30 bg-blue-950/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between border-b border-blue-800/30 p-5">
+      <div className="flex w-64 flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-              <PawPrint className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2a9d8f]/20">
+              <PawPrint className="h-5 w-5 text-[#2a9d8f]" />
             </div>
-            <h1 className="text-xl font-medium text-blue-50">ClinicConnect</h1>
+            <h1 className="text-xl font-medium text-white">ClinicConnect</h1>
           </div>
         </div>
 
@@ -121,14 +121,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button
                 key={item.name}
                 variant="ghost"
-                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-blue-300 hover:bg-blue-800/30 ${
-                  isActive ? "bg-blue-800/40 font-medium text-blue-50" : ""
+                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-gray-300 hover:bg-[#2a4a5a] hover:text-white ${
+                  isActive ? "bg-[#2a4a5a] font-medium text-white" : ""
                 }`}
                 asChild
               >
                 <Link href={item.href}>
                   <item.icon
-                    className={`h-5 w-5 ${isActive ? "text-blue-50" : "text-blue-300"}`}
+                    className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-300"}`}
                   />
                   <span>{item.name}</span>
                 </Link>
@@ -137,24 +137,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="border-t border-blue-800/30 p-4">
+        <div className="border-t border-[#2a4a5a] p-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 border border-blue-700/30">
+            <Avatar className="h-9 w-9 border border-[#2a4a5a]">
               <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback className="bg-blue-700 text-white">
+              <AvatarFallback className="bg-[#2a4a5a] text-white">
                 {isLoading ? "..." : getUserInitials()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium text-blue-50">
+              <p className="text-sm font-medium text-white">
                 {isLoading ? "Loading..." : getDisplayName()}
               </p>
-              <p className="text-xs text-blue-300">{user?.email || ""}</p>
+              <p className="text-xs text-gray-300">{user?.email || ""}</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-blue-300 hover:bg-blue-800/30 hover:text-blue-50"
+              className="h-8 w-8 rounded-full text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -165,7 +165,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               type="submit"
               variant="ghost"
-              className="w-full justify-start gap-3 rounded-lg py-2.5 text-blue-300 hover:bg-blue-800/30"
+              className="w-full justify-start gap-3 rounded-lg py-2.5 text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
             >
               <LogOut className="h-5 w-5" />
               <span>Sign out</span>

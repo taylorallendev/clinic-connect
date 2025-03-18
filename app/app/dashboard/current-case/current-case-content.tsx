@@ -549,7 +549,7 @@ export function CurrentCaseContent() {
           },
           timestamp: Date.now(),
         });
-        
+
         // Update status to "ongoing" automatically
         if (form.getValues("status") !== "ongoing") {
           form.setValue("status", "ongoing");
@@ -737,7 +737,7 @@ export function CurrentCaseContent() {
       });
     } finally {
       setIsGeneratingSoap(false);
-      
+
       // Clear selected recordings after generation (for single transcript)
       useCaseStore.getState().clearSelectedRecordings();
     }
@@ -866,7 +866,7 @@ export function CurrentCaseContent() {
       });
     } finally {
       setIsGeneratingSoap(false);
-      
+
       // Clear selected recordings after generation (for multiple transcripts)
       useCaseStore.getState().clearSelectedRecordings();
     }
@@ -1019,37 +1019,39 @@ export function CurrentCaseContent() {
   };
 
   return (
-    <div className="flex flex-col space-y-6 p-6 bg-gradient-to-br from-blue-950 to-indigo-950">
+    <div className="flex flex-col space-y-6 p-6 bg-background">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-blue-50">Current Case</h1>
+        <h1 className="text-2xl font-semibold text-card-foreground">
+          Current Case
+        </h1>
         <div className="flex items-center gap-3">
           {/* Reset button moved to the left */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
-                className="text-blue-100 hover:bg-blue-800/30 hover:text-blue-50"
+                className="text-card-foreground hover:bg-muted/30 hover:text-card-foreground"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Reset
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-blue-950 border-blue-800">
+            <AlertDialogContent className="bg-card border-border">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-blue-50">
+                <AlertDialogTitle className="text-card-foreground">
                   Reset case?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-blue-200">
+                <AlertDialogDescription className="text-muted-foreground">
                   This will clear all case information, transcripts, and SOAP
                   notes. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="bg-blue-900 text-blue-100 border-blue-700 hover:bg-blue-800">
+                <AlertDialogCancel className="bg-muted text-card-foreground border-muted hover:bg-muted/30">
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                   onClick={() => {
                     // Reset without saving
                     useCaseStore.getState().reset();
@@ -1082,7 +1084,7 @@ export function CurrentCaseContent() {
             onClick={form.handleSubmit(
               currentCaseId ? handleUpdateCase : onSubmit
             )}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={isSaving}
           >
             {isSaving ? (
@@ -1095,7 +1097,7 @@ export function CurrentCaseContent() {
 
           {/* New Case button */}
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={async () => {
               // If there's a current case or unsaved changes, save them first
               if (actions.length > 0 || form.formState.isDirty) {
@@ -1133,18 +1135,18 @@ export function CurrentCaseContent() {
       {/* Unified layout with all content visible at once */}
       <div className="grid grid-cols-1 gap-6">
         {/* Case Details Section */}
-        <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
-          <CardHeader className="border-b border-blue-800/30 bg-blue-900/20">
-            <CardTitle className="text-blue-50 flex items-center justify-between">
+        <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/20">
+            <CardTitle className="text-card-foreground flex items-center justify-between">
               <div className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-blue-300" />
+                <FileText className="h-5 w-5 mr-2 text-card-foreground" />
                 Case Information
               </div>
               {!isEditMode && savedCaseData && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-blue-900/20 border-blue-700/30 text-blue-50 hover:bg-blue-800/40"
+                  className="bg-muted/20 border-muted/30 text-card-foreground hover:bg-muted/40"
                   onClick={() => setIsEditMode(true)}
                 >
                   Edit Case
@@ -1162,14 +1164,14 @@ export function CurrentCaseContent() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-200">
+                          <FormLabel className="text-muted-foreground">
                             Case Name
                           </FormLabel>
                           <FormControl>
                             <Input
                               placeholder="Enter case name"
                               {...field}
-                              className="bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50 focus-visible:ring-blue-500"
+                              className="bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                             />
                           </FormControl>
                           <FormMessage className="text-red-300" />
@@ -1182,14 +1184,14 @@ export function CurrentCaseContent() {
                       name="dateTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-200">
+                          <FormLabel className="text-muted-foreground">
                             Date & Time
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="datetime-local"
                               {...field}
-                              className="bg-blue-900/20 border-blue-700/30 text-blue-50 focus-visible:ring-blue-500"
+                              className="bg-muted/20 border-input text-foreground focus-visible:ring-ring"
                             />
                           </FormControl>
                           <FormMessage className="text-red-300" />
@@ -1202,7 +1204,7 @@ export function CurrentCaseContent() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-200">
+                          <FormLabel className="text-muted-foreground">
                             Case Type
                           </FormLabel>
                           <Select
@@ -1210,11 +1212,11 @@ export function CurrentCaseContent() {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="bg-blue-900/20 border-blue-700/30 text-blue-50 focus:ring-blue-500">
+                              <SelectTrigger className="bg-muted/20 border-input text-foreground focus:ring-ring">
                                 <SelectValue placeholder="Select case type" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-blue-900 border-blue-700 text-blue-50">
+                            <SelectContent className="bg-popover border-border text-popover-foreground">
                               <SelectItem value="checkup">Checkup</SelectItem>
                               <SelectItem value="emergency">
                                 Emergency
@@ -1235,7 +1237,7 @@ export function CurrentCaseContent() {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-200">
+                          <FormLabel className="text-muted-foreground">
                             Status
                           </FormLabel>
                           <Select
@@ -1243,11 +1245,11 @@ export function CurrentCaseContent() {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="bg-blue-900/20 border-blue-700/30 text-blue-50 focus:ring-blue-500">
+                              <SelectTrigger className="bg-muted/20 border-input text-foreground focus:ring-ring">
                                 <SelectValue placeholder="Select status" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-blue-900 border-blue-700 text-blue-50">
+                            <SelectContent className="bg-popover border-border text-popover-foreground">
                               <SelectItem value="ongoing">Ongoing</SelectItem>
                               <SelectItem value="completed">
                                 Completed
@@ -1268,19 +1270,19 @@ export function CurrentCaseContent() {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-sm font-medium text-blue-300 mb-1">
+                      <h3 className="text-sm font-medium text-card-foreground mb-1">
                         Case Name
                       </h3>
-                      <p className="text-blue-50 text-lg">
+                      <p className="text-card-foreground text-lg">
                         {savedCaseData.name}
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-medium text-blue-300 mb-1">
+                      <h3 className="text-sm font-medium text-card-foreground mb-1">
                         Date & Time
                       </h3>
-                      <p className="text-blue-50 text-lg">
+                      <p className="text-card-foreground text-lg">
                         <ClientSideDate
                           timestamp={new Date(savedCaseData.dateTime).getTime()}
                         />
@@ -1288,19 +1290,19 @@ export function CurrentCaseContent() {
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-medium text-blue-300 mb-1">
+                      <h3 className="text-sm font-medium text-card-foreground mb-1">
                         Case Type
                       </h3>
-                      <p className="text-blue-50 text-lg capitalize">
+                      <p className="text-card-foreground text-lg capitalize">
                         {savedCaseData.type.replace("_", " ")}
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-medium text-blue-300 mb-1">
+                      <h3 className="text-sm font-medium text-card-foreground mb-1">
                         Status
                       </h3>
-                      <p className="text-blue-50 text-lg">
+                      <p className="text-card-foreground text-lg">
                         {savedCaseData.status
                           ? savedCaseData.status.replace("_", " ")
                           : "SCHEDULED"}
@@ -1314,10 +1316,10 @@ export function CurrentCaseContent() {
         </Card>
 
         {/* Recording Section */}
-        <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
-          <CardHeader className="border-b border-blue-800/30 bg-blue-900/20">
-            <CardTitle className="text-blue-50">
-              <Mic className="h-5 w-5 mr-2 text-blue-300 inline" />
+        <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/20">
+            <CardTitle className="text-card-foreground flex items-center">
+              <Mic className="h-5 w-5 mr-2 text-card-foreground inline" />
               Voice Recording
             </CardTitle>
           </CardHeader>
@@ -1344,11 +1346,11 @@ export function CurrentCaseContent() {
                 </Button>
               </div>
 
-              <div className="text-3xl font-mono text-blue-50 mb-2">
+              <div className="text-3xl font-mono text-card-foreground mb-2">
                 {formatTime(recordingTime)}
               </div>
 
-              <p className="text-blue-300 text-center max-w-md">
+              <p className="text-muted-foreground text-center max-w-md">
                 {isRecording
                   ? "Recording in progress. Click the button to stop recording."
                   : isProcessing
@@ -1359,10 +1361,10 @@ export function CurrentCaseContent() {
               {/* Live transcription display */}
               {isRecording && (
                 <div className="mt-6 w-full">
-                  <h3 className="text-blue-200 text-sm font-medium mb-2">
+                  <h3 className="text-muted-foreground text-sm font-medium mb-2">
                     Live Transcription
                   </h3>
-                  <div className="bg-blue-900/30 border border-blue-800/30 rounded-lg p-4 text-blue-50 min-h-[100px] max-h-[200px] overflow-y-auto">
+                  <div className="bg-muted/30 border border-muted/30 rounded-lg p-4 text-card-foreground min-h-[100px] max-h-[200px] overflow-y-auto">
                     {transcriptText || "Listening..."}
                   </div>
                 </div>
@@ -1372,11 +1374,11 @@ export function CurrentCaseContent() {
         </Card>
 
         {/* Case Actions Section */}
-        <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
-          <CardHeader className="border-b border-blue-800/30 bg-blue-900/20">
+        <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/20">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-blue-50 flex items-center">
-                <ClipboardCheck className="h-5 w-5 mr-2 text-blue-300" />
+              <CardTitle className="text-card-foreground flex items-center">
+                <ClipboardCheck className="h-5 w-5 mr-2 text-card-foreground" />
                 Case Actions
               </CardTitle>
               {actions.length > 0 && (
@@ -1431,7 +1433,7 @@ export function CurrentCaseContent() {
                         }
                       }
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground border-muted/30"
                   >
                     {useCaseStore.getState().selectedRecordings.length > 0 ||
                     selectedSoapIds.length > 0
@@ -1447,23 +1449,31 @@ export function CurrentCaseContent() {
                         value={selectedTemplateId}
                         onValueChange={setSelectedTemplateId}
                       >
-                        <SelectTrigger 
-                          className="w-[180px] bg-blue-600 hover:bg-blue-700 border-blue-700/50 font-normal text-sm text-white"
+                        <SelectTrigger
+                          className="w-[180px] bg-primary hover:bg-primary/90 border-muted/50 font-normal text-sm text-white"
                           style={{ color: "white" }} // Force white text color for all states
                         >
-                          <SelectValue 
-                            placeholder="Select Template" 
+                          <SelectValue
+                            placeholder="Select Template"
                             className="!text-white white-placeholder"
                             style={{ color: "white" }} // Force white text color
                           />
                         </SelectTrigger>
-                        <SelectContent className="bg-blue-900 border-blue-700">
+                        <SelectContent className="bg-popover border-border text-popover-foreground">
                           {isLoadingTemplates ? (
-                            <SelectItem value="loading" disabled className="text-blue-300">
+                            <SelectItem
+                              value="loading"
+                              disabled
+                              className="text-muted-foreground"
+                            >
                               Loading templates...
                             </SelectItem>
                           ) : availableTemplates.length === 0 ? (
-                            <SelectItem value="none" disabled className="text-blue-300">
+                            <SelectItem
+                              value="none"
+                              disabled
+                              className="text-muted-foreground"
+                            >
                               No templates available
                             </SelectItem>
                           ) : (
@@ -1471,7 +1481,7 @@ export function CurrentCaseContent() {
                               <SelectItem
                                 key={template.id}
                                 value={template.id.toString()}
-                                className="text-blue-50"
+                                className="text-card-foreground"
                               >
                                 {template.name} ({template.type})
                               </SelectItem>
@@ -1482,11 +1492,12 @@ export function CurrentCaseContent() {
 
                       <Button
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         onClick={handleGenerateFromMultiple}
                         disabled={
                           isGeneratingSoap ||
-                          useCaseStore.getState().selectedRecordings.length === 0 ||
+                          useCaseStore.getState().selectedRecordings.length ===
+                            0 ||
                           !selectedTemplateId
                         }
                       >
@@ -1515,7 +1526,7 @@ export function CurrentCaseContent() {
                 <div className="space-y-6">
                   {/* Transcriptions Section */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-blue-50 border-b border-blue-800/30 pb-2">
+                    <h3 className="text-lg font-medium text-card-foreground border-b border-muted/30 pb-2">
                       Transcriptions
                     </h3>
                     {actions.filter((action) => action.type === "recording")
@@ -1539,27 +1550,27 @@ export function CurrentCaseContent() {
                           return (
                             <Card
                               key={action.id}
-                              className={`bg-blue-900/20 border-blue-700/30 ${
+                              className={`bg-muted/20 border-muted/30 ${
                                 isSelected ? "ring-2 ring-blue-400" : ""
                               }`}
                             >
                               <CardHeader className="p-4 pb-2">
                                 <div className="flex justify-between items-center w-full">
-                                  <div 
+                                  <div
                                     className="flex items-center gap-2 flex-1 cursor-pointer"
                                     onClick={toggleExpanded}
                                   >
                                     <label
                                       htmlFor={`recording-${action.id}`}
-                                      className="text-blue-50 font-medium cursor-pointer"
+                                      className="text-card-foreground font-medium cursor-pointer"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       Recording {index + 1}
                                     </label>
-                                    <Badge className="bg-blue-700/50 text-blue-100 border-0">
+                                    <Badge className="bg-muted/50 text-muted-foreground border-0">
                                       Transcript
                                     </Badge>
-                                    <span className="text-xs text-blue-300 ml-1">
+                                    <span className="text-xs text-muted-foreground ml-1">
                                       <ClientSideDate
                                         timestamp={action.timestamp}
                                       />
@@ -1581,7 +1592,7 @@ export function CurrentCaseContent() {
                                           handleActionDeselect();
                                         }
                                       }}
-                                      className="h-4 w-4 rounded border-blue-700 text-blue-600 focus:ring-blue-500 mr-3"
+                                      className="h-4 w-4 rounded border-muted/70 text-muted-foreground focus:ring-blue-500 mr-3"
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                     <Button
@@ -1591,7 +1602,7 @@ export function CurrentCaseContent() {
                                         e.stopPropagation();
                                         toggleExpanded();
                                       }}
-                                      className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                                      className="h-8 w-8 p-0 text-card-foreground hover:bg-muted/30"
                                     >
                                       {isTranscriptExpanded ? (
                                         <ChevronUp className="h-5 w-5" />
@@ -1603,7 +1614,7 @@ export function CurrentCaseContent() {
                                 </div>
                                 {!isTranscriptExpanded && (
                                   <div
-                                    className="text-blue-50/80 text-sm mt-2 cursor-pointer line-clamp-1"
+                                    className="text-muted-foreground/80 text-sm mt-2 cursor-pointer line-clamp-1"
                                     onClick={toggleExpanded}
                                   >
                                     {action.content.transcript}
@@ -1613,7 +1624,7 @@ export function CurrentCaseContent() {
                               {isTranscriptExpanded && (
                                 <CardContent className="p-4 pt-0">
                                   <div
-                                    className="text-blue-50 text-sm mt-2 whitespace-pre-line"
+                                    className="text-muted-foreground text-sm mt-2 whitespace-pre-line"
                                     onClick={() => {
                                       // Toggle the recording selection when clicked
                                       useCaseStore
@@ -1636,11 +1647,11 @@ export function CurrentCaseContent() {
                         })
                     ) : (
                       <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <Clipboard className="h-12 w-12 text-blue-700/50 mb-3" />
-                        <h3 className="text-lg font-medium text-blue-50 mb-1">
+                        <Clipboard className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                        <h3 className="text-lg font-medium text-card-foreground mb-1">
                           No Transcriptions Yet
                         </h3>
-                        <p className="text-blue-300 max-w-md text-sm">
+                        <p className="text-muted-foreground max-w-md text-sm">
                           Record your case notes to create transcripts.
                         </p>
                       </div>
@@ -1649,7 +1660,7 @@ export function CurrentCaseContent() {
 
                   {/* Generations Section */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-blue-50 border-b border-blue-800/30 pb-2">
+                    <h3 className="text-lg font-medium text-card-foreground border-b border-muted/30 pb-2">
                       Generations
                     </h3>
                     {actions.filter((action) => action.type === "soap").length >
@@ -1735,19 +1746,21 @@ export function CurrentCaseContent() {
                           return (
                             <Card
                               key={action.id}
-                              className={`bg-blue-900/20 border-blue-700/30 ${
+                              className={`bg-muted/20 border-muted/30 ${
                                 isSoapSelected ? "ring-2 ring-green-400" : ""
                               }`}
                             >
                               <CardHeader className="p-4 pb-2">
                                 <div className="flex justify-between items-center w-full">
-                                  <div 
+                                  <div
                                     className="flex items-center gap-2 flex-1 cursor-pointer"
-                                    onClick={() => toggleSoapExpanded(action.id)}
+                                    onClick={() =>
+                                      toggleSoapExpanded(action.id)
+                                    }
                                   >
                                     <label
                                       htmlFor={`soap-${action.id}`}
-                                      className="text-blue-50 font-medium cursor-pointer"
+                                      className="text-card-foreground font-medium cursor-pointer"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       {templateName} {index + 1}
@@ -1757,7 +1770,7 @@ export function CurrentCaseContent() {
                                     >
                                       {isSoapFormat ? "SOAP" : "Template"}
                                     </Badge>
-                                    <span className="text-xs text-blue-300 ml-1">
+                                    <span className="text-xs text-muted-foreground ml-1">
                                       <ClientSideDate
                                         timestamp={action.timestamp}
                                       />
@@ -1784,7 +1797,7 @@ export function CurrentCaseContent() {
                                       onClick={() =>
                                         toggleSoapExpanded(action.id)
                                       }
-                                      className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                                      className="h-8 w-8 p-0 text-card-foreground hover:bg-muted/30"
                                     >
                                       {isSoapExpanded ? (
                                         <ChevronUp className="h-5 w-5" />
@@ -1817,7 +1830,7 @@ export function CurrentCaseContent() {
                                                 !allExpanded
                                               );
                                             }}
-                                            className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
+                                            className="h-7 px-2 text-xs text-muted-foreground hover:text-muted-foreground hover:bg-muted/20"
                                             title={
                                               Object.values(
                                                 expandedSoapSections[
@@ -1849,7 +1862,7 @@ export function CurrentCaseContent() {
                                             onClick={() =>
                                               handleEditSoap(action)
                                             }
-                                            className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-800/20"
+                                            className="h-7 px-2 text-xs text-muted-foreground hover:text-muted-foreground hover:bg-muted/20"
                                             title="Edit SOAP notes"
                                           >
                                             <Edit className="h-3 w-3 mr-1" />
@@ -1858,22 +1871,26 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Subjective */}
-                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
                                           <div
-                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              setExpandedSoapSections((prev) => ({
-                                                ...prev,
-                                                [action.id]: {
-                                                  ...prev[action.id],
-                                                  subjective: !prev[action.id].subjective
-                                                }
-                                              }));
+                                              setExpandedSoapSections(
+                                                (prev) => ({
+                                                  ...prev,
+                                                  [action.id]: {
+                                                    ...prev[action.id],
+                                                    subjective:
+                                                      !prev[action.id]
+                                                        .subjective,
+                                                  },
+                                                })
+                                              );
                                             }}
                                           >
-                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
-                                              <Badge className="bg-blue-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
+                                            <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                                              <Badge className="bg-muted text-muted-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
                                                 S
                                               </Badge>
                                               Subjective
@@ -1882,7 +1899,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                className="h-6 text-xs text-muted-foreground"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
@@ -1901,7 +1918,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                                className="h-6 w-6 p-0 text-card-foreground"
                                               >
                                                 {expandedSoapSections[action.id]
                                                   .subjective ? (
@@ -1915,7 +1932,7 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .subjective && (
                                             <div
-                                              className="p-3 text-blue-50 text-sm"
+                                              className="p-3 text-muted-foreground text-sm"
                                               dangerouslySetInnerHTML={{
                                                 __html:
                                                   parsedSoap?.subjective || "",
@@ -1925,21 +1942,25 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Objective */}
-                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
                                           <div
-                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              setExpandedSoapSections((prev) => ({
-                                                ...prev,
-                                                [action.id]: {
-                                                  ...prev[action.id],
-                                                  objective: !prev[action.id].objective
-                                                }
-                                              }));
+                                              setExpandedSoapSections(
+                                                (prev) => ({
+                                                  ...prev,
+                                                  [action.id]: {
+                                                    ...prev[action.id],
+                                                    objective:
+                                                      !prev[action.id]
+                                                        .objective,
+                                                  },
+                                                })
+                                              );
                                             }}
                                           >
-                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                            <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                               <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
                                                 O
                                               </Badge>
@@ -1949,7 +1970,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                className="h-6 text-xs text-muted-foreground"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
@@ -1968,7 +1989,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                                className="h-6 w-6 p-0 text-card-foreground"
                                               >
                                                 {expandedSoapSections[action.id]
                                                   .objective ? (
@@ -1982,7 +2003,7 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .objective && (
                                             <div
-                                              className="p-3 text-blue-50 text-sm"
+                                              className="p-3 text-muted-foreground text-sm"
                                               dangerouslySetInnerHTML={{
                                                 __html:
                                                   parsedSoap?.objective || "",
@@ -1992,21 +2013,25 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Assessment */}
-                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
                                           <div
-                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              setExpandedSoapSections((prev) => ({
-                                                ...prev,
-                                                [action.id]: {
-                                                  ...prev[action.id],
-                                                  assessment: !prev[action.id].assessment
-                                                }
-                                              }));
+                                              setExpandedSoapSections(
+                                                (prev) => ({
+                                                  ...prev,
+                                                  [action.id]: {
+                                                    ...prev[action.id],
+                                                    assessment:
+                                                      !prev[action.id]
+                                                        .assessment,
+                                                  },
+                                                })
+                                              );
                                             }}
                                           >
-                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                            <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                               <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
                                                 A
                                               </Badge>
@@ -2016,7 +2041,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                className="h-6 text-xs text-muted-foreground"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
@@ -2035,7 +2060,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                                className="h-6 w-6 p-0 text-card-foreground"
                                               >
                                                 {expandedSoapSections[action.id]
                                                   .assessment ? (
@@ -2049,7 +2074,7 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .assessment && (
                                             <div
-                                              className="p-3 text-blue-50 text-sm"
+                                              className="p-3 text-muted-foreground text-sm"
                                               dangerouslySetInnerHTML={{
                                                 __html:
                                                   parsedSoap?.assessment || "",
@@ -2059,21 +2084,23 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Plan */}
-                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
                                           <div
-                                            className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
+                                            className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              setExpandedSoapSections((prev) => ({
-                                                ...prev,
-                                                [action.id]: {
-                                                  ...prev[action.id],
-                                                  plan: !prev[action.id].plan
-                                                }
-                                              }));
+                                              setExpandedSoapSections(
+                                                (prev) => ({
+                                                  ...prev,
+                                                  [action.id]: {
+                                                    ...prev[action.id],
+                                                    plan: !prev[action.id].plan,
+                                                  },
+                                                })
+                                              );
                                             }}
                                           >
-                                            <h4 className="text-blue-100 flex items-center text-sm font-medium">
+                                            <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                               <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
                                                 P
                                               </Badge>
@@ -2083,7 +2110,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                                className="h-6 text-xs text-muted-foreground"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
@@ -2102,7 +2129,7 @@ export function CurrentCaseContent() {
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-6 w-6 p-0 text-blue-200 hover:text-blue-50"
+                                                className="h-6 w-6 p-0 text-card-foreground"
                                               >
                                                 {expandedSoapSections[action.id]
                                                   .plan ? (
@@ -2116,7 +2143,7 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .plan && (
                                             <div
-                                              className="p-3 text-blue-50 text-sm"
+                                              className="p-3 text-muted-foreground text-sm"
                                               dangerouslySetInnerHTML={{
                                                 __html: parsedSoap?.plan || "",
                                               }}
@@ -2130,7 +2157,7 @@ export function CurrentCaseContent() {
                                           <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="h-6 text-xs text-blue-400 hover:text-blue-300"
+                                            className="h-6 text-xs text-muted-foreground"
                                             onClick={() => {
                                               navigator.clipboard.writeText(
                                                 parsedSoap?.plan || ""
@@ -2146,8 +2173,8 @@ export function CurrentCaseContent() {
                                             Copy
                                           </Button>
                                         </div>
-                                        <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                          <div className="p-3 text-blue-50 text-sm whitespace-pre-wrap">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
+                                          <div className="p-3 text-muted-foreground text-sm whitespace-pre-wrap">
                                             {parsedSoap?.plan || ""}
                                           </div>
                                         </div>
@@ -2160,11 +2187,11 @@ export function CurrentCaseContent() {
                         })
                     ) : (
                       <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <Clipboard className="h-12 w-12 text-blue-700/50 mb-3" />
-                        <h3 className="text-lg font-medium text-blue-50 mb-1">
+                        <Clipboard className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                        <h3 className="text-lg font-medium text-card-foreground mb-1">
                           No Generations Yet
                         </h3>
-                        <p className="text-blue-300 max-w-md text-sm">
+                        <p className="text-muted-foreground max-w-md text-sm">
                           Select one or more transcripts and generate SOAP
                           notes.
                         </p>
@@ -2174,11 +2201,11 @@ export function CurrentCaseContent() {
 
                   {actions.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Clipboard className="h-16 w-16 text-blue-700/50 mb-4" />
-                      <h3 className="text-xl font-medium text-blue-50 mb-2">
+                      <Clipboard className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                      <h3 className="text-xl font-medium text-card-foreground mb-2">
                         No Case Actions Yet
                       </h3>
-                      <p className="text-blue-300 max-w-md">
+                      <p className="text-muted-foreground max-w-md">
                         Record your case notes to create transcripts and
                         generate SOAP notes.
                       </p>
@@ -2188,11 +2215,11 @@ export function CurrentCaseContent() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Clipboard className="h-16 w-16 text-blue-700/50 mb-4" />
-                <h3 className="text-xl font-medium text-blue-50 mb-2">
+                <Clipboard className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <h3 className="text-xl font-medium text-card-foreground mb-2">
                   No Case Actions Yet
                 </h3>
-                <p className="text-blue-300 max-w-md">
+                <p className="text-muted-foreground max-w-md">
                   Record your case notes to create transcripts and generate SOAP
                   notes.
                 </p>
@@ -2203,23 +2230,23 @@ export function CurrentCaseContent() {
 
         {/* Case Summary Card */}
         {actions.length > 0 && (
-          <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
+          <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
             <CardHeader
-              className="border-b border-blue-800/30 bg-blue-900/20 cursor-pointer"
+              className="border-b border-border bg-muted/20 cursor-pointer"
               onClick={() => {
                 // Add state for case summary collapse
                 setCaseSummaryCollapsed(!caseSummaryCollapsed);
               }}
             >
               <div className="flex justify-between items-center">
-                <CardTitle className="text-blue-50 flex items-center">
-                  <Stethoscope className="h-5 w-5 mr-2 text-blue-300" />
+                <CardTitle className="text-card-foreground flex items-center">
+                  <Stethoscope className="h-5 w-5 mr-2 text-card-foreground" />
                   Case Summary
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
+                  className="h-7 w-7 p-0 text-card-foreground hover:bg-muted/30"
                 >
                   {caseSummaryCollapsed ? (
                     <ChevronDown className="h-5 w-5" />
@@ -2232,42 +2259,42 @@ export function CurrentCaseContent() {
             {!caseSummaryCollapsed && (
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-blue-900/30 backdrop-blur-sm border-blue-800/20 rounded-xl p-4 shadow-md shadow-blue-950/20">
+                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20">
                     <div className="flex items-center">
-                      <div className="rounded-full bg-blue-700/30 p-2 mr-2">
-                        <Clock className="h-5 w-5 text-blue-200" />
+                      <div className="rounded-full bg-muted/30 p-2 mr-2">
+                        <Clock className="h-5 w-5 text-card-foreground" />
                       </div>
-                      <span className="text-xs text-blue-300/90">
+                      <span className="text-xs text-muted-foreground/90">
                         Recording Time
                       </span>
                     </div>
                     <div className="mt-3">
-                      <span className="text-2xl font-bold text-blue-50">
+                      <span className="text-2xl font-bold text-card-foreground">
                         {formatTime(
                           actions.filter(
                             (action) => action.type === "recording"
                           ).length * 60
                         )}
                       </span>
-                      <p className="text-xs text-blue-300/90 mt-1">
+                      <p className="text-xs text-muted-foreground/90 mt-1">
                         Total recording duration
                       </p>
                     </div>
                   </div>
-                  <div className="bg-blue-900/30 backdrop-blur-sm border-blue-800/20 rounded-xl p-4 shadow-md shadow-blue-950/20">
+                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20">
                     <div className="flex items-center">
-                      <div className="rounded-full bg-blue-700/30 p-2 mr-2">
-                        <FileText className="h-5 w-5 text-blue-200" />
+                      <div className="rounded-full bg-muted/30 p-2 mr-2">
+                        <FileText className="h-5 w-5 text-card-foreground" />
                       </div>
-                      <span className="text-xs text-blue-300/90">
+                      <span className="text-xs text-muted-foreground/90">
                         Case Actions
                       </span>
                     </div>
                     <div className="mt-3">
-                      <span className="text-2xl font-bold text-blue-50">
+                      <span className="text-2xl font-bold text-card-foreground">
                         {actions.length}
                       </span>
-                      <p className="text-xs text-blue-300/90 mt-1">
+                      <p className="text-xs text-muted-foreground/90 mt-1">
                         <span className="font-medium">
                           {
                             actions.filter(
@@ -2286,12 +2313,12 @@ export function CurrentCaseContent() {
                       </p>
                     </div>
                   </div>
-                  <div className="bg-blue-900/30 backdrop-blur-sm border-blue-800/20 rounded-xl p-4 shadow-md shadow-blue-950/20">
+                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20">
                     <div className="flex items-center">
-                      <div className="rounded-full bg-blue-700/30 p-2 mr-2">
-                        <ClipboardCheck className="h-5 w-5 text-blue-200" />
+                      <div className="rounded-full bg-muted/30 p-2 mr-2">
+                        <ClipboardCheck className="h-5 w-5 text-card-foreground" />
                       </div>
-                      <span className="text-xs text-blue-300/90">
+                      <span className="text-xs text-muted-foreground/90">
                         SOAP Progress
                       </span>
                     </div>
@@ -2300,10 +2327,10 @@ export function CurrentCaseContent() {
                         {actions.filter((action) => action.type === "soap")
                           .length > 0 ? (
                           <>
-                            <span className="text-2xl font-bold text-blue-50">
+                            <span className="text-2xl font-bold text-card-foreground">
                               Complete
                             </span>
-                            <Badge className="ml-2 bg-green-800/40 text-green-300 border-blue-700/30">
+                            <Badge className="ml-2 bg-success/40 text-success-foreground border-muted/30">
                               {
                                 actions.filter(
                                   (action) => action.type === "soap"
@@ -2314,10 +2341,10 @@ export function CurrentCaseContent() {
                           </>
                         ) : (
                           <>
-                            <span className="text-2xl font-bold text-blue-50">
+                            <span className="text-2xl font-bold text-card-foreground">
                               Pending
                             </span>
-                            <Badge className="ml-2 bg-amber-800/40 text-amber-300 border-blue-700/30">
+                            <Badge className="ml-2 bg-warning/40 text-warning-foreground border-muted/30">
                               0 generated
                             </Badge>
                           </>
@@ -2357,7 +2384,7 @@ export function CurrentCaseContent() {
         <div className="fixed bottom-4 right-4 z-50">
           <Button
             onClick={handleEmailClick}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Mail className="h-4 w-4" />
             Email
@@ -2367,10 +2394,12 @@ export function CurrentCaseContent() {
 
       {/* Add email dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="sm:max-w-md bg-blue-950 border-blue-800">
+        <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-blue-50">Send Email</DialogTitle>
-            <DialogDescription className="text-blue-200">
+            <DialogTitle className="text-card-foreground">
+              Send Email
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Send the selected case action by email.
             </DialogDescription>
           </DialogHeader>
@@ -2378,7 +2407,7 @@ export function CurrentCaseContent() {
             <div className="space-y-2">
               <label
                 htmlFor="from"
-                className="text-sm font-medium text-blue-200"
+                className="text-sm font-medium text-muted-foreground"
               >
                 From Email
               </label>
@@ -2388,11 +2417,14 @@ export function CurrentCaseContent() {
                 value={emailFrom}
                 onChange={(e) => setEmailFrom(e.target.value)}
                 placeholder="clinic@example.com"
-                className="bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50"
+                className="bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="to" className="text-sm font-medium text-blue-200">
+              <label
+                htmlFor="to"
+                className="text-sm font-medium text-muted-foreground"
+              >
                 To Email
               </label>
               <Input
@@ -2401,7 +2433,7 @@ export function CurrentCaseContent() {
                 value={emailTo}
                 onChange={(e) => setEmailTo(e.target.value)}
                 placeholder="owner@example.com"
-                className="bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50"
+                className="bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
               />
             </div>
           </div>
@@ -2412,7 +2444,7 @@ export function CurrentCaseContent() {
               onClick={() => {
                 setShowEmailDialog(false);
               }}
-              className="text-blue-200 hover:text-blue-100 hover:bg-blue-800/30"
+              className="text-muted-foreground hover:text-muted-foreground/90 hover:bg-muted/30"
             >
               Cancel
             </Button>
@@ -2420,7 +2452,7 @@ export function CurrentCaseContent() {
               type="submit"
               onClick={handleSendEmail}
               disabled={isSendingEmail || !emailTo || !emailFrom}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isSendingEmail ? (
                 <>
