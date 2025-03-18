@@ -53,9 +53,7 @@ interface AppointmentsTableProps {
   pageSize: number;
   totalCount: number;
   onPageChange: (page: number) => void;
-  onStatusChange?: (status: string) => void;
-  onSearchChange?: (search: string) => void;
-  onDateChange?: (date: string) => void;
+  isLoading?: boolean;
 }
 
 export function AppointmentsTable({
@@ -65,17 +63,9 @@ export function AppointmentsTable({
   pageSize,
   totalCount,
   onPageChange,
-  onStatusChange,
-  onSearchChange,
-  onDateChange,
+  isLoading = false,
 }: AppointmentsTableProps) {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  // Don't set a default date - this caused confusion with filtering
-  const [date, setDate] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<"all" | "case-management">("all");
-  const [activeTab, setActiveTab] = useState("all");
 
   // Sidebar state
   const [selectedAppointment, setSelectedAppointment] =
@@ -83,195 +73,6 @@ export function AppointmentsTable({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const totalPages = Math.ceil(totalCount / pageSize);
-
-  // Initial load effect - load all appointments without filters
-  useEffect(() => {
-    // If we have appointments already, no need to fetch
-    if (appointments.length === 0) {
-      console.log("Initial load - fetching all appointments without filters");
-      // Use empty strings for all filters to get all appointments
-      fetchAppointments(0, pageSize, "", "", "");
-    }
-  }, [appointments.length]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Search submitted with:", search);
-
-    // Always use the fetchAppointments function to ensure everything stays in sync
-    await fetchAppointments(
-      0, // Reset to first page
-      pageSize,
-      search,
-      date ? format(date, "yyyy-MM-dd") : "",
-      activeTab === "all" ? "" : activeTab
-    );
-  };
-
-  const handleDateSelect = (newDate: Date | undefined) => {
-    console.log("handleDateSelect called with date:", newDate);
-
-    // Format date as YYYY-MM-DD to match API expectations
-    let formattedDate = "";
-
-    if (newDate) {
-      try {
-        // Ensure correct timezone handling - use UTC for consistency
-        formattedDate = format(newDate, "yyyy-MM-dd");
-        console.log("Formatted date for API:", formattedDate);
-
-        // IMPORTANT: Force update the displayed date in button
-        setDate(newDate);
-      } catch (e) {
-        console.error("Error formatting date:", e);
-        formattedDate = "";
-        setDate(null);
-      }
-    } else {
-      console.log("Clearing date filter");
-      setDate(null);
-    }
-
-    // Get current status filter
-    const statusFilter = activeTab === "all" ? "" : activeTab;
-    console.log("Using status filter with date:", statusFilter);
-
-    // Call the parent's onDateChange directly for immediate update
-    if (onDateChange) {
-      console.log("Calling parent's onDateChange with:", formattedDate);
-      onDateChange(formattedDate);
-    }
-
-    // Always use fetchAppointments to keep everything in sync
-    fetchAppointments(
-      0, // Reset to first page
-      pageSize,
-      search,
-      formattedDate,
-      statusFilter
-    );
-  };
-
-  const handlePageChange = async (newPage: number) => {
-    await fetchAppointments(
-      newPage,
-      pageSize,
-      search,
-      date ? format(date, "yyyy-MM-dd") : ""
-    );
-  };
-
-  const handleClearFilters = async () => {
-    console.log("Clearing all filters in AppointmentsTable");
-
-    // Clear local state
-    setSearch("");
-    setDate(null);
-    setActiveTab("all");
-
-    // Important: Only after clearing local state, update parent state through fetchAppointments
-    await fetchAppointments(0, pageSize, "", "", ""); // Pass empty strings for all filters
-
-    // Show visual confirmation
-    toast({
-      title: "Filters cleared",
-      description: "Showing all appointments",
-    });
-  };
-
-  // Synchronizes the local and parent state for filters and pagination
-  const fetchAppointments = async (
-    pageNum: number,
-    size: number,
-    query: string,
-    dateFilter: string,
-    statusFilter: string = ""
-  ) => {
-    setIsLoading(true);
-    try {
-      // Verify that the status filter is valid
-      let apiStatusFilter = statusFilter;
-      // Make sure we only use valid status values
-      if (
-        statusFilter &&
-        !["ongoing", "completed", "reviewed", "exported"].includes(
-          statusFilter.toLowerCase()
-        )
-      ) {
-        console.log("Ignoring invalid status filter:", statusFilter);
-        apiStatusFilter = ""; // Use empty string for invalid statuses
-      }
-
-      console.log("AppointmentsTable.fetchAppointments called with:", {
-        pageNum,
-        size,
-        query,
-        dateFilter,
-        statusFilter, // Original value
-        apiStatusFilter, // Value that will be sent to API
-      });
-
-      // Update local state first
-      setSearch(query || "");
-
-      // Update date state if provided
-      if (dateFilter) {
-        try {
-          const parsedDate = new Date(dateFilter);
-          console.log("Setting date state to:", parsedDate);
-          setDate(parsedDate);
-        } catch (e) {
-          console.error("Error parsing date:", e);
-          setDate(null);
-        }
-      } else {
-        setDate(null);
-      }
-
-      // Update status tab state based on status filter
-      if (statusFilter === "") {
-        // Empty status filter means "all"
-        console.log("Setting activeTab to 'all'");
-        setActiveTab("all");
-      } else {
-        // First create a reverse mapping from status value to tab name
-        const statusToTab: Record<string, string> = {
-          "": "all",
-          ongoing: "ongoing",
-          completed: "completed",
-          exported: "exported",
-          reviewed: "reviewed",
-        };
-
-        const tabValue = statusToTab[statusFilter] || "all";
-        console.log(
-          `Setting activeTab to '${tabValue}' based on statusFilter '${statusFilter}'`
-        );
-        setActiveTab(tabValue);
-      }
-
-      // Then use the provided callbacks to update parent state
-      if (onSearchChange) onSearchChange(query);
-      if (onDateChange) onDateChange(dateFilter);
-      if (onStatusChange) onStatusChange(apiStatusFilter); // Use the API-compatible value
-      onPageChange(pageNum + 1); // Page is 1-indexed in parent but 0-indexed here
-
-      // Show toast for user feedback
-      toast({
-        title: "Filters applied",
-        description: "The appointments list has been updated",
-      });
-    } catch (error) {
-      console.error("Error applying filters:", error);
-      toast({
-        title: "Error",
-        description: "Failed to apply filters",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -290,19 +91,6 @@ export function AppointmentsTable({
     }
   };
 
-  // Filter appointments by status for the case management view
-  const filterAppointmentsByStatus = (status: string) => {
-    return appointments.filter(
-      (apt) => apt.status.toLowerCase() === status.toLowerCase()
-    );
-  };
-
-  // Only use valid status values
-  const ongoingAppointments = filterAppointmentsByStatus("ongoing");
-  const completedAppointments = filterAppointmentsByStatus("completed");
-  const exportedAppointments = filterAppointmentsByStatus("exported");
-  const reviewedAppointments = filterAppointmentsByStatus("reviewed");
-
   // Handle appointment selection and sidebar open/close
   const handleViewAppointment = (appointment: AppointmentData) => {
     console.log("View appointment clicked for:", appointment.id);
@@ -316,163 +104,14 @@ export function AppointmentsTable({
     setIsSidebarOpen(false);
   };
 
+  const handlePageChange = (newPage: number) => {
+    onPageChange(newPage + 1); // Convert to 1-indexed for parent
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-card border-border shadow-md">
         <CardContent className="p-6">
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            {/* Search Form */}
-            <form
-              onSubmit={handleSearch}
-              className="flex items-center space-x-2 w-full sm:w-1/2"
-            >
-              <Input
-                placeholder="Search appointments..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={cn(
-                  "w-full bg-muted/20 border-input focus-visible:ring-ring",
-                  search ? "text-foreground font-medium" : "text-muted-foreground"
-                )}
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground border-border"
-              >
-                <SearchIcon className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-            </form>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-              <div className="flex gap-2">
-                {/* Status Filter */}
-                <Select
-                  value={activeTab || "all"}
-                  onValueChange={(value) => {
-                    setActiveTab(value);
-                    // IMPORTANT: Only use valid enum values (ongoing, completed, reviewed, exported)
-                    // There is no "scheduled" status in the database
-                    const statusMap: Record<string, string> = {
-                      all: "",
-                      ongoing: "ongoing",
-                      completed: "completed",
-                      exported: "exported",
-                      reviewed: "reviewed",
-                    };
-
-                    const mappedStatus = statusMap[value] || "";
-                    console.log(
-                      "Status changed to:",
-                      value,
-                      "mapped to:",
-                      mappedStatus
-                    );
-
-                    // Always use fetchAppointments to keep everything in sync
-                    fetchAppointments(
-                      0, // Reset to first page
-                      pageSize,
-                      search,
-                      date ? format(date, "yyyy-MM-dd") : "",
-                      mappedStatus
-                    );
-                  }}
-                >
-                  <SelectTrigger className="bg-muted/20 border-input text-foreground w-[160px]">
-                    <SelectValue>
-                      {(() => {
-                        switch(activeTab) {
-                          case 'ongoing': return 'Ongoing';
-                          case 'completed': return 'Completed';
-                          case 'exported': return 'Exported';
-                          case 'reviewed': return 'Reviewed';
-                          case 'all': default: return 'All Status';
-                        }
-                      })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="ongoing">Ongoing</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="exported">Exported</SelectItem>
-                    <SelectItem value="reviewed">Reviewed</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Date Picker */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "bg-muted/20 border-input w-[160px]",
-                        date ? "text-foreground font-medium" : "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "MMM d, yyyy") : "Date Filter"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto p-0 bg-card border-border"
-                    align="end"
-                  >
-                    <div className="p-2">
-                      <Calendar
-                        mode="single"
-                        selected={date || undefined}
-                        onSelect={(newDate) => {
-                          console.log("Calendar date selected:", newDate);
-                          // Call handleDateSelect which will update the UI and trigger the filter
-                          handleDateSelect(newDate);
-                        }}
-                        initialFocus
-                      />
-                      {date && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="mt-2 w-full text-muted-foreground"
-                          onClick={() => handleDateSelect(undefined)}
-                        >
-                          Clear Date
-                        </Button>
-                      )}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Clear Filters */}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  console.log("Clear Filters button clicked");
-                  // First clear the UI state
-                  setSearch("");
-                  setDate(null);
-                  setActiveTab("all");
-
-                  // Then call the handler
-                  handleClearFilters();
-                }}
-                className={cn(
-                  "whitespace-nowrap border-border",
-                  (search || date || activeTab !== "all") 
-                    ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground font-medium" 
-                    : "bg-muted/20 hover:bg-muted/30 text-muted-foreground"
-                )}
-                disabled={!search && !date && activeTab === "all"}
-              >
-                {(search || date || activeTab !== "all") ? "Clear Filters" : "No Filters"}
-              </Button>
-            </div>
-          </div>
-
           {/* Appointments Table */}
           <div className="overflow-x-auto">
             <Table>
@@ -496,7 +135,19 @@ export function AppointmentsTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {appointments.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-6 text-muted-foreground"
+                    >
+                      <div className="flex justify-center items-center py-4">
+                        <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+                        <span className="ml-2">Loading appointments...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : appointments.length > 0 ? (
                   appointments.map((appointment) => (
                     <TableRow
                       key={appointment.id}

@@ -234,7 +234,7 @@ export default function AppointmentsPage() {
   };
 
   // Handle date filter change
-  const handleDateChange = (date: Date | null) => {
+  const handleDateChange = (date: Date | null | string) => {
     // Ensure the date is properly set in the state
     if (date && date instanceof Date && !isNaN(date.getTime())) {
       console.log("Setting parent date filter to:", date);
@@ -283,6 +283,73 @@ export default function AppointmentsPage() {
           />
           Refresh
         </Button>
+      </div>
+
+      {/* Add filter controls section */}
+      <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex items-center gap-2">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search appointments..."
+                className="pl-8 w-[250px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button type="submit" variant="secondary">
+              Search
+            </Button>
+          </form>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <DatePickerDemo
+            date={dateFilter}
+            setDate={handleDateChange}
+            placeholder="Filter by date"
+          />
+          {dateFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDateChange(null)}
+              className="h-8 px-2"
+            >
+              ✕
+            </Button>
+          )}
+        </div>
+
+        {/* Add status filter dropdown */}
+        <div className="flex items-center gap-2">
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0); // Reset to first page when changing status
+            }}
+          >
+            <option value="">All Statuses</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="no-show">No Show</option>
+          </select>
+          {statusFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusFilter("")}
+              className="h-8 px-2"
+            >
+              ✕
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading ? (
