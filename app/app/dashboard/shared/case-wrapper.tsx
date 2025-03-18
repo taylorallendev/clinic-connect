@@ -60,7 +60,7 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
 
   if (isLoading || isAppointmentLoading) {
     return (
-      <div className="flex items-center justify-center h-full text-blue-50">
+      <div className="flex items-center justify-center h-full text-card-foreground">
         <Loader2 className="w-8 h-8 mr-2 animate-spin" />
         <span>Loading case data...</span>
       </div>
@@ -69,7 +69,7 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
 
   if (appointmentId && error) {
     return (
-      <div className="flex items-center justify-center h-full text-red-400">
+      <div className="flex items-center justify-center h-full text-destructive">
         <span>Error loading case: {error.message}</span>
       </div>
     );
@@ -83,7 +83,7 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
           <Button 
             variant="outline" 
             size="sm"
-            className="bg-blue-900/20 border-blue-700/30 text-blue-100 hover:bg-blue-800/30"
+            className="bg-muted/20 border-border text-muted-foreground hover:bg-muted/40"
             asChild
           >
             <Link href="/app/dashboard/appointments">

@@ -10,7 +10,7 @@ interface CasePageProps {
 
 export default function CasePage({ params }: CasePageProps) {
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-br from-blue-950 to-indigo-950">
+    <div className="flex-1 overflow-auto bg-background">
       <Suspense fallback={<CurrentCaseSkeleton />}>
         <CaseWrapper appointmentId={params.id} />
       </Suspense>

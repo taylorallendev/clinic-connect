@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Copy, CheckCircle } from "lucide-react";
+import { FileText, Copy, CheckCircle, ClipboardCheck, Clipboard } from "lucide-react";
 import { AppointmentData, CaseAction } from "@/store/use-case-store";
-import { useAppointment } from "@/hooks/use-appointment"; // You'll need to create this hook
+import { useAppointment } from "@/hooks/use-appointment";
 import { MarkdownRenderer } from "@/components/ui/markdown";
 
 interface CaseViewProps {
@@ -120,142 +122,225 @@ export function CaseView({ appointmentId }: CaseViewProps) {
     appointment.case_actions?.filter((action) => action.type === "soap") || [];
 
   return (
-    <div className="container mx-auto max-w-5xl py-8">
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-950/95 p-6 rounded-lg">
-          <div>
-            <h2 className="text-2xl font-semibold text-blue-50 mb-6">
+    <div className="flex flex-col space-y-6 p-6 bg-background">
+      <div className="space-y-6">
+        {/* Case Details Card */}
+        <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/20">
+            <CardTitle className="text-card-foreground flex items-center">
+              <FileText className="h-5 w-5 mr-2 text-card-foreground" />
               Case Details
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">
-                  Date & Time
-                </h3>
-                <p className="text-blue-50 mt-1">
-                  {appointment.date} at {appointment.time}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">Patient</h3>
-                <p className="text-blue-50 mt-1">
-                  {appointment.patients?.name || "Unknown Patient"}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">Provider</h3>
-                <p className="text-blue-50 mt-1">
-                  {appointment.users?.name || "Unassigned"}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-blue-400">Type</h3>
-              <Badge
-                variant="outline"
-                className="mt-1 capitalize text-blue-100 border-blue-700/50"
-              >
-                {appointment.type?.replace("_", " ") || "General"}
-              </Badge>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-blue-400">Status</h3>
-              <Badge
-                className={`mt-1 capitalize ${getStatusColor(
-                  appointment.status
-                )} text-white`}
-              >
-                {appointment.status?.replace("_", " ") || "Scheduled"}
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        {soapActions.length > 0 && (
-          <div className="bg-blue-950/95 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold text-blue-50 mb-4">
-              SOAP Notes History
-            </h3>
-            <div className="space-y-4">
-              {soapActions.map((action) => (
-                <div key={action.id} className="bg-blue-900/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <FileText className="h-5 w-5 mr-2 text-blue-400" />
-                      <span className="font-medium text-blue-100">
-                        SOAP Note
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-blue-400">
-                        {formatDistanceToNow(new Date(action.timestamp), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(action)}
-                        className="text-blue-300 hover:text-blue-100 transition-colors"
-                        title="Copy to clipboard"
-                      >
-                        {copiedId === action.id ? (
-                          <CheckCircle className="h-5 w-5" />
-                        ) : (
-                          <Copy className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {action.content.soap && (
-                    <div className="text-sm text-blue-200 space-y-2">
-                      {(() => {
-                        const parsedSoap = parseSoapNotes(action);
-                        if (!parsedSoap) return null;
-
-                        return (
-                          <>
-                            <div>
-                              <span className="font-medium">Subjective:</span>
-                              <div className="mt-1">
-                                <MarkdownRenderer content={parsedSoap.subjective} className="text-blue-200" />
-                              </div>
-                            </div>
-                            {parsedSoap.objective && (
-                              <div>
-                                <span className="font-medium">Objective:</span>
-                                <div className="mt-1">
-                                  <MarkdownRenderer content={parsedSoap.objective} className="text-blue-200" />
-                                </div>
-                              </div>
-                            )}
-                            {parsedSoap.assessment && (
-                              <div>
-                                <span className="font-medium">Assessment:</span>
-                                <div className="mt-1">
-                                  <MarkdownRenderer content={parsedSoap.assessment} className="text-blue-200" />
-                                </div>
-                              </div>
-                            )}
-                            {parsedSoap.plan && (
-                              <div>
-                                <span className="font-medium">Plan:</span>
-                                <div className="mt-1">
-                                  <MarkdownRenderer content={parsedSoap.plan} className="text-blue-200" />
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-card-foreground mb-1">
+                    Date & Time
+                  </h3>
+                  <p className="text-card-foreground text-lg">
+                    {appointment.date} at {appointment.time}
+                  </p>
                 </div>
-              ))}
+                <div>
+                  <h3 className="text-sm font-medium text-card-foreground mb-1">
+                    Patient
+                  </h3>
+                  <p className="text-card-foreground text-lg">
+                    {appointment.patients?.name || "Unknown Patient"}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-card-foreground mb-1">
+                    Provider
+                  </h3>
+                  <p className="text-card-foreground text-lg">
+                    {appointment.users?.name || "Unassigned"}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Right Column */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-card-foreground mb-1">
+                    Type
+                  </h3>
+                  <Badge
+                    variant="outline"
+                    className="capitalize text-foreground border-border text-xs"
+                  >
+                    {appointment.type?.replace("_", " ") || "General"}
+                  </Badge>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-card-foreground mb-1">
+                    Status
+                  </h3>
+                  <Badge
+                    className={`capitalize text-white text-xs ${getStatusColor(appointment.status)}`}
+                  >
+                    {appointment.status?.replace("_", " ") || "Scheduled"}
+                  </Badge>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+
+        {/* SOAP Notes History Card */}
+        <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border bg-muted/20">
+            <CardTitle className="text-card-foreground flex items-center">
+              <ClipboardCheck className="h-5 w-5 mr-2 text-card-foreground" />
+              SOAP Notes History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {soapActions.length > 0 ? (
+              <div className="space-y-4">
+                {soapActions.map((action, index) => {
+                  const parsedSoap = parseSoapNotes(action);
+                  if (!parsedSoap) return null;
+                  
+                  const isSoapFormat = parsedSoap.subjective && parsedSoap.objective && 
+                                      parsedSoap.assessment && parsedSoap.plan;
+                  
+                  return (
+                    <Card key={action.id} className="bg-muted/20 border-muted/30 shadow-sm">
+                      <CardHeader className="p-4 pb-2">
+                        <div className="flex justify-between items-center w-full">
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-card-foreground font-medium">
+                              SOAP Note {index + 1}
+                            </span>
+                            <Badge className="bg-green-700/50 text-green-100 border-0">
+                              SOAP
+                            </Badge>
+                            <span className="text-xs text-muted-foreground ml-1">
+                              {formatDistanceToNow(new Date(action.timestamp), {
+                                addSuffix: true,
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(action)}
+                              className="h-7 px-2 text-xs text-muted-foreground hover:text-muted-foreground hover:bg-muted/20"
+                              title="Copy all SOAP notes"
+                            >
+                              {copiedId === action.id ? (
+                                <>
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  Copy
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Subjective Section */}
+                          <div className="border border-muted/30 rounded-lg overflow-hidden">
+                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                              <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                                <Badge className="bg-muted text-muted-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                                  S
+                                </Badge>
+                                Subjective
+                              </h4>
+                            </div>
+                            <div className="p-3 text-muted-foreground text-sm">
+                              <MarkdownRenderer 
+                                content={parsedSoap.subjective || ""} 
+                                className="text-muted-foreground" 
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Objective Section */}
+                          <div className="border border-muted/30 rounded-lg overflow-hidden">
+                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                              <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                                <Badge className="bg-success text-success-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                                  O
+                                </Badge>
+                                Objective
+                              </h4>
+                            </div>
+                            <div className="p-3 text-muted-foreground text-sm">
+                              <MarkdownRenderer 
+                                content={parsedSoap.objective || ""} 
+                                className="text-muted-foreground" 
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Assessment Section */}
+                          <div className="border border-muted/30 rounded-lg overflow-hidden">
+                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                              <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                                <Badge className="bg-info text-info-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                                  A
+                                </Badge>
+                                Assessment
+                              </h4>
+                            </div>
+                            <div className="p-3 text-muted-foreground text-sm">
+                              <MarkdownRenderer 
+                                content={parsedSoap.assessment || ""} 
+                                className="text-muted-foreground" 
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Plan Section */}
+                          <div className="border border-muted/30 rounded-lg overflow-hidden">
+                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                              <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                                <Badge className="bg-accent text-accent-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                                  P
+                                </Badge>
+                                Plan
+                              </h4>
+                            </div>
+                            <div className="p-3 text-muted-foreground text-sm">
+                              <MarkdownRenderer 
+                                content={parsedSoap.plan || ""} 
+                                className="text-muted-foreground" 
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Clipboard className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <h3 className="text-lg font-medium text-card-foreground mb-1">
+                  No SOAP Notes
+                </h3>
+                <p className="text-muted-foreground max-w-md text-sm">
+                  There are no SOAP notes associated with this case.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
