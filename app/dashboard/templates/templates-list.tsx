@@ -75,14 +75,14 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <Plus className="h-4 w-4 mr-2" />
           Create Template
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
+      <DialogContent className="sm:max-w-[425px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">
+          <DialogTitle className="text-card-foreground">
             Create New Template
           </DialogTitle>
         </DialogHeader>
@@ -93,15 +93,15 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Name</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      className="bg-muted/20 border-input"
                       placeholder="Template name"
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -110,24 +110,24 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Type</FormLabel>
+                  <FormLabel>Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50">
+                      <SelectTrigger className="bg-muted/20 border-input">
                         <SelectValue placeholder="Select a type" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-blue-900 border-blue-800">
+                    <SelectContent className="bg-card border-border">
                       <SelectItem value="soap">SOAP Note</SelectItem>
                       <SelectItem value="summary">Summary</SelectItem>
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="structured">Structured</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -136,21 +136,21 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Content</FormLabel>
+                  <FormLabel>Content</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      className="bg-muted/20 border-input"
                       placeholder="Template content"
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               Create Template
             </Button>
