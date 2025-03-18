@@ -265,6 +265,20 @@ export function CurrentCaseContent() {
         },
       });
 
+      // Make sure the sections remain expanded after editing
+      setExpandedSoapSections((prev) => ({
+        ...prev,
+        [editingSoapId]: {
+          subjective: true,
+          objective: true,
+          assessment: true,
+          plan: true,
+        },
+      }));
+
+      // Close the editor
+      handleCloseSoapEditor();
+
       // Update local state
       toast({
         title: "SOAP notes updated",
@@ -1773,7 +1787,9 @@ export function CurrentCaseContent() {
                                     <Badge
                                       className={`${isSoapFormat ? "bg-green-700/50 text-green-100" : "bg-purple-700/50 text-purple-100"} border-0`}
                                     >
-                                      {isSoapFormat ? "SOAP" : parsedSoap?.objective || "Template"}
+                                      {isSoapFormat
+                                        ? "SOAP"
+                                        : parsedSoap?.objective || "Template"}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground ml-1">
                                       <ClientSideDate
@@ -1937,9 +1953,11 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .subjective && (
                                             <div className="p-3 text-muted-foreground text-sm">
-                                              <MarkdownRenderer 
-                                                content={parsedSoap?.subjective || ""} 
-                                                className="text-muted-foreground" 
+                                              <MarkdownRenderer
+                                                content={
+                                                  parsedSoap?.subjective || ""
+                                                }
+                                                className="text-muted-foreground"
                                               />
                                             </div>
                                           )}
@@ -2007,9 +2025,11 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .objective && (
                                             <div className="p-3 text-muted-foreground text-sm">
-                                              <MarkdownRenderer 
-                                                content={parsedSoap?.objective || ""} 
-                                                className="text-muted-foreground" 
+                                              <MarkdownRenderer
+                                                content={
+                                                  parsedSoap?.objective || ""
+                                                }
+                                                className="text-muted-foreground"
                                               />
                                             </div>
                                           )}
@@ -2077,9 +2097,11 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .assessment && (
                                             <div className="p-3 text-muted-foreground text-sm">
-                                              <MarkdownRenderer 
-                                                content={parsedSoap?.assessment || ""} 
-                                                className="text-muted-foreground" 
+                                              <MarkdownRenderer
+                                                content={
+                                                  parsedSoap?.assessment || ""
+                                                }
+                                                className="text-muted-foreground"
                                               />
                                             </div>
                                           )}
@@ -2145,9 +2167,9 @@ export function CurrentCaseContent() {
                                           {expandedSoapSections[action.id]
                                             .plan && (
                                             <div className="p-3 text-muted-foreground text-sm">
-                                              <MarkdownRenderer 
-                                                content={parsedSoap?.plan || ""} 
-                                                className="text-muted-foreground" 
+                                              <MarkdownRenderer
+                                                content={parsedSoap?.plan || ""}
+                                                className="text-muted-foreground"
                                               />
                                             </div>
                                           )}
@@ -2189,9 +2211,9 @@ export function CurrentCaseContent() {
                                         </div>
                                         <div className="border border-muted/30 rounded-lg overflow-hidden">
                                           <div className="p-3 text-muted-foreground text-sm">
-                                            <MarkdownRenderer 
-                                              content={parsedSoap?.plan || ""} 
-                                              className="text-muted-foreground" 
+                                            <MarkdownRenderer
+                                              content={parsedSoap?.plan || ""}
+                                              className="text-muted-foreground"
                                             />
                                           </div>
                                         </div>
