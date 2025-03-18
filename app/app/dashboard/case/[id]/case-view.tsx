@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Copy, CheckCircle } from "lucide-react";
 import { AppointmentData, CaseAction } from "@/store/use-case-store";
 import { useAppointment } from "@/hooks/use-appointment"; // You'll need to create this hook
+import { MarkdownRenderer } from "@/components/ui/markdown";
 
 interface CaseViewProps {
   appointmentId: string;
@@ -100,9 +101,9 @@ export function CaseView({ appointmentId }: CaseViewProps) {
     const soap = parseSoapNotes(action);
     if (!soap) return;
 
-    const soapText = `Subjective: ${soap.subjective || "N/A"}\n\nObjective: ${
+    const soapText = `## Subjective\n${soap.subjective || "N/A"}\n\n## Objective\n${
       soap.objective || "N/A"
-    }\n\nAssessment: ${soap.assessment || "N/A"}\n\nPlan: ${
+    }\n\n## Assessment\n${soap.assessment || "N/A"}\n\n## Plan\n${
       soap.plan || "N/A"
     }`;
 
@@ -217,24 +218,32 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                           <>
                             <div>
                               <span className="font-medium">Subjective:</span>
-                              <p className="mt-1">{parsedSoap.subjective}</p>
+                              <div className="mt-1">
+                                <MarkdownRenderer content={parsedSoap.subjective} className="text-blue-200" />
+                              </div>
                             </div>
                             {parsedSoap.objective && (
                               <div>
                                 <span className="font-medium">Objective:</span>
-                                <p className="mt-1">{parsedSoap.objective}</p>
+                                <div className="mt-1">
+                                  <MarkdownRenderer content={parsedSoap.objective} className="text-blue-200" />
+                                </div>
                               </div>
                             )}
                             {parsedSoap.assessment && (
                               <div>
                                 <span className="font-medium">Assessment:</span>
-                                <p className="mt-1">{parsedSoap.assessment}</p>
+                                <div className="mt-1">
+                                  <MarkdownRenderer content={parsedSoap.assessment} className="text-blue-200" />
+                                </div>
                               </div>
                             )}
                             {parsedSoap.plan && (
                               <div>
                                 <span className="font-medium">Plan:</span>
-                                <p className="mt-1">{parsedSoap.plan}</p>
+                                <div className="mt-1">
+                                  <MarkdownRenderer content={parsedSoap.plan} className="text-blue-200" />
+                                </div>
                               </div>
                             )}
                           </>

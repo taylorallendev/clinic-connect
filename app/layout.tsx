@@ -35,15 +35,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen w-screen flex flex-col">
+          <main className="max-h-screen w-screen flex flex-col">
             <EmailButtonProvider>
-            <MicrophoneContextProvider>
-              <DeepgramContextProvider>
-                <div className="flex flex-col">{children}</div>
-                <Toaster />
-              </DeepgramContextProvider>
-            </MicrophoneContextProvider>
-            </EmailButtonProvider>``
+              <MicrophoneContextProvider>
+                <DeepgramContextProvider>
+                  <div className="flex flex-col">{children}</div>
+                  <Toaster />
+                </DeepgramContextProvider>
+              </MicrophoneContextProvider>
+            </EmailButtonProvider>
           </main>
         </ThemeProvider>
       </body>

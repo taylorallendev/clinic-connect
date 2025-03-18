@@ -67,6 +67,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { SoapNotesEditor } from "@/components/ui/soap-notes-editor";
+import { MarkdownRenderer } from "@/components/ui/markdown";
 import { useEmailButton } from "@/context/EmailButtonContext";
 import { simpleSendEmail } from "./email-actions";
 import {
@@ -1904,7 +1905,7 @@ export function CurrentCaseContent() {
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
-                                                    parsedSoap?.subjective || ""
+                                                    `## Subjective\n${parsedSoap?.subjective || ""}`
                                                   );
                                                   toast({
                                                     title: "Copied",
@@ -1932,13 +1933,12 @@ export function CurrentCaseContent() {
                                           </div>
                                           {expandedSoapSections[action.id]
                                             .subjective && (
-                                            <div
-                                              className="p-3 text-muted-foreground text-sm"
-                                              dangerouslySetInnerHTML={{
-                                                __html:
-                                                  parsedSoap?.subjective || "",
-                                              }}
-                                            />
+                                            <div className="p-3 text-muted-foreground text-sm">
+                                              <MarkdownRenderer 
+                                                content={parsedSoap?.subjective || ""} 
+                                                className="text-muted-foreground" 
+                                              />
+                                            </div>
                                           )}
                                         </div>
 
@@ -1975,7 +1975,7 @@ export function CurrentCaseContent() {
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
-                                                    parsedSoap?.objective || ""
+                                                    `## Objective\n${parsedSoap?.objective || ""}`
                                                   );
                                                   toast({
                                                     title: "Copied",
@@ -2003,13 +2003,12 @@ export function CurrentCaseContent() {
                                           </div>
                                           {expandedSoapSections[action.id]
                                             .objective && (
-                                            <div
-                                              className="p-3 text-muted-foreground text-sm"
-                                              dangerouslySetInnerHTML={{
-                                                __html:
-                                                  parsedSoap?.objective || "",
-                                              }}
-                                            />
+                                            <div className="p-3 text-muted-foreground text-sm">
+                                              <MarkdownRenderer 
+                                                content={parsedSoap?.objective || ""} 
+                                                className="text-muted-foreground" 
+                                              />
+                                            </div>
                                           )}
                                         </div>
 
@@ -2046,7 +2045,7 @@ export function CurrentCaseContent() {
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
-                                                    parsedSoap?.assessment || ""
+                                                    `## Assessment\n${parsedSoap?.assessment || ""}`
                                                   );
                                                   toast({
                                                     title: "Copied",
@@ -2074,13 +2073,12 @@ export function CurrentCaseContent() {
                                           </div>
                                           {expandedSoapSections[action.id]
                                             .assessment && (
-                                            <div
-                                              className="p-3 text-muted-foreground text-sm"
-                                              dangerouslySetInnerHTML={{
-                                                __html:
-                                                  parsedSoap?.assessment || "",
-                                              }}
-                                            />
+                                            <div className="p-3 text-muted-foreground text-sm">
+                                              <MarkdownRenderer 
+                                                content={parsedSoap?.assessment || ""} 
+                                                className="text-muted-foreground" 
+                                              />
+                                            </div>
                                           )}
                                         </div>
 
@@ -2115,7 +2113,7 @@ export function CurrentCaseContent() {
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   navigator.clipboard.writeText(
-                                                    parsedSoap?.plan || ""
+                                                    `## Plan\n${parsedSoap?.plan || ""}`
                                                   );
                                                   toast({
                                                     title: "Copied",
@@ -2143,12 +2141,12 @@ export function CurrentCaseContent() {
                                           </div>
                                           {expandedSoapSections[action.id]
                                             .plan && (
-                                            <div
-                                              className="p-3 text-muted-foreground text-sm"
-                                              dangerouslySetInnerHTML={{
-                                                __html: parsedSoap?.plan || "",
-                                              }}
-                                            />
+                                            <div className="p-3 text-muted-foreground text-sm">
+                                              <MarkdownRenderer 
+                                                content={parsedSoap?.plan || ""} 
+                                                className="text-muted-foreground" 
+                                              />
+                                            </div>
                                           )}
                                         </div>
                                       </div>
@@ -2175,8 +2173,11 @@ export function CurrentCaseContent() {
                                           </Button>
                                         </div>
                                         <div className="border border-muted/30 rounded-lg overflow-hidden">
-                                          <div className="p-3 text-muted-foreground text-sm whitespace-pre-wrap">
-                                            {parsedSoap?.plan || ""}
+                                          <div className="p-3 text-muted-foreground text-sm">
+                                            <MarkdownRenderer 
+                                              content={parsedSoap?.plan || ""} 
+                                              className="text-muted-foreground" 
+                                            />
                                           </div>
                                         </div>
                                       </div>
