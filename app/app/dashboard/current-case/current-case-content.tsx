@@ -78,6 +78,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getEmailTemplates, ensureDefaultTemplates } from "../template-actions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 declare global {
   interface Window {
@@ -888,13 +889,15 @@ export function CurrentCaseContent() {
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailTo, setEmailTo] = useState("");
-  const [emailFrom, setEmailFrom] = useState("");
+  const [emailFrom, setEmailFrom] = useState("no-reply@clinicconnect.dev");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // No longer needed as templates are loaded on component mount
 
   // Add email handling functions
   const handleEmailClick = () => {
+    // Ensure the default email is set
+    setEmailFrom("no-reply@clinicconnect.dev");
     setShowEmailDialog(true);
   };
 
@@ -1450,7 +1453,7 @@ export function CurrentCaseContent() {
                         onValueChange={setSelectedTemplateId}
                       >
                         <SelectTrigger
-                          className="w-[180px] bg-primary hover:bg-primary/90 border-muted/50 font-normal text-sm text-white"
+                          className="w-[180px] bg-primary hover:bg-primary/90 border-muted/50 font-normal text-sm text-white focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                           style={{ color: "white" }} // Force white text color for all states
                         >
                           <SelectValue
@@ -1577,11 +1580,10 @@ export function CurrentCaseContent() {
                                     </span>
                                   </div>
                                   <div className="flex items-center">
-                                    <input
-                                      type="checkbox"
+                                    <Checkbox
                                       id={`recording-${action.id}`}
                                       checked={isSelected}
-                                      onChange={() => {
+                                      onCheckedChange={() => {
                                         useCaseStore
                                           .getState()
                                           .toggleRecordingSelection(action.id);
@@ -1592,7 +1594,7 @@ export function CurrentCaseContent() {
                                           handleActionDeselect();
                                         }
                                       }}
-                                      className="h-4 w-4 rounded border-muted/70 text-muted-foreground focus:ring-blue-500 mr-3"
+                                      className="mr-3 bg-muted/50 hover:bg-muted data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-muted/70"
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                     <Button
@@ -1777,11 +1779,10 @@ export function CurrentCaseContent() {
                                     </span>
                                   </div>
                                   <div className="flex items-center">
-                                    <input
-                                      type="checkbox"
+                                    <Checkbox
                                       id={`soap-${action.id}`}
                                       checked={isSoapSelected}
-                                      onChange={() => {
+                                      onCheckedChange={() => {
                                         toggleSoapSelection(action.id);
                                         if (!isSoapSelected) {
                                           handleActionSelect(action.id);
@@ -1789,7 +1790,7 @@ export function CurrentCaseContent() {
                                           handleActionDeselect();
                                         }
                                       }}
-                                      className="h-4 w-4 rounded border-green-700 text-green-600 focus:ring-green-500 mr-3"
+                                      className="mr-3 data-[state=checked]:bg-white data-[state=checked]:text-primary-foreground border-green-700 text-green-600 focus:ring-green-500"
                                     />
                                     <Button
                                       variant="ghost"
@@ -2415,9 +2416,8 @@ export function CurrentCaseContent() {
                 id="from"
                 type="email"
                 value={emailFrom}
-                onChange={(e) => setEmailFrom(e.target.value)}
-                placeholder="clinic@example.com"
-                className="bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                disabled={true}
+                className="bg-muted/30 border-input text-foreground/80 placeholder:text-muted-foreground focus-visible:ring-ring cursor-not-allowed"
               />
             </div>
             <div className="space-y-2">
@@ -2451,7 +2451,7 @@ export function CurrentCaseContent() {
             <Button
               type="submit"
               onClick={handleSendEmail}
-              disabled={isSendingEmail || !emailTo || !emailFrom}
+              disabled={isSendingEmail || !emailTo}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isSendingEmail ? (

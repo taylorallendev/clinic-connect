@@ -42,22 +42,22 @@ export function SoapNotesEditor({
       [section]: value,
     }));
   };
-  
+
   const handleSave = () => {
     setIsSaving(true);
-    
+
     // Call onUpdate with the updated SOAP notes
     onUpdate(soap);
-    
+
     if (onSave) {
       onSave();
     }
-    
+
     toast({
       title: "SOAP notes updated",
       description: "Your changes have been saved successfully",
     });
-    
+
     setIsSaving(false);
   };
 
@@ -69,23 +69,23 @@ export function SoapNotesEditor({
       onClose();
     }
   };
-  
+
   return (
     <>
       {/* Overlay for clicking outside */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/30 z-40"
         onClick={handleClickOutside}
       />
-      
+
       {/* Editor panel */}
-      <div className="fixed inset-0 right-0 left-auto w-3/5 h-screen bg-blue-950 border-l border-blue-800/30 shadow-xl z-50 overflow-y-auto">
+      <div className="fixed inset-0 right-0 left-auto w-3/5 h-screen bg-background border-l border-border shadow-xl z-50 overflow-y-auto">
         <Card className="border-0 h-full flex flex-col bg-transparent">
-          <CardHeader className="sticky top-0 bg-blue-950 z-10 flex flex-row items-center justify-between border-b border-blue-800/30">
+          <CardHeader className="sticky top-0 bg-background z-10 flex flex-row items-center justify-between border-b border-border">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-blue-50">Edit SOAP Notes</CardTitle>
+              <CardTitle className="text-foreground">Edit SOAP Notes</CardTitle>
               {actionId && (
-                <Badge className="bg-blue-800/50 text-blue-200 border-0">
+                <Badge className="bg-muted text-muted-foreground border-0">
                   ID: {actionId.substring(0, 8)}
                 </Badge>
               )}
@@ -93,7 +93,7 @@ export function SoapNotesEditor({
             <div className="flex items-center gap-2">
               <Button
                 onClick={handleSave}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 disabled={isSaving}
               >
                 <Save className="h-4 w-4 mr-2" />
@@ -106,106 +106,116 @@ export function SoapNotesEditor({
                   handleSave();
                   onClose();
                 }}
-                className="h-8 w-8 text-blue-300 hover:text-blue-100 hover:bg-blue-800/30"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto space-y-6 pb-16 pt-6">
-          {transcript && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium mb-2 text-blue-300">Original Transcript</h3>
-              <div className="bg-blue-900/30 border border-blue-800/30 rounded-md p-3 text-sm text-blue-100 max-h-40 overflow-y-auto whitespace-pre-line">
-                {transcript}
+          <CardContent className="flex-1 overflow-y-auto space-y-6 pb-16 pt-6">
+            {transcript && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium mb-2 text-muted-foreground">
+                  Original Transcript
+                </h3>
+                <div className="bg-muted/30 border border-border rounded-md p-3 text-sm text-foreground max-h-40 overflow-y-auto whitespace-pre-line">
+                  {transcript}
+                </div>
               </div>
+            )}
+
+            <div>
+              <div className="flex items-center mb-2">
+                <Badge className="bg-primary text-primary-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                  S
+                </Badge>
+                <h3 className="text-base font-medium text-foreground">
+                  Subjective
+                </h3>
+              </div>
+              <RichTextEditor
+                value={soap.subjective}
+                onChange={(value) => handleUpdateSection("subjective", value)}
+                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+              />
             </div>
-          )}
 
-          <div>
-            <div className="flex items-center mb-2">
-              <Badge className="bg-blue-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">S</Badge>
-              <h3 className="text-base font-medium text-blue-300">
-                Subjective
-              </h3>
+            <Separator className="border-border" />
+
+            <div>
+              <div className="flex items-center mb-2">
+                <Badge className="bg-success text-success-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                  O
+                </Badge>
+                <h3 className="text-base font-medium text-foreground">
+                  Objective
+                </h3>
+              </div>
+              <RichTextEditor
+                value={soap.objective}
+                onChange={(value) => handleUpdateSection("objective", value)}
+                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+              />
             </div>
-            <RichTextEditor
-              value={soap.subjective}
-              onChange={(value) => handleUpdateSection("subjective", value)}
-              className="bg-blue-900/20 border-blue-800/30"
-            />
-          </div>
 
-          <Separator className="border-blue-800/30" />
+            <Separator className="border-border" />
 
-          <div>
-            <div className="flex items-center mb-2">
-              <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">O</Badge>
-              <h3 className="text-base font-medium text-green-300">
-                Objective
-              </h3>
+            <div>
+              <div className="flex items-center mb-2">
+                <Badge className="bg-info text-info-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                  A
+                </Badge>
+                <h3 className="text-base font-medium text-foreground">
+                  Assessment
+                </h3>
+              </div>
+              <RichTextEditor
+                value={soap.assessment}
+                onChange={(value) => handleUpdateSection("assessment", value)}
+                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+              />
             </div>
-            <RichTextEditor
-              value={soap.objective}
-              onChange={(value) => handleUpdateSection("objective", value)}
-              className="bg-blue-900/20 border-blue-800/30"
-            />
-          </div>
 
-          <Separator className="border-blue-800/30" />
+            <Separator className="border-border" />
 
-          <div>
-            <div className="flex items-center mb-2">
-              <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">A</Badge>
-              <h3 className="text-base font-medium text-purple-300">
-                Assessment
-              </h3>
+            <div>
+              <div className="flex items-center mb-2">
+                <Badge className="bg-accent text-accent-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                  P
+                </Badge>
+                <h3 className="text-base font-medium text-foreground">Plan</h3>
+              </div>
+              <RichTextEditor
+                value={soap.plan}
+                onChange={(value) => handleUpdateSection("plan", value)}
+                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+              />
             </div>
-            <RichTextEditor
-              value={soap.assessment}
-              onChange={(value) => handleUpdateSection("assessment", value)}
-              className="bg-blue-900/20 border-blue-800/30"
-            />
-          </div>
-
-          <Separator className="border-blue-800/30" />
-
-          <div>
-            <div className="flex items-center mb-2">
-              <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">P</Badge>
-              <h3 className="text-base font-medium text-amber-300">Plan</h3>
+          </CardContent>
+          <CardFooter className="border-t border-border bg-background/95 sticky bottom-0 py-3">
+            <div className="flex justify-end w-full gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleSave();
+                  onClose();
+                }}
+                className="border-border text-muted-foreground hover:text-foreground hover:bg-muted/20"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </Button>
             </div>
-            <RichTextEditor
-              value={soap.plan}
-              onChange={(value) => handleUpdateSection("plan", value)}
-              className="bg-blue-900/20 border-blue-800/30"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="border-t border-blue-800/30 bg-blue-950/95 sticky bottom-0 py-3">
-          <div className="flex justify-end w-full gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                handleSave();
-                onClose();
-              }}
-              className="border-blue-700/30 text-blue-300 hover:text-blue-100 hover:bg-blue-800/20"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
+          </CardFooter>
+        </Card>
+      </div>
     </>
   );
 }
