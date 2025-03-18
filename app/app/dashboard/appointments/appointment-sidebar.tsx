@@ -120,9 +120,11 @@ export function AppointmentSidebar({
 
   return (
     <div className={`fixed inset-0 z-[999] ${isOpen ? "block" : "hidden"}`}>
+      {/* Overlay for clicking outside */}
       <div 
-        className="fixed inset-0 z-[999] bg-black/50" 
+        className="fixed inset-0 top-0 bottom-0 left-0 right-0 z-[999] bg-black/50" 
         onClick={onClose}
+        style={{margin: 0, padding: 0}}
       />
       <div className="fixed right-0 top-0 z-[1000] h-full w-full max-w-md bg-card border-l border-border shadow-xl">
         <div className="flex h-full flex-col overflow-hidden">

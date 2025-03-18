@@ -244,13 +244,7 @@ export function AppointmentsTable({
         </CardContent>
       </Card>
 
-      {selectedAppointment && (
-        <AppointmentSidebar
-          appointment={selectedAppointment}
-          isOpen={isSidebarOpen}
-          onClose={handleCloseSidebar}
-        />
-      )}
+      {/* Sidebar moved to parent component */}
     </div>
   );
 }
