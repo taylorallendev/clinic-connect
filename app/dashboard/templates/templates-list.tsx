@@ -202,36 +202,38 @@ export function TemplateSelector({ onSelect, trigger }: TemplateSelectorProps) {
       <DialogTrigger asChild>
         {trigger || <Button variant="outline">Select Template</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
+      <DialogContent className="sm:max-w-[425px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">
+          <DialogTitle className="text-card-foreground">
             Select Email Template
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto">
           {loading ? (
-            <div className="text-blue-200">Loading templates...</div>
+            <div className="text-muted-foreground">Loading templates...</div>
           ) : error ? (
-            <div className="text-red-400">Error: {error}</div>
+            <div className="text-destructive">Error: {error}</div>
           ) : templates.length === 0 ? (
-            <div className="text-blue-200">No email templates found</div>
+            <div className="text-muted-foreground">
+              No email templates found
+            </div>
           ) : (
             templates.map((template) => (
               <Card
                 key={template.id}
-                className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 hover:bg-blue-900/30 transition-colors cursor-pointer"
+                className="bg-card border-border shadow-md hover:bg-muted/10 transition-colors cursor-pointer"
                 onClick={() => handleSelect(template)}
               >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <CardTitle className="text-lg font-medium text-blue-50">
+                  <CardTitle className="text-lg font-medium text-card-foreground">
                     {template.name}
                   </CardTitle>
-                  <Badge className="bg-purple-500/20 text-purple-200 hover:bg-purple-500/30">
+                  <Badge className="bg-primary/20 text-primary hover:bg-primary/30">
                     EMAIL
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-blue-200 line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {template.content}
                   </p>
                 </CardContent>
@@ -244,16 +246,16 @@ export function TemplateSelector({ onSelect, trigger }: TemplateSelectorProps) {
   );
 }
 
-function EditTemplateDialog({ 
-  template, 
-  onSuccess, 
-  open, 
-  setOpen 
-}: { 
-  template: Template; 
-  onSuccess: () => void; 
-  open: boolean; 
-  setOpen: (open: boolean) => void; 
+function EditTemplateDialog({
+  template,
+  onSuccess,
+  open,
+  setOpen,
+}: {
+  template: Template;
+  onSuccess: () => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }) {
   const form = useForm<z.infer<typeof templateFormSchema>>({
     resolver: zodResolver(templateFormSchema),
@@ -281,9 +283,7 @@ function EditTemplateDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">
-            Edit Template
-          </DialogTitle>
+          <DialogTitle className="text-blue-50">Edit Template</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -382,24 +382,25 @@ export function TemplatesList() {
     }
     setLoading(false);
   }
-  
+
   // Filter templates when search term or type filter changes
   useEffect(() => {
     let filtered = templates;
-    
+
     // Apply type filter first
     if (typeFilter !== "all") {
-      filtered = filtered.filter(template => template.type === typeFilter);
+      filtered = filtered.filter((template) => template.type === typeFilter);
     }
-    
+
     // Then apply search term filter
     if (searchTerm.trim() !== "") {
-      filtered = filtered.filter(template => 
-        template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        template.content.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (template) =>
+          template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          template.content.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     setFilteredTemplates(filtered);
   }, [searchTerm, typeFilter, templates]);
 
@@ -425,20 +426,20 @@ export function TemplatesList() {
   }, []);
 
   if (loading) {
-    return <div className="text-blue-200">Loading templates...</div>;
+    return <div className="text-muted-foreground">Loading templates...</div>;
   }
 
   if (error) {
-    return <div className="text-red-400">Error: {error}</div>;
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-blue-50">Templates</h2>
+        <h2 className="text-2xl font-bold text-foreground">Templates</h2>
         <CreateTemplateDialog onSuccess={loadTemplates} />
       </div>
-      
+
       {/* Search and filter bar */}
       <div className="flex gap-3 items-center">
         <div className="relative flex-grow">
@@ -447,11 +448,11 @@ export function TemplatesList() {
             placeholder="Search templates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-blue-900/30 border-blue-800/30 text-blue-50 pl-10"
+            className="bg-muted/20 border-input text-foreground pl-10"
           />
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
-        
+
         <Select
           value={typeFilter || "all"}
           onValueChange={(value) => {
@@ -459,10 +460,10 @@ export function TemplatesList() {
             // Filter will be applied through useEffect
           }}
         >
-          <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50 w-[160px]">
+          <SelectTrigger className="bg-muted/20 border-input text-foreground w-[160px]">
             <SelectValue placeholder="Filter Type" />
           </SelectTrigger>
-          <SelectContent className="bg-blue-900 border-blue-700">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="soap">SOAP Notes</SelectItem>
             <SelectItem value="summary">Summary</SelectItem>
@@ -471,42 +472,42 @@ export function TemplatesList() {
           </SelectContent>
         </Select>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredTemplates.map((template) => (
           <Card
             key={template.id}
-            className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 hover:bg-blue-900/30 transition-colors"
+            className="bg-card border-border shadow-md hover:bg-muted/10 transition-colors"
           >
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium text-blue-50">
+              <CardTitle className="text-lg font-medium text-card-foreground">
                 {template.name}
               </CardTitle>
               <Badge
                 className={
                   template.type === "soap"
-                    ? "bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30"
+                    ? "bg-info/20 text-info hover:bg-info/30"
                     : template.type === "email"
-                      ? "bg-purple-500/20 text-purple-200 hover:bg-purple-500/30"
-                      : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
+                      ? "bg-primary/20 text-primary hover:bg-primary/30"
+                      : "bg-warning/20 text-warning hover:bg-warning/30"
                 }
               >
                 {template.type.toUpperCase()}
               </Badge>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-blue-200 line-clamp-2 mb-4">
+              <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                 {template.content}
               </p>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-blue-400">
+                <p className="text-xs text-muted-foreground">
                   Created: {new Date(template.createdAt).toLocaleDateString()}
                 </p>
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-blue-300 hover:text-blue-50 hover:bg-blue-800/30"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     onClick={() => {
                       setEditingTemplate(template);
                       setIsEditDialogOpen(true);
@@ -517,7 +518,7 @@ export function TemplatesList() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-blue-300 hover:text-red-400 hover:bg-red-500/10"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     onClick={() => handleDeleteTemplate(template.id)}
                     disabled={isDeleting && deleteTemplateId === template.id}
                   >
@@ -533,7 +534,7 @@ export function TemplatesList() {
           </Card>
         ))}
       </div>
-      
+
       {/* Edit template dialog */}
       {editingTemplate && (
         <EditTemplateDialog

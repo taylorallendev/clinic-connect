@@ -27,10 +27,10 @@ export default function AppointmentsPage() {
   // Fetch appointments
   useEffect(() => {
     let isMounted = true; // For preventing state updates after unmount
-    
+
     async function fetchAppointments() {
       if (!isMounted) return;
-      
+
       setLoading(true);
       try {
         console.log("Main Page: Fetching appointments with params:", {
@@ -38,18 +38,18 @@ export default function AppointmentsPage() {
           pageSize,
           searchQuery,
           dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
-          statusFilter
+          statusFilter,
         });
-        
+
         // Log state for debugging
         console.log("Current appointments state:", {
           currentAppointments: appointments.length,
-          loadingState: loading
+          loadingState: loading,
         });
-        
+
         // Create a unique timestamp for cache busting
         const fetchTimestamp = Date.now();
-        
+
         const response = await fetch("/api/appointments", {
           method: "POST",
           headers: {
@@ -69,24 +69,28 @@ export default function AppointmentsPage() {
           try {
             const errorText = await response.text();
             console.error("API error response:", errorText);
-            
+
             // Try parsing the error text as JSON (if it's a structured error)
             try {
               const errorJson = JSON.parse(errorText);
               if (errorJson.error) {
                 console.error("Structured error from API:", errorJson.error);
-                
+
                 // Check for specific error types and handle them
                 if (errorJson.error.includes("enum case_status")) {
-                  console.error("Status enum error - the status filter value is not valid in the database");
+                  console.error(
+                    "Status enum error - the status filter value is not valid in the database"
+                  );
                   // Reset status filter since it's causing errors
                   if (isMounted) {
                     setStatusFilter("");
                   }
                 }
-                
+
                 if (errorJson.error.includes("dateTime")) {
-                  console.error("Date filter error - there might be an issue with the dateTime column");
+                  console.error(
+                    "Date filter error - there might be an issue with the dateTime column"
+                  );
                   // Reset date filter since it's causing errors
                   if (isMounted) {
                     setDateFilter(null);
@@ -101,7 +105,7 @@ export default function AppointmentsPage() {
             // If we can't even get the error text
             console.error("Failed to parse error response:", parseError);
           }
-          
+
           // Set empty appointments instead of throwing
           if (isMounted) {
             setAppointments([]);
@@ -112,27 +116,29 @@ export default function AppointmentsPage() {
 
         const data = await response.json();
         console.log("Received appointments data:", data);
-        
+
         if (data.debug) {
           console.log("API debug info:", data.debug);
         }
-        
+
         if (!isMounted) return;
-        
+
         if (data.error) {
           console.error("API returned error:", data.error);
           setAppointments([]);
           setTotalCount(0);
         } else if (Array.isArray(data.appointments)) {
-          console.log(`Setting ${data.appointments.length} appointments with totalCount=${data.totalCount}`);
-          
+          console.log(
+            `Setting ${data.appointments.length} appointments with totalCount=${data.totalCount}`
+          );
+
           // Check if we have any appointments with actual data
           if (data.appointments.length > 0) {
             console.log("First appointment sample:", data.appointments[0]);
           } else {
             console.log("No appointments were returned from the API");
           }
-          
+
           setAppointments(data.appointments);
           setTotalCount(data.totalCount || 0);
         } else {
@@ -154,7 +160,7 @@ export default function AppointmentsPage() {
     }
 
     fetchAppointments();
-    
+
     // Cleanup function to prevent state updates after unmount
     return () => {
       isMounted = false;
@@ -180,19 +186,19 @@ export default function AppointmentsPage() {
     e.preventDefault();
     console.log("Manual search triggered with:", searchQuery);
     setPage(0); // Reset to first page when searching
-    
+
     // Fetch with current filters
     fetchAppointmentsDirectly();
   };
-  
+
   // A direct fetch function that bypasses child components
   const fetchAppointmentsDirectly = async () => {
     console.log("Direct fetch with filters:", {
       searchQuery,
       dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
-      statusFilter
+      statusFilter,
     });
-    
+
     setLoading(true);
     try {
       const response = await fetch("/api/appointments", {
@@ -209,10 +215,12 @@ export default function AppointmentsPage() {
           timestamp: Date.now(),
         }),
       });
-      
+
       const data = await response.json();
       if (Array.isArray(data.appointments)) {
-        console.log(`Direct fetch returned ${data.appointments.length} appointments`);
+        console.log(
+          `Direct fetch returned ${data.appointments.length} appointments`
+        );
         setAppointments(data.appointments);
         setTotalCount(data.totalCount || 0);
       } else {
@@ -234,7 +242,7 @@ export default function AppointmentsPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-50">Appointments</h1>
+        <h1 className="text-2xl font-bold text-foreground">Appointments</h1>
         <Button
           variant="outline"
           onClick={() => {
@@ -244,7 +252,7 @@ export default function AppointmentsPage() {
             setDateFilter(null);
             setStatusFilter("");
             setPage(0);
-            
+
             // Use our direct fetch function for immediate results
             setTimeout(() => {
               fetchAppointmentsDirectly();
@@ -253,7 +261,9 @@ export default function AppointmentsPage() {
           disabled={loading}
           className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
           Refresh
         </Button>
       </div>
@@ -280,15 +290,15 @@ export default function AppointmentsPage() {
                   try {
                     // Convert YYYY-MM-DD to a Date object
                     // Ensure proper timezone handling by using this syntax
-                    const [year, month, day] = dateStr.split('-').map(Number);
+                    const [year, month, day] = dateStr.split("-").map(Number);
                     const parsedDate = new Date(year, month - 1, day);
-                    
+
                     // Check if it's a valid date
                     if (!isNaN(parsedDate.getTime())) {
                       console.log("Setting date filter to:", {
                         rawDate: parsedDate,
                         formattedISO: parsedDate.toISOString(),
-                        original: dateStr
+                        original: dateStr,
                       });
                       setDateFilter(parsedDate);
                     } else {
@@ -317,17 +327,19 @@ export default function AppointmentsPage() {
                       ? "Try adjusting your search filters or click Refresh to see all appointments"
                       : "No appointments are available. Try again later or create a new appointment."}
                   </p>
-                  <Button 
+                  <Button
                     className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => {
-                      console.log("Clearing all filters from No Appointments card");
-                      
+                      console.log(
+                        "Clearing all filters from No Appointments card"
+                      );
+
                       // Clear all filters with a more direct approach
                       setSearchQuery("");
                       setDateFilter(null);
                       setStatusFilter("");
                       setPage(0);
-                      
+
                       // Directly fetch without any filters
                       // Don't wait for React state to update - use direct values
                       setLoading(true);
@@ -345,19 +357,19 @@ export default function AppointmentsPage() {
                           timestamp: Date.now(),
                         }),
                       })
-                      .then(response => response.json())
-                      .then(data => {
-                        console.log("Direct clear filters response:", data);
-                        if (Array.isArray(data.appointments)) {
-                          setAppointments(data.appointments);
-                          setTotalCount(data.totalCount || 0);
-                        }
-                        setLoading(false);
-                      })
-                      .catch(error => {
-                        console.error("Error in direct clear:", error);
-                        setLoading(false);
-                      });
+                        .then((response) => response.json())
+                        .then((data) => {
+                          console.log("Direct clear filters response:", data);
+                          if (Array.isArray(data.appointments)) {
+                            setAppointments(data.appointments);
+                            setTotalCount(data.totalCount || 0);
+                          }
+                          setLoading(false);
+                        })
+                        .catch((error) => {
+                          console.error("Error in direct clear:", error);
+                          setLoading(false);
+                        });
                     }}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
