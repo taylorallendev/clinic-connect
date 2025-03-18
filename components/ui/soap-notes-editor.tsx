@@ -85,12 +85,13 @@ export function SoapNotesEditor({
     <>
       {/* Overlay for clicking outside */}
       <div
-        className="fixed inset-0 bg-black/30 z-40"
+        className="fixed inset-0 top-0 bottom-0 left-0 right-0 bg-black/30 z-[100]"
         onClick={handleClickOutside}
+        style={{margin: 0, padding: 0}}
       />
 
       {/* Editor panel */}
-      <div className="fixed inset-0 right-0 left-auto w-3/5 h-screen bg-background border-l border-border shadow-xl z-50 overflow-y-auto">
+      <div className="fixed top-0 bottom-0 right-0 left-auto w-3/5 h-screen bg-background border-l border-border shadow-xl z-[101] overflow-y-auto" style={{margin: 0, padding: 0}}>
         <Card className="border-0 h-full flex flex-col bg-transparent">
           <CardHeader className="sticky top-0 bg-background z-10 flex flex-row items-center justify-between border-b border-border">
             <div className="flex items-center gap-2">
