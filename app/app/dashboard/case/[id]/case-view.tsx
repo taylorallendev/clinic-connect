@@ -17,14 +17,47 @@ interface CaseViewProps {
 
 export function CaseView({ appointmentId }: CaseViewProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedSoapSections, setExpandedSoapSections] = useState<Record<string, Record<string, boolean>>>({});
   const { appointment, isLoading, error } = useAppointment(appointmentId);
 
+  // Initialize expanded state for SOAP sections when appointment loads
+  useEffect(() => {
+    if (appointment && appointment.case_actions) {
+      const soapActions = appointment.case_actions.filter(action => action.type === "soap");
+      
+      const initialExpandedState: Record<string, Record<string, boolean>> = {};
+      soapActions.forEach(action => {
+        initialExpandedState[action.id] = {
+          subjective: true,
+          objective: true,
+          assessment: true,
+          plan: true
+        };
+      });
+      
+      setExpandedSoapSections(initialExpandedState);
+    }
+  }, [appointment]);
+
   if (isLoading) {
-    return <div className="p-8 text-center">Loading case details...</div>;
+    return (
+      <div className="flex items-center justify-center h-64 text-card-foreground">
+        <ClipboardCheck className="h-8 w-8 mr-2 animate-pulse text-muted-foreground" />
+        <span>Loading case details...</span>
+      </div>
+    );
   }
 
   if (error || !appointment) {
-    return <div className="p-8 text-center">Error loading case details</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-destructive">
+        <ClipboardCheck className="h-8 w-8 mb-2 text-muted-foreground" />
+        <span>Error loading case details</span>
+        <p className="text-sm text-muted-foreground mt-2">
+          {error?.message || "The requested case could not be found."}
+        </p>
+      </div>
+    );
   }
 
   // Helper function to parse SOAP notes that might be stored as JSON strings
@@ -96,14 +129,14 @@ export function CaseView({ appointmentId }: CaseViewProps) {
     }
   }
 
-  // Function to copy SOAP notes to clipboard
+  // Function to copy all SOAP notes to clipboard
   const copyToClipboard = async (action: CaseAction) => {
     if (action.type !== "soap" || !action.content.soap) return;
 
     const soap = parseSoapNotes(action);
     if (!soap) return;
 
-    const soapText = `## Subjective\n${soap.subjective || "N/A"}\n\n## Objective\n${
+    const soapText = `# SOAP Notes\n\n## Subjective\n${soap.subjective || "N/A"}\n\n## Objective\n${
       soap.objective || "N/A"
     }\n\n## Assessment\n${soap.assessment || "N/A"}\n\n## Plan\n${
       soap.plan || "N/A"
@@ -111,7 +144,7 @@ export function CaseView({ appointmentId }: CaseViewProps) {
 
     try {
       await navigator.clipboard.writeText(soapText);
-      setCopiedId(action.id);
+      setCopiedId(`${action.id}-all`);
       setTimeout(() => setCopiedId(null), 2000); // Reset after 2 seconds
     } catch (err) {
       console.error("Failed to copy text: ", err);
@@ -193,10 +226,46 @@ export function CaseView({ appointmentId }: CaseViewProps) {
         {/* SOAP Notes History Card */}
         <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
           <CardHeader className="border-b border-border bg-muted/20">
-            <CardTitle className="text-card-foreground flex items-center">
-              <ClipboardCheck className="h-5 w-5 mr-2 text-card-foreground" />
-              SOAP Notes History
-            </CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="text-card-foreground flex items-center">
+                <ClipboardCheck className="h-5 w-5 mr-2 text-card-foreground" />
+                SOAP Notes History
+              </CardTitle>
+              {soapActions.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Check if at least one section is collapsed
+                    const allExpanded = soapActions.every(action => {
+                      const sections = expandedSoapSections[action.id];
+                      return sections && (sections.subjective && sections.objective && 
+                                        sections.assessment && sections.plan);
+                    });
+                    
+                    // Toggle all sections
+                    const newExpandedState: Record<string, Record<string, boolean>> = {};
+                    soapActions.forEach(action => {
+                      newExpandedState[action.id] = {
+                        subjective: !allExpanded,
+                        objective: !allExpanded,
+                        assessment: !allExpanded,
+                        plan: !allExpanded
+                      };
+                    });
+                    
+                    setExpandedSoapSections(newExpandedState);
+                  }}
+                  className="h-8 px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                >
+                  {soapActions.every(action => {
+                    const sections = expandedSoapSections[action.id];
+                    return sections && (sections.subjective && sections.objective && 
+                                      sections.assessment && sections.plan);
+                  }) ? 'Collapse All' : 'Expand All'}
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-6">
             {soapActions.length > 0 ? (
@@ -233,7 +302,7 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                               className="h-7 px-2 text-xs text-muted-foreground hover:text-muted-foreground hover:bg-muted/20"
                               title="Copy all SOAP notes"
                             >
-                              {copiedId === action.id ? (
+                              {copiedId === `${action.id}-all` ? (
                                 <>
                                   <CheckCircle className="h-3 w-3 mr-1" />
                                   Copied
@@ -241,7 +310,7 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                               ) : (
                                 <>
                                   <Copy className="h-3 w-3 mr-1" />
-                                  Copy
+                                  Copy All
                                 </>
                               )}
                             </Button>
@@ -253,74 +322,206 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                         <div className="space-y-3">
                           {/* Subjective Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                            <div 
+                              className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                              onClick={() => {
+                                setExpandedSoapSections(prev => ({
+                                  ...prev,
+                                  [action.id]: {
+                                    ...prev[action.id],
+                                    subjective: !prev[action.id]?.subjective
+                                  }
+                                }));
+                              }}
+                            >
                               <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                 <Badge className="bg-muted text-muted-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
                                   S
                                 </Badge>
                                 Subjective
                               </h4>
+                              <div className="flex items-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(`## Subjective\n${parsedSoap.subjective || ""}`);
+                                    setCopiedId(`${action.id}-subjective`);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                  }}
+                                  className="h-6 text-xs text-muted-foreground"
+                                >
+                                  {copiedId === `${action.id}-subjective` ? (
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 mr-1" />
+                                  )}
+                                  Copy
+                                </Button>
+                              </div>
                             </div>
-                            <div className="p-3 text-muted-foreground text-sm">
-                              <MarkdownRenderer 
-                                content={parsedSoap.subjective || ""} 
-                                className="text-muted-foreground" 
-                              />
-                            </div>
+                            {expandedSoapSections[action.id]?.subjective && (
+                              <div className="p-3 text-muted-foreground text-sm">
+                                <MarkdownRenderer 
+                                  content={parsedSoap.subjective || ""} 
+                                  className="text-muted-foreground" 
+                                />
+                              </div>
+                            )}
                           </div>
                           
                           {/* Objective Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                            <div 
+                              className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                              onClick={() => {
+                                setExpandedSoapSections(prev => ({
+                                  ...prev,
+                                  [action.id]: {
+                                    ...prev[action.id],
+                                    objective: !prev[action.id]?.objective
+                                  }
+                                }));
+                              }}
+                            >
                               <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                 <Badge className="bg-success text-success-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
                                   O
                                 </Badge>
                                 Objective
                               </h4>
+                              <div className="flex items-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(`## Objective\n${parsedSoap.objective || ""}`);
+                                    setCopiedId(`${action.id}-objective`);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                  }}
+                                  className="h-6 text-xs text-muted-foreground"
+                                >
+                                  {copiedId === `${action.id}-objective` ? (
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 mr-1" />
+                                  )}
+                                  Copy
+                                </Button>
+                              </div>
                             </div>
-                            <div className="p-3 text-muted-foreground text-sm">
-                              <MarkdownRenderer 
-                                content={parsedSoap.objective || ""} 
-                                className="text-muted-foreground" 
-                              />
-                            </div>
+                            {expandedSoapSections[action.id]?.objective && (
+                              <div className="p-3 text-muted-foreground text-sm">
+                                <MarkdownRenderer 
+                                  content={parsedSoap.objective || ""} 
+                                  className="text-muted-foreground" 
+                                />
+                              </div>
+                            )}
                           </div>
                           
                           {/* Assessment Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                            <div 
+                              className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                              onClick={() => {
+                                setExpandedSoapSections(prev => ({
+                                  ...prev,
+                                  [action.id]: {
+                                    ...prev[action.id],
+                                    assessment: !prev[action.id]?.assessment
+                                  }
+                                }));
+                              }}
+                            >
                               <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                 <Badge className="bg-info text-info-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
                                   A
                                 </Badge>
                                 Assessment
                               </h4>
+                              <div className="flex items-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(`## Assessment\n${parsedSoap.assessment || ""}`);
+                                    setCopiedId(`${action.id}-assessment`);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                  }}
+                                  className="h-6 text-xs text-muted-foreground"
+                                >
+                                  {copiedId === `${action.id}-assessment` ? (
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 mr-1" />
+                                  )}
+                                  Copy
+                                </Button>
+                              </div>
                             </div>
-                            <div className="p-3 text-muted-foreground text-sm">
-                              <MarkdownRenderer 
-                                content={parsedSoap.assessment || ""} 
-                                className="text-muted-foreground" 
-                              />
-                            </div>
+                            {expandedSoapSections[action.id]?.assessment && (
+                              <div className="p-3 text-muted-foreground text-sm">
+                                <MarkdownRenderer 
+                                  content={parsedSoap.assessment || ""} 
+                                  className="text-muted-foreground" 
+                                />
+                              </div>
+                            )}
                           </div>
                           
                           {/* Plan Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                            <div 
+                              className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                              onClick={() => {
+                                setExpandedSoapSections(prev => ({
+                                  ...prev,
+                                  [action.id]: {
+                                    ...prev[action.id],
+                                    plan: !prev[action.id]?.plan
+                                  }
+                                }));
+                              }}
+                            >
                               <h4 className="text-muted-foreground flex items-center text-sm font-medium">
                                 <Badge className="bg-accent text-accent-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
                                   P
                                 </Badge>
                                 Plan
                               </h4>
+                              <div className="flex items-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(`## Plan\n${parsedSoap.plan || ""}`);
+                                    setCopiedId(`${action.id}-plan`);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                  }}
+                                  className="h-6 text-xs text-muted-foreground"
+                                >
+                                  {copiedId === `${action.id}-plan` ? (
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 mr-1" />
+                                  )}
+                                  Copy
+                                </Button>
+                              </div>
                             </div>
-                            <div className="p-3 text-muted-foreground text-sm">
-                              <MarkdownRenderer 
-                                content={parsedSoap.plan || ""} 
-                                className="text-muted-foreground" 
-                              />
-                            </div>
+                            {expandedSoapSections[action.id]?.plan && (
+                              <div className="p-3 text-muted-foreground text-sm">
+                                <MarkdownRenderer 
+                                  content={parsedSoap.plan || ""} 
+                                  className="text-muted-foreground" 
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
