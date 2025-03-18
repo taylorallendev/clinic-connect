@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2, Trash2, Plus } from "lucide-react";
+import { Edit2, Trash2, Plus, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import {
   getEmailTemplates,
   Template,
   deleteTemplate,
+  updateTemplate,
 } from "../../app/dashboard/template-actions";
 import { useEffect, useState } from "react";
 import {
@@ -243,12 +244,133 @@ export function TemplateSelector({ onSelect, trigger }: TemplateSelectorProps) {
   );
 }
 
+function EditTemplateDialog({ 
+  template, 
+  onSuccess, 
+  open, 
+  setOpen 
+}: { 
+  template: Template; 
+  onSuccess: () => void; 
+  open: boolean; 
+  setOpen: (open: boolean) => void; 
+}) {
+  const form = useForm<z.infer<typeof templateFormSchema>>({
+    resolver: zodResolver(templateFormSchema),
+    defaultValues: {
+      name: template.name,
+      type: template.type as any,
+      content: template.content,
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof templateFormSchema>) {
+    const result = await updateTemplate(template.id, values);
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Template updated successfully");
+      form.reset();
+      setOpen(false);
+      onSuccess();
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
+        <DialogHeader>
+          <DialogTitle className="text-blue-50">
+            Edit Template
+          </DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-blue-200">Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      placeholder="Template name"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-blue-200">Type</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50">
+                        <SelectValue placeholder="Select a type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-blue-900 border-blue-800">
+                      <SelectItem value="soap">SOAP Note</SelectItem>
+                      <SelectItem value="summary">Summary</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="structured">Structured</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="content"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-blue-200">Content</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      placeholder="Template content"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              Update Template
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function TemplatesList() {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteTemplateId, setDeleteTemplateId] = useState<number | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   async function loadTemplates() {
     const result = await getTemplates();
@@ -256,9 +378,30 @@ export function TemplatesList() {
       setError(result.error || "An unknown error occurred");
     } else if (result.templates) {
       setTemplates(result.templates);
+      setFilteredTemplates(result.templates);
     }
     setLoading(false);
   }
+  
+  // Filter templates when search term or type filter changes
+  useEffect(() => {
+    let filtered = templates;
+    
+    // Apply type filter first
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(template => template.type === typeFilter);
+    }
+    
+    // Then apply search term filter
+    if (searchTerm.trim() !== "") {
+      filtered = filtered.filter(template => 
+        template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        template.content.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    setFilteredTemplates(filtered);
+  }, [searchTerm, typeFilter, templates]);
 
   async function handleDeleteTemplate(id: number) {
     setIsDeleting(true);
@@ -295,8 +438,42 @@ export function TemplatesList() {
         <h2 className="text-2xl font-bold text-blue-50">Templates</h2>
         <CreateTemplateDialog onSuccess={loadTemplates} />
       </div>
+      
+      {/* Search and filter bar */}
+      <div className="flex gap-3 items-center">
+        <div className="relative flex-grow">
+          <Input
+            type="text"
+            placeholder="Search templates..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-blue-900/30 border-blue-800/30 text-blue-50 pl-10"
+          />
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
+        </div>
+        
+        <Select
+          value={typeFilter || "all"}
+          onValueChange={(value) => {
+            setTypeFilter(value);
+            // Filter will be applied through useEffect
+          }}
+        >
+          <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50 w-[160px]">
+            <SelectValue placeholder="Filter Type" />
+          </SelectTrigger>
+          <SelectContent className="bg-blue-900 border-blue-700">
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="soap">SOAP Notes</SelectItem>
+            <SelectItem value="summary">Summary</SelectItem>
+            <SelectItem value="email">Email</SelectItem>
+            <SelectItem value="structured">Structured</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {templates.map((template) => (
+        {filteredTemplates.map((template) => (
           <Card
             key={template.id}
             className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 hover:bg-blue-900/30 transition-colors"
@@ -330,6 +507,10 @@ export function TemplatesList() {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 text-blue-300 hover:text-blue-50 hover:bg-blue-800/30"
+                    onClick={() => {
+                      setEditingTemplate(template);
+                      setIsEditDialogOpen(true);
+                    }}
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
@@ -352,6 +533,19 @@ export function TemplatesList() {
           </Card>
         ))}
       </div>
+      
+      {/* Edit template dialog */}
+      {editingTemplate && (
+        <EditTemplateDialog
+          template={editingTemplate}
+          open={isEditDialogOpen}
+          setOpen={setIsEditDialogOpen}
+          onSuccess={() => {
+            loadTemplates();
+            setEditingTemplate(null);
+          }}
+        />
+      )}
     </div>
   );
 }

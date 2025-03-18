@@ -17,7 +17,7 @@ interface AppointmentSidebarProps {
 
 export function AppointmentSidebar({
   appointment,
-  isOpen,
+  isOpen = true,
   onClose,
 }: AppointmentSidebarProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -136,55 +136,48 @@ export function AppointmentSidebar({
           </div>
 
           <ScrollArea className="flex-1 p-4">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">
-                  Date & Time
-                </h3>
-                <p className="text-blue-50 mt-1">
-                  {appointment.date} at {appointment.time}
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">Patient</h3>
-                <p className="text-blue-50 mt-1">
-                  {appointment.patients?.name || "Unknown Patient"}
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">Provider</h3>
-                <p className="text-blue-50 mt-1">
-                  {appointment.users?.name || "Unassigned"}
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">Type</h3>
-                <Badge
-                  variant="outline"
-                  className="mt-1 capitalize text-blue-100 border-blue-700/50"
-                >
-                  {appointment.type?.replace("_", " ") || "General"}
-                </Badge>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-blue-400">Status</h3>
-                <Badge
-                  className={`mt-1 capitalize ${getStatusColor(appointment.status)} text-white`}
-                >
-                  {appointment.status?.replace("_", " ") || "Scheduled"}
-                </Badge>
+            <div className="space-y-4">
+              {/* Compact info grid layout */}
+              <div className="grid grid-cols-2 gap-3 bg-blue-900/30 p-3 rounded-lg border border-blue-800/30">
+                <div>
+                  <h3 className="text-xs font-medium text-blue-400 mb-1">Date & Time</h3>
+                  <p className="text-sm text-blue-50">{appointment.date} at {appointment.time}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-xs font-medium text-blue-400 mb-1">Patient</h3>
+                  <p className="text-sm text-blue-50">{appointment.patients?.name || "Unknown Patient"}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-xs font-medium text-blue-400 mb-1">Provider</h3>
+                  <p className="text-sm text-blue-50">{appointment.users?.name || "Unassigned"}</p>
+                </div>
+                
+                <div className="flex flex-col">
+                  <h3 className="text-xs font-medium text-blue-400 mb-1">Status</h3>
+                  <Badge className={`capitalize ${getStatusColor(appointment.status)} text-white text-xs`}>
+                    {appointment.status?.replace("_", " ") || "Scheduled"}
+                  </Badge>
+                </div>
+                
+                <div className="col-span-2 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-medium text-blue-400 mb-1">Type</h3>
+                    <Badge variant="outline" className="capitalize text-blue-100 border-blue-700/50 text-xs">
+                      {appointment.type?.replace("_", " ") || "General"}
+                    </Badge>
+                  </div>
+                </div>
               </div>
 
               {soapActions.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-blue-400 mb-2">
+                  <h3 className="text-sm font-medium text-blue-400 bg-blue-900/50 py-2 px-3 rounded-t-lg flex items-center">
+                    <FileText className="h-4 w-4 mr-2" />
                     SOAP Notes
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-3 border border-blue-800/30 p-3 rounded-b-lg bg-blue-950/50">
                     {soapActions.map((action) => {
                       const parsedSoap = parseSoapNotes(action);
                       
@@ -233,104 +226,110 @@ export function AppointmentSidebar({
                           {action.content.soap && (
                             <div className="p-3">
                               {isSoapFormat ? (
-                                <div className="space-y-2 text-sm text-blue-200">
+                                <div className="text-sm text-blue-200">
+                                  {/* Compact tabbed layout for SOAP notes */}
                                   <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                    <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
-                                      <h4 className="text-blue-100 flex items-center text-xs font-medium">
-                                        <div className="bg-blue-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
-                                          S
+                                    {/* SOAP sections in separate boxes */}
+                                    <div className="space-y-3 p-3">
+                                      <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
+                                          <h4 className="text-blue-100 flex items-center text-xs font-medium">
+                                            <div className="bg-blue-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
+                                              S
+                                            </div>
+                                            Subjective
+                                          </h4>
+                                          <button
+                                            onClick={() => copySoapSection(action, "subjective")}
+                                            className="text-blue-300 hover:text-blue-100 transition-colors"
+                                            title="Copy Subjective"
+                                          >
+                                            {copiedId === `${action.id}-subjective` ? (
+                                              <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                              <Copy className="h-4 w-4" />
+                                            )}
+                                          </button>
                                         </div>
-                                        Subjective
-                                      </h4>
-                                      <button
-                                        onClick={() => copySoapSection(action, "subjective")}
-                                        className="text-blue-300 hover:text-blue-100 transition-colors"
-                                        title="Copy Subjective"
-                                      >
-                                        {copiedId === `${action.id}-subjective` ? (
-                                          <CheckCircle className="h-3 w-3" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </button>
-                                    </div>
-                                    <div className="p-2 text-xs">
-                                      {truncateText(parsedSoap?.subjective || "", 100)}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                    <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
-                                      <h4 className="text-blue-100 flex items-center text-xs font-medium">
-                                        <div className="bg-green-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
-                                          O
+                                        <div className="p-3 text-xs bg-blue-950/30">
+                                          {truncateText(parsedSoap?.subjective || "", 300)}
                                         </div>
-                                        Objective
-                                      </h4>
-                                      <button
-                                        onClick={() => copySoapSection(action, "objective")}
-                                        className="text-blue-300 hover:text-blue-100 transition-colors"
-                                        title="Copy Objective"
-                                      >
-                                        {copiedId === `${action.id}-objective` ? (
-                                          <CheckCircle className="h-3 w-3" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </button>
-                                    </div>
-                                    <div className="p-2 text-xs">
-                                      {truncateText(parsedSoap?.objective || "", 100)}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                    <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
-                                      <h4 className="text-blue-100 flex items-center text-xs font-medium">
-                                        <div className="bg-purple-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
-                                          A
+                                      </div>
+                                      
+                                      <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
+                                          <h4 className="text-blue-100 flex items-center text-xs font-medium">
+                                            <div className="bg-green-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
+                                              O
+                                            </div>
+                                            Objective
+                                          </h4>
+                                          <button
+                                            onClick={() => copySoapSection(action, "objective")}
+                                            className="text-blue-300 hover:text-blue-100 transition-colors"
+                                            title="Copy Objective"
+                                          >
+                                            {copiedId === `${action.id}-objective` ? (
+                                              <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                              <Copy className="h-4 w-4" />
+                                            )}
+                                          </button>
                                         </div>
-                                        Assessment
-                                      </h4>
-                                      <button
-                                        onClick={() => copySoapSection(action, "assessment")}
-                                        className="text-blue-300 hover:text-blue-100 transition-colors"
-                                        title="Copy Assessment"
-                                      >
-                                        {copiedId === `${action.id}-assessment` ? (
-                                          <CheckCircle className="h-3 w-3" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </button>
-                                    </div>
-                                    <div className="p-2 text-xs">
-                                      {truncateText(parsedSoap?.assessment || "", 100)}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="border border-blue-800/30 rounded-lg overflow-hidden">
-                                    <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
-                                      <h4 className="text-blue-100 flex items-center text-xs font-medium">
-                                        <div className="bg-amber-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
-                                          P
+                                        <div className="p-3 text-xs bg-blue-950/30">
+                                          {truncateText(parsedSoap?.objective || "", 300)}
                                         </div>
-                                        Plan
-                                      </h4>
-                                      <button
-                                        onClick={() => copySoapSection(action, "plan")}
-                                        className="text-blue-300 hover:text-blue-100 transition-colors"
-                                        title="Copy Plan"
-                                      >
-                                        {copiedId === `${action.id}-plan` ? (
-                                          <CheckCircle className="h-3 w-3" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </button>
-                                    </div>
-                                    <div className="p-2 text-xs">
-                                      {truncateText(parsedSoap?.plan || "", 100)}
+                                      </div>
+                                      
+                                      <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
+                                          <h4 className="text-blue-100 flex items-center text-xs font-medium">
+                                            <div className="bg-purple-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
+                                              A
+                                            </div>
+                                            Assessment
+                                          </h4>
+                                          <button
+                                            onClick={() => copySoapSection(action, "assessment")}
+                                            className="text-blue-300 hover:text-blue-100 transition-colors"
+                                            title="Copy Assessment"
+                                          >
+                                            {copiedId === `${action.id}-assessment` ? (
+                                              <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                              <Copy className="h-4 w-4" />
+                                            )}
+                                          </button>
+                                        </div>
+                                        <div className="p-3 text-xs bg-blue-950/30">
+                                          {truncateText(parsedSoap?.assessment || "", 300)}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="border border-blue-800/30 rounded-lg overflow-hidden">
+                                        <div className="flex items-center justify-between bg-blue-900/40 px-3 py-2">
+                                          <h4 className="text-blue-100 flex items-center text-xs font-medium">
+                                            <div className="bg-amber-600 text-white mr-2 h-4 w-4 rounded flex items-center justify-center text-[10px]">
+                                              P
+                                            </div>
+                                            Plan
+                                          </h4>
+                                          <button
+                                            onClick={() => copySoapSection(action, "plan")}
+                                            className="text-blue-300 hover:text-blue-100 transition-colors"
+                                            title="Copy Plan"
+                                          >
+                                            {copiedId === `${action.id}-plan` ? (
+                                              <CheckCircle className="h-4 w-4" />
+                                            ) : (
+                                              <Copy className="h-4 w-4" />
+                                            )}
+                                          </button>
+                                        </div>
+                                        <div className="p-3 text-xs bg-blue-950/30">
+                                          {truncateText(parsedSoap?.plan || "", 300)}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -352,7 +351,7 @@ export function AppointmentSidebar({
 
           <div className="p-4 border-t border-blue-800/30">
             <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-              <Link href={`/app/dashboard/case/${appointment.id}`}>
+              <Link href={`/app/dashboard/case/${appointment.id}?from=appointments`}>
                 View Full Case
               </Link>
             </Button>

@@ -39,6 +39,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Custom style for template dropdown placeholder text */
+  [data-placeholder].white-placeholder {
+    color: white !important;
+  }
+  
+  /* Force white text for select trigger and value components */
+  .bg-blue-600 .select-value,
+  .bg-blue-600 [data-placeholder] {
+    color: white !important;
+  }
 }
 
 /* Add these custom styles for the Progress component */

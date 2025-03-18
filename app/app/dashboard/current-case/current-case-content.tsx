@@ -169,7 +169,7 @@ export function CurrentCaseContent() {
     transcript: string;
   } | null>(null);
   const [caseSummaryCollapsed, setCaseSummaryCollapsed] =
-    useState<boolean>(false);
+    useState<boolean>(true);
 
   // Access case store
   const {
@@ -279,6 +279,7 @@ export function CurrentCaseContent() {
       dateTime: new Date().toISOString().slice(0, 16),
       assignedTo: "",
       type: "checkup",
+      status: "ongoing",
       visibility: "private",
     },
   });
@@ -548,6 +549,15 @@ export function CurrentCaseContent() {
           },
           timestamp: Date.now(),
         });
+        
+        // Update status to "ongoing" automatically
+        if (form.getValues("status") !== "ongoing") {
+          form.setValue("status", "ongoing");
+          // If case already exists, update it
+          if (currentCaseId) {
+            handleUpdateCase(form.getValues());
+          }
+        }
 
         // Reset recording time and transcript
         setRecordingTime(0);
@@ -727,6 +737,9 @@ export function CurrentCaseContent() {
       });
     } finally {
       setIsGeneratingSoap(false);
+      
+      // Clear selected recordings after generation (for single transcript)
+      useCaseStore.getState().clearSelectedRecordings();
     }
   };
 
@@ -853,6 +866,9 @@ export function CurrentCaseContent() {
       });
     } finally {
       setIsGeneratingSoap(false);
+      
+      // Clear selected recordings after generation (for multiple transcripts)
+      useCaseStore.getState().clearSelectedRecordings();
     }
   };
 
@@ -1042,6 +1058,7 @@ export function CurrentCaseContent() {
                       dateTime: new Date().toISOString().slice(0, 16),
                       assignedTo: "",
                       type: "checkup",
+                      status: "ongoing",
                       visibility: "private",
                     });
 
@@ -1094,6 +1111,7 @@ export function CurrentCaseContent() {
                 dateTime: new Date().toISOString().slice(0, 16),
                 assignedTo: "",
                 type: "checkup",
+                status: "ongoing",
                 visibility: "private",
               });
 
@@ -1429,16 +1447,23 @@ export function CurrentCaseContent() {
                         value={selectedTemplateId}
                         onValueChange={setSelectedTemplateId}
                       >
-                        <SelectTrigger className="w-[180px] bg-blue-900/20 border-blue-700/30 text-blue-50">
-                          <SelectValue placeholder="Select Template" />
+                        <SelectTrigger 
+                          className="w-[180px] bg-blue-600 hover:bg-blue-700 border-blue-700/50 font-normal text-sm text-white"
+                          style={{ color: "white" }} // Force white text color for all states
+                        >
+                          <SelectValue 
+                            placeholder="Select Template" 
+                            className="!text-white white-placeholder"
+                            style={{ color: "white" }} // Force white text color
+                          />
                         </SelectTrigger>
                         <SelectContent className="bg-blue-900 border-blue-700">
                           {isLoadingTemplates ? (
-                            <SelectItem value="loading" disabled>
+                            <SelectItem value="loading" disabled className="text-blue-300">
                               Loading templates...
                             </SelectItem>
                           ) : availableTemplates.length === 0 ? (
-                            <SelectItem value="none" disabled>
+                            <SelectItem value="none" disabled className="text-blue-300">
                               No templates available
                             </SelectItem>
                           ) : (
@@ -1446,6 +1471,7 @@ export function CurrentCaseContent() {
                               <SelectItem
                                 key={template.id}
                                 value={template.id.toString()}
+                                className="text-blue-50"
                               >
                                 {template.name} ({template.type})
                               </SelectItem>
@@ -1460,8 +1486,8 @@ export function CurrentCaseContent() {
                         onClick={handleGenerateFromMultiple}
                         disabled={
                           isGeneratingSoap ||
-                          useCaseStore.getState().selectedRecordings.length ===
-                            0
+                          useCaseStore.getState().selectedRecordings.length === 0 ||
+                          !selectedTemplateId
                         }
                       >
                         {isGeneratingSoap ? (
@@ -1519,10 +1545,14 @@ export function CurrentCaseContent() {
                             >
                               <CardHeader className="p-4 pb-2">
                                 <div className="flex justify-between items-center w-full">
-                                  <div className="flex items-center gap-2 flex-1">
+                                  <div 
+                                    className="flex items-center gap-2 flex-1 cursor-pointer"
+                                    onClick={toggleExpanded}
+                                  >
                                     <label
                                       htmlFor={`recording-${action.id}`}
                                       className="text-blue-50 font-medium cursor-pointer"
+                                      onClick={(e) => e.stopPropagation()}
                                     >
                                       Recording {index + 1}
                                     </label>
@@ -1552,11 +1582,15 @@ export function CurrentCaseContent() {
                                         }
                                       }}
                                       className="h-4 w-4 rounded border-blue-700 text-blue-600 focus:ring-blue-500 mr-3"
+                                      onClick={(e) => e.stopPropagation()}
                                     />
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={toggleExpanded}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleExpanded();
+                                      }}
                                       className="h-8 w-8 p-0 text-blue-200 hover:text-blue-50 hover:bg-blue-800/30"
                                     >
                                       {isTranscriptExpanded ? (
@@ -1707,10 +1741,14 @@ export function CurrentCaseContent() {
                             >
                               <CardHeader className="p-4 pb-2">
                                 <div className="flex justify-between items-center w-full">
-                                  <div className="flex items-center gap-2 flex-1">
+                                  <div 
+                                    className="flex items-center gap-2 flex-1 cursor-pointer"
+                                    onClick={() => toggleSoapExpanded(action.id)}
+                                  >
                                     <label
                                       htmlFor={`soap-${action.id}`}
                                       className="text-blue-50 font-medium cursor-pointer"
+                                      onClick={(e) => e.stopPropagation()}
                                     >
                                       {templateName} {index + 1}
                                     </label>
@@ -1823,13 +1861,16 @@ export function CurrentCaseContent() {
                                         <div className="border border-blue-800/30 rounded-lg overflow-hidden">
                                           <div
                                             className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                            onClick={() =>
-                                              toggleAllSections(
-                                                action.id,
-                                                !expandedSoapSections[action.id]
-                                                  .subjective
-                                              )
-                                            }
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setExpandedSoapSections((prev) => ({
+                                                ...prev,
+                                                [action.id]: {
+                                                  ...prev[action.id],
+                                                  subjective: !prev[action.id].subjective
+                                                }
+                                              }));
+                                            }}
                                           >
                                             <h4 className="text-blue-100 flex items-center text-sm font-medium">
                                               <Badge className="bg-blue-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
@@ -1887,13 +1928,16 @@ export function CurrentCaseContent() {
                                         <div className="border border-blue-800/30 rounded-lg overflow-hidden">
                                           <div
                                             className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                            onClick={() =>
-                                              toggleAllSections(
-                                                action.id,
-                                                !expandedSoapSections[action.id]
-                                                  .objective
-                                              )
-                                            }
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setExpandedSoapSections((prev) => ({
+                                                ...prev,
+                                                [action.id]: {
+                                                  ...prev[action.id],
+                                                  objective: !prev[action.id].objective
+                                                }
+                                              }));
+                                            }}
                                           >
                                             <h4 className="text-blue-100 flex items-center text-sm font-medium">
                                               <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
@@ -1951,13 +1995,16 @@ export function CurrentCaseContent() {
                                         <div className="border border-blue-800/30 rounded-lg overflow-hidden">
                                           <div
                                             className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                            onClick={() =>
-                                              toggleAllSections(
-                                                action.id,
-                                                !expandedSoapSections[action.id]
-                                                  .assessment
-                                              )
-                                            }
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setExpandedSoapSections((prev) => ({
+                                                ...prev,
+                                                [action.id]: {
+                                                  ...prev[action.id],
+                                                  assessment: !prev[action.id].assessment
+                                                }
+                                              }));
+                                            }}
                                           >
                                             <h4 className="text-blue-100 flex items-center text-sm font-medium">
                                               <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
@@ -2015,13 +2062,16 @@ export function CurrentCaseContent() {
                                         <div className="border border-blue-800/30 rounded-lg overflow-hidden">
                                           <div
                                             className="flex items-center justify-between bg-blue-900/40 px-3 py-2 cursor-pointer"
-                                            onClick={() =>
-                                              toggleAllSections(
-                                                action.id,
-                                                !expandedSoapSections[action.id]
-                                                  .plan
-                                              )
-                                            }
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setExpandedSoapSections((prev) => ({
+                                                ...prev,
+                                                [action.id]: {
+                                                  ...prev[action.id],
+                                                  plan: !prev[action.id].plan
+                                                }
+                                              }));
+                                            }}
                                           >
                                             <h4 className="text-blue-100 flex items-center text-sm font-medium">
                                               <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">

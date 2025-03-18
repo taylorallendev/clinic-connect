@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { CurrentCaseContent } from "../current-case/current-case-content";
 import { useAppointment } from "@/hooks/use-appointment";
 import { useCaseStore } from "@/store/use-case-store";
-import { Loader2, ChevronLeft } from "lucide-react";
+import { Loader2, ChevronLeft, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,6 +24,8 @@ interface CaseWrapperProps {
 export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
   const [isLoading, setIsLoading] = useState(!!appointmentId);
   const { loadAppointmentData, reset } = useCaseStore();
+  const searchParams = useSearchParams();
+  const isFromAppointments = searchParams.get('from') === 'appointments';
 
   // If an appointmentId is provided, we're in view/edit mode for an existing case
   // If not, we're in creation mode for a new case
@@ -74,24 +77,24 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
 
   return (
     <div className="flex flex-col space-y-4 p-6">
-      {/* Navigation and Breadcrumbs */}
-      <div className="flex flex-col space-y-2">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
+      {/* Back to Appointments button - only show when coming from appointments page */}
+      {isFromAppointments && appointmentId && (
+        <div className="mb-4">
+          <Button 
+            variant="outline" 
             size="sm"
-            className="text-blue-200 hover:text-blue-50 hover:bg-blue-800/30 mr-2"
+            className="bg-blue-900/20 border-blue-700/30 text-blue-100 hover:bg-blue-800/30"
             asChild
           >
             <Link href="/app/dashboard/appointments">
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Appointments
             </Link>
           </Button>
         </div>
-      </div>
-
-      {/* Render the same CurrentCaseContent component for both new and existing cases */}
+      )}
+      
+      {/* Render the CurrentCaseContent component for both new and existing cases */}
       <CurrentCaseContent />
     </div>
   );
