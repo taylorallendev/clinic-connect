@@ -1,272 +1,498 @@
 "use client";
 
-import React, { useState } from "react";
-import { Save, X } from "lucide-react";
-import { Button } from "./button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "./card";
-import { Separator } from "./separator";
-import { RichTextEditor } from "./rich-text-editor";
-import { SoapResponse } from "@/store/use-case-store";
-import { Badge } from "./badge";
-import { useToast } from "./use-toast";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Loader2,
+  Save,
+  X,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MarkdownRenderer } from "@/components/ui/markdown";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Toggle } from "@/components/ui/toggle";
+
+interface SoapResponse {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+}
 
 interface SoapNotesEditorProps {
   soapNotes: SoapResponse;
+  transcript: string;
   onClose: () => void;
   onUpdate: (updatedSoap: SoapResponse) => void;
-  onSave?: () => void;
-  transcript?: string;
-  actionId?: string;
+  actionId: string;
 }
 
 export function SoapNotesEditor({
   soapNotes,
+  transcript,
   onClose,
   onUpdate,
-  onSave,
-  transcript,
   actionId,
 }: SoapNotesEditorProps) {
-  const { toast } = useToast();
-  const [soap, setSoap] = useState<SoapResponse>({
-    subjective: soapNotes.subjective || "",
-    objective: soapNotes.objective || "",
-    assessment: soapNotes.assessment || "",
-    plan: soapNotes.plan || "",
-  });
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Determine template type from the subjective field
-  const isTemplateGenerated = soap.subjective.startsWith("Generated using template:");
-  // Extract template name from subjective field if it's a generated template
-  const templateName = isTemplateGenerated
-    ? soap.subjective.replace("Generated using template:", "").trim()
-    : "SOAP Notes";
-  // Use objective field to determine template type
-  const templateType = soap.objective || "";
-  // Check if this is a standard SOAP note or another template type
-  const isSoapFormat = !isTemplateGenerated || templateType.toLowerCase() === "soap_notes";
+  // Parse the SOAP notes if they're in JSON string format
+  const [parsedSoap, setParsedSoap] = useState<SoapResponse>(soapNotes);
 
-  const handleUpdateSection = (section: keyof SoapResponse, value: string) => {
-    setSoap((prev) => ({
+  useEffect(() => {
+    // Try to parse the SOAP notes if they appear to be in JSON format
+    try {
+      // Check if any field contains JSON
+      if (
+        typeof soapNotes.plan === "string" &&
+        (soapNotes.plan.includes('"subjective":') ||
+          soapNotes.plan.includes('"objective":') ||
+          soapNotes.plan.includes('"assessment":') ||
+          soapNotes.plan.includes('"plan":'))
+      ) {
+        const parsed = JSON.parse(soapNotes.plan);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          (parsed.subjective ||
+            parsed.objective ||
+            parsed.assessment ||
+            parsed.plan)
+        ) {
+          setParsedSoap(parsed);
+          return;
+        }
+      }
+
+      // If we couldn't parse JSON or it wasn't in JSON format, use the original
+      setParsedSoap(soapNotes);
+    } catch (e) {
+      console.error("Failed to parse SOAP JSON:", e);
+      setParsedSoap(soapNotes);
+    }
+  }, [soapNotes]);
+
+  // Initialize state with the parsed SOAP notes
+  const [editedSoap, setEditedSoap] = useState<SoapResponse>({
+    subjective: parsedSoap.subjective || "",
+    objective: parsedSoap.objective || "",
+    assessment: parsedSoap.assessment || "",
+    plan: parsedSoap.plan || "",
+  });
+
+  // Update edited soap when parsed soap changes
+  useEffect(() => {
+    setEditedSoap({
+      subjective: parsedSoap.subjective || "",
+      objective: parsedSoap.objective || "",
+      assessment: parsedSoap.assessment || "",
+      plan: parsedSoap.plan || "",
+    });
+  }, [parsedSoap]);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    subjective: true,
+    objective: true,
+    assessment: true,
+    plan: true,
+  });
+
+  // Determine if this is a standard SOAP note or another template type
+  const isSoapFormat =
+    !parsedSoap.subjective?.startsWith("Generated using template:") &&
+    parsedSoap.subjective &&
+    parsedSoap.objective &&
+    parsedSoap.assessment &&
+    parsedSoap.plan;
+
+  // Handle saving the edited SOAP notes
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Call the onUpdate callback with the edited SOAP notes
+      onUpdate(editedSoap);
+    } catch (error) {
+      console.error("Error saving SOAP notes:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle changes to the SOAP notes
+  const handleChange = (section: keyof SoapResponse, value: string) => {
+    setEditedSoap((prev) => ({
       ...prev,
       [section]: value,
     }));
   };
 
-  const handleSave = () => {
-    setIsSaving(true);
-
-    // Call onUpdate with the updated SOAP notes
-    onUpdate(soap);
-
-    if (onSave) {
-      onSave();
-    }
-
-    toast({
-      title: isSoapFormat ? "SOAP notes updated" : `${templateType} content updated`,
-      description: "Your changes have been saved successfully",
-    });
-
-    setIsSaving(false);
+  // Toggle section expansion
+  const toggleSection = (section: keyof SoapResponse) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
-  // Function to handle clicking outside
-  const handleClickOutside = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close if clicking directly on the overlay
-    if (e.target === e.currentTarget) {
-      handleSave();
-      onClose();
+  // Format helper functions
+  const addFormatting = (section: keyof SoapResponse, format: string) => {
+    const textarea = document.getElementById(
+      `${section}-textarea`
+    ) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    let formattedText = "";
+    switch (format) {
+      case "bold":
+        formattedText = `**${text.substring(start, end)}**`;
+        break;
+      case "italic":
+        formattedText = `*${text.substring(start, end)}*`;
+        break;
+      case "underline":
+        formattedText = `<u>${text.substring(start, end)}</u>`;
+        break;
+      case "bullet":
+        formattedText = `\n- ${text.substring(start, end)}`;
+        break;
+      case "number":
+        formattedText = `\n1. ${text.substring(start, end)}`;
+        break;
+      default:
+        return;
     }
+
+    const newText =
+      text.substring(0, start) + formattedText + text.substring(end);
+    handleChange(section, newText);
+
+    // Set cursor position after formatting
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + formattedText.length,
+        start + formattedText.length
+      );
+    }, 0);
   };
 
   return (
-    <>
-      {/* Overlay for clicking outside */}
-      <div
-        className="fixed inset-0 top-0 bottom-0 left-0 right-0 bg-black/30 z-[100]"
-        onClick={handleClickOutside}
-        style={{margin: 0, padding: 0}}
-      />
+    <Dialog open={true} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="text-card-foreground flex items-center">
+            Edit {isSoapFormat ? "SOAP Notes" : "Generated Content"}
+          </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            {isSoapFormat
+              ? "Edit the Subjective, Objective, Assessment, and Plan sections."
+              : "Edit the generated content."}
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Editor panel */}
-      <div className="fixed top-0 bottom-0 right-0 left-auto w-3/5 h-screen bg-background border-l border-border shadow-xl z-[101] overflow-y-auto" style={{margin: 0, padding: 0}}>
-        <Card className="border-0 h-full flex flex-col bg-transparent">
-          <CardHeader className="sticky top-0 bg-background z-10 flex flex-row items-center justify-between border-b border-border">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-foreground">
-                {isSoapFormat ? "Edit SOAP Notes" : `Edit ${templateType} Content`}
-              </CardTitle>
-              {actionId && (
-                <Badge className="bg-muted text-muted-foreground border-0">
-                  ID: {actionId.substring(0, 8)}
-                </Badge>
-              )}
+        {/* Original transcript for reference */}
+        {transcript && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">
+              Original Transcript
+            </h3>
+            <div className="bg-muted/20 border border-muted/30 rounded-lg p-3 text-muted-foreground text-sm max-h-[150px] overflow-y-auto">
+              {transcript}
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={handleSave}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isSaving}
+          </div>
+        )}
+
+        {/* Formatting toolbar */}
+        <div className="flex items-center gap-1 mb-4 border-b border-muted/30 pb-2">
+          <Toggle
+            size="sm"
+            aria-label="Bold"
+            onClick={() => {
+              const activeSection = document.activeElement?.id?.split(
+                "-"
+              )[0] as keyof SoapResponse;
+              if (
+                activeSection &&
+                Object.keys(editedSoap).includes(activeSection)
+              ) {
+                addFormatting(activeSection, "bold");
+              }
+            }}
+          >
+            <Bold className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            size="sm"
+            aria-label="Italic"
+            onClick={() => {
+              const activeSection = document.activeElement?.id?.split(
+                "-"
+              )[0] as keyof SoapResponse;
+              if (
+                activeSection &&
+                Object.keys(editedSoap).includes(activeSection)
+              ) {
+                addFormatting(activeSection, "italic");
+              }
+            }}
+          >
+            <Italic className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            size="sm"
+            aria-label="Underline"
+            onClick={() => {
+              const activeSection = document.activeElement?.id?.split(
+                "-"
+              )[0] as keyof SoapResponse;
+              if (
+                activeSection &&
+                Object.keys(editedSoap).includes(activeSection)
+              ) {
+                addFormatting(activeSection, "underline");
+              }
+            }}
+          >
+            <Underline className="h-4 w-4" />
+          </Toggle>
+          <div className="h-4 w-px bg-muted/50 mx-1" />
+          <Toggle
+            size="sm"
+            aria-label="Bullet List"
+            onClick={() => {
+              const activeSection = document.activeElement?.id?.split(
+                "-"
+              )[0] as keyof SoapResponse;
+              if (
+                activeSection &&
+                Object.keys(editedSoap).includes(activeSection)
+              ) {
+                addFormatting(activeSection, "bullet");
+              }
+            }}
+          >
+            <List className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            size="sm"
+            aria-label="Numbered List"
+            onClick={() => {
+              const activeSection = document.activeElement?.id?.split(
+                "-"
+              )[0] as keyof SoapResponse;
+              if (
+                activeSection &&
+                Object.keys(editedSoap).includes(activeSection)
+              ) {
+                addFormatting(activeSection, "number");
+              }
+            }}
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Toggle>
+        </div>
+
+        {isSoapFormat ? (
+          <div className="space-y-4">
+            {/* Subjective Section */}
+            <div className="border border-muted/30 rounded-lg overflow-hidden">
+              <div
+                className="flex items-center justify-between bg-muted/10 p-2 cursor-pointer"
+                onClick={() => toggleSection("subjective")}
               >
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  handleSave();
-                  onClose();
-                }}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto space-y-6 pb-16 pt-6">
-            {transcript && (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-2 text-muted-foreground">
-                  Original Transcript
-                </h3>
-                <div className="bg-muted/30 border border-border rounded-md p-3 text-sm text-foreground max-h-40 overflow-y-auto whitespace-pre-line">
-                  {transcript}
+                <div className="flex items-center">
+                  <Badge className="bg-muted text-muted-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                    S
+                  </Badge>
+                  <span className="font-medium">Subjective</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {expandedSections.subjective ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
-            )}
-
-            {isSoapFormat ? (
-              // Standard SOAP layout with 4 sections
-              <div className="space-y-4">
-                {/* Subjective */}
-                <div className="border border-muted/30 rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-                    <h4 className="text-muted-foreground flex items-center text-sm font-medium">
-                      <Badge className="bg-muted text-muted-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                        S
-                      </Badge>
-                      Subjective
-                    </h4>
-                  </div>
-                  <div className="p-3">
-                    <RichTextEditor
-                      value={soap.subjective}
-                      onChange={(value) => handleUpdateSection("subjective", value)}
-                      className="bg-transparent border-0 shadow-none [&_.ProseMirror]:!text-card-foreground [&_.ProseMirror]:p-0 [&_.ProseMirror]:min-h-[80px]"
-                    />
-                  </div>
-                </div>
-
-                {/* Objective */}
-                <div className="border border-muted/30 rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-                    <h4 className="text-muted-foreground flex items-center text-sm font-medium">
-                      <Badge className="bg-success text-success-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                        O
-                      </Badge>
-                      Objective
-                    </h4>
-                  </div>
-                  <div className="p-3">
-                    <RichTextEditor
-                      value={soap.objective}
-                      onChange={(value) => handleUpdateSection("objective", value)}
-                      className="bg-transparent border-0 shadow-none [&_.ProseMirror]:!text-card-foreground [&_.ProseMirror]:p-0 [&_.ProseMirror]:min-h-[80px]"
-                    />
-                  </div>
-                </div>
-
-                {/* Assessment */}
-                <div className="border border-muted/30 rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-                    <h4 className="text-muted-foreground flex items-center text-sm font-medium">
-                      <Badge className="bg-info text-info-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                        A
-                      </Badge>
-                      Assessment
-                    </h4>
-                  </div>
-                  <div className="p-3">
-                    <RichTextEditor
-                      value={soap.assessment}
-                      onChange={(value) => handleUpdateSection("assessment", value)}
-                      className="bg-transparent border-0 shadow-none [&_.ProseMirror]:!text-card-foreground [&_.ProseMirror]:p-0 [&_.ProseMirror]:min-h-[80px]"
-                    />
-                  </div>
-                </div>
-
-                {/* Plan */}
-                <div className="border border-muted/30 rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-                    <h4 className="text-muted-foreground flex items-center text-sm font-medium">
-                      <Badge className="bg-accent text-accent-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                        P
-                      </Badge>
-                      Plan
-                    </h4>
-                  </div>
-                  <div className="p-3">
-                    <RichTextEditor
-                      value={soap.plan}
-                      onChange={(value) => handleUpdateSection("plan", value)}
-                      className="bg-transparent border-0 shadow-none [&_.ProseMirror]:!text-card-foreground [&_.ProseMirror]:p-0 [&_.ProseMirror]:min-h-[80px]"
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Single content editor for other template types
-              <div className="border border-muted/30 rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-                  <h4 className="text-muted-foreground flex items-center text-sm font-medium">
-                    <Badge 
-                      className="bg-purple-600 text-white mr-2 h-5 flex items-center justify-center px-2 py-0.5"
-                    >
-                      {templateType}
-                    </Badge>
-                    {templateName}
-                  </h4>
-                </div>
+              {expandedSections.subjective && (
                 <div className="p-3">
-                  <div className="text-sm text-muted-foreground mb-4">
-                    Edit the generated content below.
-                  </div>
-                  <RichTextEditor
-                    value={soap.plan}
-                    onChange={(value) => handleUpdateSection("plan", value)}
-                    className="bg-transparent border-0 shadow-none [&_.ProseMirror]:!text-card-foreground [&_.ProseMirror]:p-0 [&_.ProseMirror]:min-h-[300px]"
+                  <Textarea
+                    id="subjective-textarea"
+                    value={editedSoap.subjective}
+                    onChange={(e) => handleChange("subjective", e.target.value)}
+                    placeholder="Enter subjective notes..."
+                    className="min-h-[100px] bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   />
                 </div>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="border-t border-border bg-background/95 sticky bottom-0 py-3">
-            <div className="flex justify-end w-full gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  handleSave();
-                  onClose();
-                }}
-                className="border-border text-muted-foreground hover:text-foreground hover:bg-muted/20"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isSaving}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
+              )}
             </div>
-          </CardFooter>
-        </Card>
-      </div>
-    </>
+
+            {/* Objective Section */}
+            <div className="border border-muted/30 rounded-lg overflow-hidden">
+              <div
+                className="flex items-center justify-between bg-muted/10 p-2 cursor-pointer"
+                onClick={() => toggleSection("objective")}
+              >
+                <div className="flex items-center">
+                  <Badge className="bg-green-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
+                    O
+                  </Badge>
+                  <span className="font-medium">Objective</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {expandedSections.objective ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+              {expandedSections.objective && (
+                <div className="p-3">
+                  <Textarea
+                    id="objective-textarea"
+                    value={editedSoap.objective}
+                    onChange={(e) => handleChange("objective", e.target.value)}
+                    placeholder="Enter objective notes..."
+                    className="min-h-[100px] bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Assessment Section */}
+            <div className="border border-muted/30 rounded-lg overflow-hidden">
+              <div
+                className="flex items-center justify-between bg-muted/10 p-2 cursor-pointer"
+                onClick={() => toggleSection("assessment")}
+              >
+                <div className="flex items-center">
+                  <Badge className="bg-purple-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
+                    A
+                  </Badge>
+                  <span className="font-medium">Assessment</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {expandedSections.assessment ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+              {expandedSections.assessment && (
+                <div className="p-3">
+                  <Textarea
+                    id="assessment-textarea"
+                    value={editedSoap.assessment}
+                    onChange={(e) => handleChange("assessment", e.target.value)}
+                    placeholder="Enter assessment notes..."
+                    className="min-h-[100px] bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Plan Section */}
+            <div className="border border-muted/30 rounded-lg overflow-hidden">
+              <div
+                className="flex items-center justify-between bg-muted/10 p-2 cursor-pointer"
+                onClick={() => toggleSection("plan")}
+              >
+                <div className="flex items-center">
+                  <Badge className="bg-amber-600 text-white mr-2 h-5 w-5 flex items-center justify-center p-0">
+                    P
+                  </Badge>
+                  <span className="font-medium">Plan</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {expandedSections.plan ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+              {expandedSections.plan && (
+                <div className="p-3">
+                  <Textarea
+                    id="plan-textarea"
+                    value={editedSoap.plan}
+                    onChange={(e) => handleChange("plan", e.target.value)}
+                    placeholder="Enter plan notes..."
+                    className="min-h-[100px] bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // For non-SOAP template content, just show a single editor
+          <div>
+            <Textarea
+              id="plan-textarea"
+              value={editedSoap.plan}
+              onChange={(e) => handleChange("plan", e.target.value)}
+              placeholder="Enter content..."
+              className="min-h-[400px] bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+            />
+          </div>
+        )}
+
+        <DialogFooter className="mt-4">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="bg-muted/20 border-muted/30 text-card-foreground hover:bg-muted/40"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
