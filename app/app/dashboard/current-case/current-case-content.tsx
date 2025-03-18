@@ -711,7 +711,8 @@ export function CurrentCaseContent() {
               transcript: transcript,
               soap: {
                 subjective: `Generated using template: ${result.template.name}`,
-                objective: "",
+                // Store the template type in objective field for display
+                objective: `${result.template.type}`,
                 assessment: "",
                 plan:
                   typeof result.content === "string"
@@ -836,7 +837,8 @@ export function CurrentCaseContent() {
               transcript: combinedTranscript,
               soap: {
                 subjective: `Generated using template: ${result.template.name}`,
-                objective: "",
+                // Store the template type in objective field for display
+                objective: `${result.template.type}`,
                 assessment: "",
                 plan:
                   typeof result.content === "string"
@@ -1771,7 +1773,7 @@ export function CurrentCaseContent() {
                                     <Badge
                                       className={`${isSoapFormat ? "bg-green-700/50 text-green-100" : "bg-purple-700/50 text-purple-100"} border-0`}
                                     >
-                                      {isSoapFormat ? "SOAP" : "Template"}
+                                      {isSoapFormat ? "SOAP" : parsedSoap?.objective || "Template"}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground ml-1">
                                       <ClientSideDate
@@ -1791,7 +1793,8 @@ export function CurrentCaseContent() {
                                           handleActionDeselect();
                                         }
                                       }}
-                                      className="mr-3 data-[state=checked]:bg-white data-[state=checked]:text-primary-foreground border-green-700 text-green-600 focus:ring-green-500"
+                                      className="mr-3 bg-muted/50 hover:bg-muted data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-muted/70"
+                                      onClick={(e) => e.stopPropagation()}
                                     />
                                     <Button
                                       variant="ghost"
@@ -2170,6 +2173,18 @@ export function CurrentCaseContent() {
                                           >
                                             <Copy className="h-3 w-3 mr-1" />
                                             Copy
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              handleEditSoap(action)
+                                            }
+                                            className="h-6 text-xs text-muted-foreground"
+                                            title="Edit content"
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            Edit
                                           </Button>
                                         </div>
                                         <div className="border border-muted/30 rounded-lg overflow-hidden">

@@ -35,6 +35,17 @@ export function SoapNotesEditor({
     plan: soapNotes.plan || "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Determine template type from the subjective field
+  const isTemplateGenerated = soap.subjective.startsWith("Generated using template:");
+  // Extract template name from subjective field if it's a generated template
+  const templateName = isTemplateGenerated
+    ? soap.subjective.replace("Generated using template:", "").trim()
+    : "SOAP Notes";
+  // Use objective field to determine template type
+  const templateType = soap.objective || "";
+  // Check if this is a standard SOAP note or another template type
+  const isSoapFormat = !isTemplateGenerated || templateType.toLowerCase() === "soap_notes";
 
   const handleUpdateSection = (section: keyof SoapResponse, value: string) => {
     setSoap((prev) => ({
@@ -54,7 +65,7 @@ export function SoapNotesEditor({
     }
 
     toast({
-      title: "SOAP notes updated",
+      title: isSoapFormat ? "SOAP notes updated" : `${templateType} content updated`,
       description: "Your changes have been saved successfully",
     });
 
@@ -83,7 +94,9 @@ export function SoapNotesEditor({
         <Card className="border-0 h-full flex flex-col bg-transparent">
           <CardHeader className="sticky top-0 bg-background z-10 flex flex-row items-center justify-between border-b border-border">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-foreground">Edit SOAP Notes</CardTitle>
+              <CardTitle className="text-foreground">
+                {isSoapFormat ? "Edit SOAP Notes" : `Edit ${templateType} Content`}
+              </CardTitle>
               {actionId && (
                 <Badge className="bg-muted text-muted-foreground border-0">
                   ID: {actionId.substring(0, 8)}
@@ -124,73 +137,100 @@ export function SoapNotesEditor({
               </div>
             )}
 
-            <div>
-              <div className="flex items-center mb-2">
-                <Badge className="bg-primary text-primary-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                  S
-                </Badge>
-                <h3 className="text-base font-medium text-foreground">
-                  Subjective
-                </h3>
+            {isSoapFormat ? (
+              // Standard SOAP layout with 4 sections
+              <>
+                <div>
+                  <div className="flex items-center mb-2">
+                    <Badge className="bg-primary text-primary-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                      S
+                    </Badge>
+                    <h3 className="text-base font-medium text-foreground">
+                      Subjective
+                    </h3>
+                  </div>
+                  <RichTextEditor
+                    value={soap.subjective}
+                    onChange={(value) => handleUpdateSection("subjective", value)}
+                    className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+                  />
+                </div>
+
+                <Separator className="border-border" />
+
+                <div>
+                  <div className="flex items-center mb-2">
+                    <Badge className="bg-success text-success-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                      O
+                    </Badge>
+                    <h3 className="text-base font-medium text-foreground">
+                      Objective
+                    </h3>
+                  </div>
+                  <RichTextEditor
+                    value={soap.objective}
+                    onChange={(value) => handleUpdateSection("objective", value)}
+                    className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+                  />
+                </div>
+
+                <Separator className="border-border" />
+
+                <div>
+                  <div className="flex items-center mb-2">
+                    <Badge className="bg-info text-info-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                      A
+                    </Badge>
+                    <h3 className="text-base font-medium text-foreground">
+                      Assessment
+                    </h3>
+                  </div>
+                  <RichTextEditor
+                    value={soap.assessment}
+                    onChange={(value) => handleUpdateSection("assessment", value)}
+                    className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+                  />
+                </div>
+
+                <Separator className="border-border" />
+
+                <div>
+                  <div className="flex items-center mb-2">
+                    <Badge className="bg-accent text-accent-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
+                      P
+                    </Badge>
+                    <h3 className="text-base font-medium text-foreground">Plan</h3>
+                  </div>
+                  <RichTextEditor
+                    value={soap.plan}
+                    onChange={(value) => handleUpdateSection("plan", value)}
+                    className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
+                  />
+                </div>
+              </>
+            ) : (
+              // Single content editor for other template types
+              <div>
+                <div className="flex items-center mb-2">
+                  <Badge 
+                    className="bg-purple-600 text-white mr-2 h-5 flex items-center justify-center px-2 py-0.5"
+                  >
+                    {templateType}
+                  </Badge>
+                  <h3 className="text-base font-medium text-foreground">
+                    {templateName}
+                  </h3>
+                </div>
+                <div className="text-sm text-muted-foreground mb-4">
+                  Edit the generated content below.
+                </div>
+                <RichTextEditor
+                  value={soap.plan}
+                  onChange={(value) => handleUpdateSection("plan", value)}
+                  className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground min-h-[300px]"
+                />
               </div>
-              <RichTextEditor
-                value={soap.subjective}
-                onChange={(value) => handleUpdateSection("subjective", value)}
-                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
-              />
-            </div>
-
-            <Separator className="border-border" />
-
-            <div>
-              <div className="flex items-center mb-2">
-                <Badge className="bg-success text-success-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                  O
-                </Badge>
-                <h3 className="text-base font-medium text-foreground">
-                  Objective
-                </h3>
-              </div>
-              <RichTextEditor
-                value={soap.objective}
-                onChange={(value) => handleUpdateSection("objective", value)}
-                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
-              />
-            </div>
-
-            <Separator className="border-border" />
-
-            <div>
-              <div className="flex items-center mb-2">
-                <Badge className="bg-info text-info-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                  A
-                </Badge>
-                <h3 className="text-base font-medium text-foreground">
-                  Assessment
-                </h3>
-              </div>
-              <RichTextEditor
-                value={soap.assessment}
-                onChange={(value) => handleUpdateSection("assessment", value)}
-                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
-              />
-            </div>
-
-            <Separator className="border-border" />
-
-            <div>
-              <div className="flex items-center mb-2">
-                <Badge className="bg-accent text-accent-foreground mr-2 h-5 w-5 flex items-center justify-center p-0">
-                  P
-                </Badge>
-                <h3 className="text-base font-medium text-foreground">Plan</h3>
-              </div>
-              <RichTextEditor
-                value={soap.plan}
-                onChange={(value) => handleUpdateSection("plan", value)}
-                className="bg-muted/20 border-border [&_.ProseMirror]:!text-card-foreground"
-              />
-            </div>
+            )}
           </CardContent>
           <CardFooter className="border-t border-border bg-background/95 sticky bottom-0 py-3">
             <div className="flex justify-end w-full gap-2">
