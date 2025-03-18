@@ -13,51 +13,51 @@ import {
 
 export function AppointmentsSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 light bg-white">
       <div className="flex items-center justify-between gap-4">
-        <div className="h-10 w-[250px] animate-pulse rounded bg-blue-800/40"></div>
+        <div className="h-10 w-[250px] animate-pulse rounded bg-[#E2E8F0]"></div>
         <div className="flex items-center gap-2">
-          <div className="h-10 w-[120px] animate-pulse rounded bg-blue-800/40"></div>
-          <div className="h-10 w-[120px] animate-pulse rounded bg-blue-800/40"></div>
+          <div className="h-10 w-[120px] animate-pulse rounded bg-[#E2E8F0]"></div>
+          <div className="h-10 w-[120px] animate-pulse rounded bg-[#E2E8F0]"></div>
         </div>
       </div>
 
-      <Card className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 rounded-2xl overflow-hidden">
-        <CardHeader className="px-6 py-4 border-b border-blue-800/30 bg-blue-900/20">
+      <Card className="bg-white border-[#E2E8F0]/50 shadow-sm rounded-lg overflow-hidden">
+        <CardHeader className="px-6 py-4 border-b border-[#E2E8F0] bg-[#E2E8F0]/50">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
-              <div className="h-6 w-[200px] animate-pulse rounded bg-blue-800/40"></div>
+              <div className="h-6 w-[200px] animate-pulse rounded bg-[#E2E8F0]"></div>
             </CardTitle>
             <div className="flex items-center gap-2">
-              <div className="h-10 w-[250px] animate-pulse rounded bg-blue-800/40"></div>
-              <div className="h-10 w-10 animate-pulse rounded bg-blue-800/40"></div>
+              <div className="h-10 w-[250px] animate-pulse rounded bg-[#E2E8F0]"></div>
+              <div className="h-10 w-10 animate-pulse rounded bg-[#E2E8F0]"></div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-blue-900/20">
-              <TableRow className="border-blue-800/30">
+            <TableHeader className="bg-[#E2E8F0]/50">
+              <TableRow className="border-[#E2E8F0]">
                 <TableHead>
-                  <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
                 <TableHead>
-                  <div className="h-4 w-[150px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[150px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
                 <TableHead>
-                  <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
                 <TableHead>
-                  <div className="h-4 w-[120px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[120px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
                 <TableHead>
-                  <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
                 <TableHead>
-                  <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
                 <TableHead>
-                  <div className="h-4 w-[80px] animate-pulse rounded bg-blue-800/40"></div>
+                  <div className="h-4 w-[80px] animate-pulse rounded bg-[#E2E8F0]"></div>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -65,27 +65,27 @@ export function AppointmentsSkeleton() {
               {Array(5)
                 .fill(0)
                 .map((_, i) => (
-                  <TableRow key={i} className="border-blue-800/30">
+                  <TableRow key={i} className="border-[#E2E8F0]">
                     <TableCell>
-                      <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-[150px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[150px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-[120px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[120px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-[100px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[100px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-[80px] animate-pulse rounded bg-blue-800/40"></div>
+                      <div className="h-4 w-[80px] animate-pulse rounded bg-[#E2E8F0]"></div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -95,8 +95,8 @@ export function AppointmentsSkeleton() {
       </Card>
 
       <div className="flex items-center justify-between">
-        <div className="h-9 w-[200px] animate-pulse rounded bg-blue-800/40"></div>
-        <div className="h-9 w-[200px] animate-pulse rounded bg-blue-800/40"></div>
+        <div className="h-9 w-[200px] animate-pulse rounded bg-[#E2E8F0]"></div>
+        <div className="h-9 w-[200px] animate-pulse rounded bg-[#E2E8F0]"></div>
       </div>
     </div>
   );

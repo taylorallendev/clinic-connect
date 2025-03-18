@@ -4,31 +4,68 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 20 14.3% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
-    --primary: 24 9.8% 10%;
-    --primary-foreground: 60 9.1% 97.8%;
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 20 14.3% 4.1%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --background: 210 17% 98%; /* #F8F9FA */
+    --foreground: 222 47% 11%; /* #1A202C */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 222 47% 11%; /* #1A202C */
+    --popover: 0 0% 100%; /* #FFFFFF */
+    --popover-foreground: 222 47% 11%; /* #1A202C */
+    --primary: 173 57% 39%; /* #2A9D8F */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary: 197 36% 24%; /* #264653 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --muted: 210 20% 91%; /* #E2E8F0 */
+    --muted-foreground: 215 22% 52%; /* #718096 */
+    --accent: 43 75% 66%; /* #E9C46A */
+    --accent-foreground: 43 87% 15%; /* #433409 */
+    --destructive: 12 71% 61%; /* #E76F51 */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --border: 210 20% 91%; /* #E2E8F0 */
+    --input: 210 20% 91%; /* #E2E8F0 */
+    --ring: 173 57% 39%; /* #2A9D8F */
+    --success: 142 52% 43%; /* #38A169 */
+    --warning: 25 75% 50%; /* #DD6B20 */
+    --info: 210 79% 50%; /* #3182CE */
     --radius: 0.5rem;
+
+    /* Chart colors using the new theme */
+    --chart-1: 173 57% 39%; /* Primary teal #2A9D8F */
+    --chart-2: 197 36% 24%; /* Secondary deep blue #264653 */
+    --chart-3: 43 75% 66%; /* Accent gold #E9C46A */
+    --chart-4: 12 71% 61%; /* Destructive red #E76F51 */
+    --chart-5: 142 52% 43%; /* Success green #38A169 */
+  }
+
+  .dark {
+    --background: 222 47% 11%; /* #1A202C */
+    --foreground: 210 17% 98%; /* #F8F9FA */
+    --card: 218 30% 19%; /* #232C3D */
+    --card-foreground: 210 17% 98%; /* #F8F9FA */
+    --popover: 218 30% 19%; /* #232C3D */
+    --popover-foreground: 210 17% 98%; /* #F8F9FA */
+    --primary: 173 59% 43%; /* #2AAFA0 */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary: 203 32% 29%; /* #2D5468 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --muted: 217 19% 23%; /* #2D3748 */
+    --muted-foreground: 215 16% 63%; /* #A0AEC0 */
+    --accent: 43 65% 60%; /* #D9B45A */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --destructive: 12 68% 53%; /* #D55A3A */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --border: 215 25% 32%; /* #3E4C63 */
+    --input: 215 25% 32%; /* #3E4C63 */
+    --ring: 173 59% 43%; /* #2AAFA0 */
+    --success: 142 52% 43%; /* #38A169 */
+    --warning: 25 75% 50%; /* #DD6B20 */
+    --info: 210 79% 50%; /* #3182CE */
+
+    /* Chart colors in dark mode */
+    --chart-1: 173 59% 43%; /* Primary teal #2AAFA0 */
+    --chart-2: 203 32% 29%; /* Secondary deep blue #2D5468 */
+    --chart-3: 43 65% 60%; /* Accent gold #D9B45A */
+    --chart-4: 12 68% 53%; /* Destructive red #D55A3A */
+    --chart-5: 142 52% 43%; /* Success green #38A169 */
   }
 }
 
@@ -39,31 +76,35 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+
   /* Custom style for template dropdown placeholder text */
   [data-placeholder].white-placeholder {
-    color: white !important;
+    @apply text-white;
   }
-  
+
   /* Force white text for select trigger and value components */
-  .bg-blue-600 .select-value,
-  .bg-blue-600 [data-placeholder] {
-    color: white !important;
+  .bg-primary .select-value,
+  .bg-primary [data-placeholder] {
+    @apply text-white;
   }
 }
 
-/* Add these custom styles for the Progress component */
+/* Update Progress component styles to use theme colors */
 .Progress {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.1);
+  @apply bg-muted;
   border-radius: 9999px;
   height: 8px;
   width: 100%;
 }
 
 .Progress-indicator {
-  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  background: linear-gradient(
+    to right,
+    hsl(var(--primary)),
+    hsl(var(--accent))
+  );
   height: 100%;
   transition: width 0.3s ease;
   border-radius: 9999px;

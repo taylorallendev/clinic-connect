@@ -101,15 +101,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-950 to-indigo-950">
+    <div className={`flex h-screen ${pathname === '/app/dashboard/appointments' || pathname === '/app/dashboard/current-case' ? 'bg-white' : 'bg-background'}`}>
       {/* Sidebar */}
-      <div className="flex w-64 flex-col border-r border-blue-800/30 bg-blue-950/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between border-b border-blue-800/30 p-5">
+      <div className="flex w-64 flex-col border-r border-secondary-foreground/10 bg-secondary backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-secondary-foreground/10 p-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-              <PawPrint className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+              <PawPrint className="h-5 w-5 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-medium text-blue-50">ClinicConnect</h1>
+            <h1 className="text-xl font-medium text-secondary-foreground">ClinicConnect</h1>
           </div>
         </div>
 
@@ -121,14 +121,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button
                 key={item.name}
                 variant="ghost"
-                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-blue-300 hover:bg-blue-800/30 ${
-                  isActive ? "bg-blue-800/40 font-medium text-blue-50" : ""
+                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-secondary-foreground/90 hover:bg-secondary/80 hover:text-secondary-foreground ${
+                  isActive ? "bg-secondary/80 font-medium text-secondary-foreground" : ""
                 }`}
                 asChild
               >
                 <Link href={item.href}>
                   <item.icon
-                    className={`h-5 w-5 ${isActive ? "text-blue-50" : "text-blue-300"}`}
+                    className={`h-5 w-5 ${isActive ? "text-accent" : "text-secondary-foreground/90"}`}
                   />
                   <span>{item.name}</span>
                 </Link>
@@ -137,24 +137,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="border-t border-blue-800/30 p-4">
+        <div className="border-t border-secondary-foreground/10 p-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 border border-blue-700/30">
+            <Avatar className="h-9 w-9 border border-secondary-foreground/10">
               <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback className="bg-blue-700 text-white">
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {isLoading ? "..." : getUserInitials()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium text-blue-50">
+              <p className="text-sm font-medium text-secondary-foreground">
                 {isLoading ? "Loading..." : getDisplayName()}
               </p>
-              <p className="text-xs text-blue-300">{user?.email || ""}</p>
+              <p className="text-xs text-secondary-foreground/80">{user?.email || ""}</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-blue-300 hover:bg-blue-800/30 hover:text-blue-50"
+              className="h-8 w-8 rounded-full text-secondary-foreground/80 hover:bg-secondary/80 hover:text-secondary-foreground"
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -165,7 +165,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               type="submit"
               variant="ghost"
-              className="w-full justify-start gap-3 rounded-lg py-2.5 text-blue-300 hover:bg-blue-800/30"
+              className="w-full justify-start gap-3 rounded-lg py-2.5 text-secondary-foreground/90 hover:bg-secondary/80 hover:text-secondary-foreground"
             >
               <LogOut className="h-5 w-5" />
               <span>Sign out</span>
@@ -175,7 +175,66 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto">{children}</div>
+      <div className={`flex-1 overflow-auto ${pathname === '/app/dashboard/appointments' || pathname === '/app/dashboard/current-case' ? 'bg-white' : 'bg-background'}`}>
+        <style jsx global>{`
+          /* Light theme styles for Current Case page */
+          .light {
+            --card-bg: #FFFFFF;
+            --bg-subtle: #F8F9FA;
+            --text-main: #1A202C;
+            --text-muted: #718096;
+            --border-color: #E2E8F0;
+            --primary: #2A9D8F;
+            --primary-hover: #2A9D8F99;
+            --secondary: #264653;
+            --accent: #E9C46A;
+            --success: #38A169;
+            --destructive: #E76F51;
+          }
+          
+          /* Override styles for Current Case page */
+          .current-case-page .bg-blue-950\\/40,
+          .current-case-page .bg-blue-900\\/30,
+          .current-case-page .bg-blue-900\\/20 {
+            background-color: var(--card-bg) !important;
+            backdrop-filter: none !important;
+          }
+          
+          .current-case-page .border-blue-800\\/30,
+          .current-case-page .border-blue-800\\/20,
+          .current-case-page .border-blue-700\\/30 {
+            border-color: var(--border-color) !important;
+          }
+          
+          .current-case-page .text-blue-50,
+          .current-case-page .text-white {
+            color: var(--text-main) !important;
+          }
+          
+          .current-case-page .text-blue-300,
+          .current-case-page .text-blue-200 {
+            color: var(--text-muted) !important;
+          }
+          
+          .current-case-page .bg-blue-600,
+          .current-case-page .bg-primary {
+            background-color: var(--primary) !important;
+          }
+          
+          .current-case-page .hover\\:bg-blue-700:hover {
+            background-color: var(--primary-hover) !important;
+          }
+          
+          .current-case-page .shadow-blue-950\\/30 {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          }
+          
+          .current-case-page .rounded-2xl {
+            border-radius: 0.5rem !important;
+          }
+        `}</style>
+        {children}
+      </div>
     </div>
   );
 }

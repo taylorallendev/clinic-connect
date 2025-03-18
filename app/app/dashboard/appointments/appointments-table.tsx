@@ -266,17 +266,17 @@ export function AppointmentsTable({
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
-        return "bg-green-500/80 hover:bg-green-500";
+        return "bg-[#38A169]/80 hover:bg-[#38A169]";
       case "ongoing":
-        return "bg-blue-500/80 hover:bg-blue-500";
+        return "bg-[#2A9D8F]/80 hover:bg-[#2A9D8F]";
       case "exported":
-        return "bg-purple-500/80 hover:bg-purple-500";
+        return "bg-[#264653]/80 hover:bg-[#264653]";
       case "reviewed":
-        return "bg-yellow-500/80 hover:bg-yellow-500";
+        return "bg-[#E9C46A]/80 hover:bg-[#E9C46A]";
       case "scheduled":
-        return "bg-gray-500/80 hover:bg-gray-500";
+        return "bg-[#718096]/80 hover:bg-[#718096]";
       default:
-        return "bg-gray-500/80 hover:bg-gray-500";
+        return "bg-[#718096]/80 hover:bg-[#718096]";
     }
   };
 
@@ -307,8 +307,8 @@ export function AppointmentsTable({
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-blue-950 to-indigo-950 border-blue-800/30">
+    <div className="space-y-6 light bg-white">
+      <Card className="bg-white border-[#E2E8F0]/50 shadow-sm">
         <CardContent className="p-6">
           {/* Controls */}
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -321,12 +321,12 @@ export function AppointmentsTable({
                   placeholder="Search appointments..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-blue-900/20 border-blue-700/30 text-blue-50 placeholder:text-blue-400/50"
+                  className="w-full bg-[#E2E8F0] border-[#E2E8F0] text-[#1A202C] placeholder:text-[#718096]"
                 />
                 <Button 
                   type="submit" 
                   variant="outline" 
-                  className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
+                  className="bg-[#2A9D8F] hover:bg-[#2A9D8F]/90 text-white border-[#2A9D8F]/80"
                 >
                   <SearchIcon className="h-4 w-4 mr-2" />
                   Search
@@ -363,10 +363,10 @@ export function AppointmentsTable({
                       );
                     }}
                   >
-                    <SelectTrigger className="bg-blue-900/20 border-blue-700/30 text-blue-50 w-[140px]">
+                    <SelectTrigger className="bg-[#E2E8F0] border-[#E2E8F0] text-[#1A202C] w-[140px]">
                       <SelectValue placeholder="Filter Status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-blue-900 border-blue-700">
+                    <SelectContent className="bg-white border-[#E2E8F0]">
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="ongoing">Ongoing</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
@@ -381,15 +381,15 @@ export function AppointmentsTable({
                       <Button
                         variant="outline"
                         className={cn(
-                          "bg-blue-900/20 border-blue-700/30 text-blue-50 w-[140px]",
-                          !date && "text-blue-300"
+                          "bg-[#E2E8F0] border-[#E2E8F0] text-[#1A202C] w-[140px]",
+                          !date && "text-[#718096]"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date ? format(date, "MMM d, yyyy") : "Date Filter"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
+                    <PopoverContent className="w-auto p-0 bg-white border-[#E2E8F0]" align="end">
                       <Calendar
                         mode="single"
                         selected={date || undefined}
@@ -399,6 +399,7 @@ export function AppointmentsTable({
                           handleDateSelect(newDate);
                         }}
                         initialFocus
+                        className="text-[#1A202C]"
                       />
                     </PopoverContent>
                   </Popover>
@@ -417,7 +418,7 @@ export function AppointmentsTable({
                     // Then call the handler
                     handleClearFilters();
                   }}
-                  className="whitespace-nowrap bg-gray-600/50 hover:bg-gray-600 text-white border-gray-700"
+                  className="whitespace-nowrap bg-[#264653] hover:bg-[#264653]/90 text-white border-[#264653]/80"
                 >
                   Clear Filters
                 </Button>
@@ -428,14 +429,14 @@ export function AppointmentsTable({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-blue-800/30">
-                    <TableHead className="text-blue-200">Date</TableHead>
-                    <TableHead className="text-blue-200">Time</TableHead>
-                    <TableHead className="text-blue-200">Patient</TableHead>
-                    <TableHead className="text-blue-200">Provider</TableHead>
-                    <TableHead className="text-blue-200">Type</TableHead>
-                    <TableHead className="text-blue-200">Status</TableHead>
-                    <TableHead className="text-blue-200 text-right">
+                  <TableRow className="border-[#E2E8F0]">
+                    <TableHead className="text-[#1A202C]">Date</TableHead>
+                    <TableHead className="text-[#1A202C]">Time</TableHead>
+                    <TableHead className="text-[#1A202C]">Patient</TableHead>
+                    <TableHead className="text-[#1A202C]">Provider</TableHead>
+                    <TableHead className="text-[#1A202C]">Type</TableHead>
+                    <TableHead className="text-[#1A202C]">Status</TableHead>
+                    <TableHead className="text-[#1A202C] text-right">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -445,30 +446,30 @@ export function AppointmentsTable({
                     appointments.map((appointment) => (
                       <TableRow
                         key={appointment.id}
-                        className="border-blue-800/30 hover:bg-blue-900/20"
+                        className="border-[#E2E8F0] hover:bg-[#E2E8F0]/50"
                       >
-                        <TableCell className="text-blue-100">
+                        <TableCell className="text-[#1A202C]">
                           {appointment.date}
                         </TableCell>
-                        <TableCell className="text-blue-100">
+                        <TableCell className="text-[#1A202C]">
                           {appointment.time}
                         </TableCell>
-                        <TableCell className="text-blue-100">
+                        <TableCell className="text-[#1A202C]">
                           {appointment.patients
                             ? appointment.patients.name
                             : "Unknown Patient"}
                         </TableCell>
-                        <TableCell className="text-blue-100">
+                        <TableCell className="text-[#1A202C]">
                           {appointment.users
                             ? appointment.users.name
                             : "Unassigned"}
                         </TableCell>
-                        <TableCell className="text-blue-100">
-                          <Badge variant="outline" className="capitalize text-blue-100 border-blue-700/50">
+                        <TableCell className="text-[#1A202C]">
+                          <Badge variant="outline" className="capitalize text-[#1A202C] border-[#E2E8F0]">
                             {appointment.type?.replace("_", " ") || "General"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-blue-100">
+                        <TableCell className="text-[#1A202C]">
                           <Badge
                             className={`${getStatusColor(appointment.status)} text-white capitalize`}
                           >
@@ -476,11 +477,11 @@ export function AppointmentsTable({
                               "Scheduled"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-blue-100 text-right">
+                        <TableCell className="text-[#1A202C] text-right">
                           <Button
                             variant="default"
                             size="sm"
-                            className="bg-blue-600/80 hover:bg-blue-600 text-white"
+                            className="bg-[#2A9D8F]/90 hover:bg-[#2A9D8F] text-white"
                             onClick={() => handleViewAppointment(appointment)}
                           >
                             View
@@ -492,7 +493,7 @@ export function AppointmentsTable({
                     <TableRow>
                       <TableCell
                         colSpan={7}
-                        className="text-center py-6 text-blue-200"
+                        className="text-center py-6 text-[#718096]"
                       >
                         No appointments found for the selected criteria. Try adjusting filters or creating a new appointment.
                       </TableCell>
@@ -511,11 +512,11 @@ export function AppointmentsTable({
                     size="sm"
                     onClick={() => handlePageChange(Math.max(0, page - 1))}
                     disabled={page === 0}
-                    className="mr-2"
+                    className="mr-2 border-[#E2E8F0] text-[#1A202C]"
                   >
                     Previous
                   </Button>
-                  <div className="flex items-center mx-2">
+                  <div className="flex items-center mx-2 text-[#1A202C]">
                     Page {page + 1} of {totalPages}
                   </div>
                   <Button
@@ -525,7 +526,7 @@ export function AppointmentsTable({
                       handlePageChange(Math.min(totalPages - 1, page + 1))
                     }
                     disabled={page >= totalPages - 1}
-                    className="ml-2"
+                    className="ml-2 border-[#E2E8F0] text-[#1A202C]"
                   >
                     Next
                   </Button>

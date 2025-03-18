@@ -75,14 +75,14 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-[#2A9D8F] hover:bg-[#2A9D8F]/90 text-white">
           <Plus className="h-4 w-4 mr-2" />
           Create Template
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
+      <DialogContent className="sm:max-w-[425px] bg-white border border-[#E2E8F0] shadow-lg">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">
+          <DialogTitle className="text-[#1A202C]">
             Create New Template
           </DialogTitle>
         </DialogHeader>
@@ -93,15 +93,15 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Name</FormLabel>
+                  <FormLabel className="text-[#718096]">Name</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      className="bg-white border-[#E2E8F0] text-[#1A202C]"
                       placeholder="Template name"
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-red-600" />
                 </FormItem>
               )}
             />
@@ -110,24 +110,24 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Type</FormLabel>
+                  <FormLabel className="text-[#718096]">Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50">
+                      <SelectTrigger className="bg-white border-[#E2E8F0] text-[#1A202C]">
                         <SelectValue placeholder="Select a type" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-blue-900 border-blue-800">
+                    <SelectContent className="bg-white border-[#E2E8F0]">
                       <SelectItem value="soap">SOAP Note</SelectItem>
                       <SelectItem value="summary">Summary</SelectItem>
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="structured">Structured</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-red-600" />
                 </FormItem>
               )}
             />
@@ -136,21 +136,21 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Content</FormLabel>
+                  <FormLabel className="text-[#718096]">Content</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      className="bg-white border-[#E2E8F0] text-[#1A202C]"
                       placeholder="Template content"
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-red-600" />
                 </FormItem>
               )}
             />
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-[#2A9D8F] hover:bg-[#2A9D8F]/90 text-white"
             >
               Create Template
             </Button>
@@ -202,36 +202,36 @@ export function TemplateSelector({ onSelect, trigger }: TemplateSelectorProps) {
       <DialogTrigger asChild>
         {trigger || <Button variant="outline">Select Template</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
+      <DialogContent className="sm:max-w-[425px] bg-white border-[#E2E8F0]">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">
+          <DialogTitle className="text-[#1A202C]">
             Select Email Template
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto">
           {loading ? (
-            <div className="text-blue-200">Loading templates...</div>
+            <div className="text-[#718096]">Loading templates...</div>
           ) : error ? (
-            <div className="text-red-400">Error: {error}</div>
+            <div className="text-red-600">Error: {error}</div>
           ) : templates.length === 0 ? (
-            <div className="text-blue-200">No email templates found</div>
+            <div className="text-[#718096]">No email templates found</div>
           ) : (
             templates.map((template) => (
               <Card
                 key={template.id}
-                className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 hover:bg-blue-900/30 transition-colors cursor-pointer"
+                className="bg-white border-[#E2E8F0] shadow-sm hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => handleSelect(template)}
               >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <CardTitle className="text-lg font-medium text-blue-50">
+                  <CardTitle className="text-lg font-medium text-[#1A202C]">
                     {template.name}
                   </CardTitle>
-                  <Badge className="bg-purple-500/20 text-purple-200 hover:bg-purple-500/30">
+                  <Badge className="bg-purple-500/10 text-purple-700 hover:bg-purple-500/20">
                     EMAIL
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-blue-200 line-clamp-2">
+                  <p className="text-sm text-[#718096] line-clamp-2">
                     {template.content}
                   </p>
                 </CardContent>
@@ -279,9 +279,9 @@ function EditTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[425px] bg-blue-950/90 backdrop-blur-xl border-blue-800/30">
+      <DialogContent className="sm:max-w-[425px] bg-white border-[#E2E8F0]">
         <DialogHeader>
-          <DialogTitle className="text-blue-50">
+          <DialogTitle className="text-[#1A202C]">
             Edit Template
           </DialogTitle>
         </DialogHeader>
@@ -292,15 +292,15 @@ function EditTemplateDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Name</FormLabel>
+                  <FormLabel className="text-[#718096]">Name</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      className="bg-white border-[#E2E8F0] text-[#1A202C]"
                       placeholder="Template name"
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-red-600" />
                 </FormItem>
               )}
             />
@@ -309,24 +309,24 @@ function EditTemplateDialog({
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Type</FormLabel>
+                  <FormLabel className="text-[#718096]">Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50">
+                      <SelectTrigger className="bg-white border-[#E2E8F0] text-[#1A202C]">
                         <SelectValue placeholder="Select a type" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-blue-900 border-blue-800">
+                    <SelectContent className="bg-white border-[#E2E8F0]">
                       <SelectItem value="soap">SOAP Note</SelectItem>
                       <SelectItem value="summary">Summary</SelectItem>
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="structured">Structured</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-red-600" />
                 </FormItem>
               )}
             />
@@ -335,21 +335,21 @@ function EditTemplateDialog({
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-blue-200">Content</FormLabel>
+                  <FormLabel className="text-[#718096]">Content</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="bg-blue-900/30 border-blue-800/30 text-blue-50"
+                      className="bg-white border-[#E2E8F0] text-[#1A202C]"
                       placeholder="Template content"
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400" />
+                  <FormMessage className="text-red-600" />
                 </FormItem>
               )}
             />
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-[#2A9D8F] hover:bg-[#2A9D8F]/90 text-white"
             >
               Update Template
             </Button>
@@ -425,17 +425,17 @@ export function TemplatesList() {
   }, []);
 
   if (loading) {
-    return <div className="text-blue-200">Loading templates...</div>;
+    return <div className="text-[#718096]">Loading templates...</div>;
   }
 
   if (error) {
-    return <div className="text-red-400">Error: {error}</div>;
+    return <div className="text-red-600">Error: {error}</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-blue-50">Templates</h2>
+        <h2 className="text-2xl font-bold text-[#1A202C]">Templates</h2>
         <CreateTemplateDialog onSuccess={loadTemplates} />
       </div>
       
@@ -447,9 +447,9 @@ export function TemplatesList() {
             placeholder="Search templates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-blue-900/30 border-blue-800/30 text-blue-50 pl-10"
+            className="border-[#E2E8F0] text-[#1A202C] pl-10"
           />
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#718096]" />
         </div>
         
         <Select
@@ -459,10 +459,10 @@ export function TemplatesList() {
             // Filter will be applied through useEffect
           }}
         >
-          <SelectTrigger className="bg-blue-900/30 border-blue-800/30 text-blue-50 w-[160px]">
+          <SelectTrigger className="border-[#E2E8F0] text-[#1A202C] w-[160px]">
             <SelectValue placeholder="Filter Type" />
           </SelectTrigger>
-          <SelectContent className="bg-blue-900 border-blue-700">
+          <SelectContent className="bg-white border-[#E2E8F0]">
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="soap">SOAP Notes</SelectItem>
             <SelectItem value="summary">Summary</SelectItem>
@@ -476,37 +476,37 @@ export function TemplatesList() {
         {filteredTemplates.map((template) => (
           <Card
             key={template.id}
-            className="bg-blue-950/40 backdrop-blur-xl border-blue-800/30 shadow-lg shadow-blue-950/30 hover:bg-blue-900/30 transition-colors"
+            className="bg-white border-[#E2E8F0] rounded-lg shadow-sm hover:shadow transition-shadow"
           >
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium text-blue-50">
+              <CardTitle className="text-lg font-medium text-[#1A202C]">
                 {template.name}
               </CardTitle>
               <Badge
                 className={
                   template.type === "soap"
-                    ? "bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30"
+                    ? "bg-[#2A9D8F]/10 text-[#2A9D8F] hover:bg-[#2A9D8F]/20"
                     : template.type === "email"
-                      ? "bg-purple-500/20 text-purple-200 hover:bg-purple-500/30"
-                      : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
+                      ? "bg-purple-500/10 text-purple-700 hover:bg-purple-500/20"
+                      : "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
                 }
               >
                 {template.type.toUpperCase()}
               </Badge>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-blue-200 line-clamp-2 mb-4">
+              <p className="text-sm text-[#718096] line-clamp-2 mb-4">
                 {template.content}
               </p>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-blue-400">
+                <p className="text-xs text-[#A0AEC0]">
                   Created: {new Date(template.createdAt).toLocaleDateString()}
                 </p>
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-blue-300 hover:text-blue-50 hover:bg-blue-800/30"
+                    className="h-8 w-8 p-0 text-[#718096] hover:text-[#1A202C] hover:bg-gray-100"
                     onClick={() => {
                       setEditingTemplate(template);
                       setIsEditDialogOpen(true);
@@ -517,7 +517,7 @@ export function TemplatesList() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-blue-300 hover:text-red-400 hover:bg-red-500/10"
+                    className="h-8 w-8 p-0 text-[#718096] hover:text-red-600 hover:bg-red-50"
                     onClick={() => handleDeleteTemplate(template.id)}
                     disabled={isDeleting && deleteTemplateId === template.id}
                   >

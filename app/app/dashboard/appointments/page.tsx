@@ -232,9 +232,9 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 space-y-6 light bg-white min-h-screen">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-50">Appointments</h1>
+        <h1 className="text-2xl font-bold text-[#1A202C]">Appointments</h1>
         <Button
           variant="outline"
           onClick={() => {
@@ -251,7 +251,7 @@ export default function AppointmentsPage() {
             }, 100); // Slight delay to ensure state updates have processed
           }}
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
+          className="bg-[#2A9D8F] hover:bg-[#2A9D8F]/90 text-white border-[#2A9D8F]/80"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -260,7 +260,7 @@ export default function AppointmentsPage() {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2A9D8F]"></div>
         </div>
       ) : (
         <>
@@ -306,19 +306,19 @@ export default function AppointmentsPage() {
               }}
             />
           ) : (
-            <Card className="bg-gradient-to-br from-blue-950 to-indigo-950 border-blue-800/30">
+            <Card className="bg-white border-[#E2E8F0]/50 shadow-sm">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center justify-center h-64 text-center">
-                  <p className="text-lg text-blue-100 mb-4">
+                  <p className="text-lg text-[#1A202C] mb-4">
                     No appointments found
                   </p>
-                  <p className="text-sm text-blue-300 max-w-md">
+                  <p className="text-sm text-[#718096] max-w-md">
                     {searchQuery || dateFilter || statusFilter
                       ? "Try adjusting your search filters or click Refresh to see all appointments"
                       : "No appointments are available. Try again later or create a new appointment."}
                   </p>
                   <Button 
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="mt-4 bg-[#2A9D8F] hover:bg-[#2A9D8F]/90 text-white"
                     onClick={() => {
                       console.log("Clearing all filters from No Appointments card");
                       

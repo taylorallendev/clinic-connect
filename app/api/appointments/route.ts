@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       statusFilter = "",
       timestamp = Date.now(),
     } = body;
-    
+
     // Log all parameters for debugging
     console.log("API: Request parameters received:", {
       page,
@@ -96,27 +96,32 @@ export async function POST(req: NextRequest) {
       pageSize,
       searchQuery,
       dateFilter,
-      statusFilter
+      statusFilter,
     });
 
     // Apply search filter if provided
     if (searchQuery && searchQuery.trim() !== "") {
       try {
         console.log("Applying search filter:", searchQuery);
-        
+
         // First, check if the table has the expected columns
         const { data: schemaInfo, error: schemaError } = await supabase
-          .from('cases')
+          .from("cases")
           .select()
           .limit(1);
-          
+
         if (schemaError) {
           console.error("Error checking schema:", schemaError);
           // We'll continue without filter if we can't verify columns
         } else {
-          console.log("Available columns for search:", schemaInfo && schemaInfo.length > 0 ? Object.keys(schemaInfo[0]) : []);
+          console.log(
+            "Available columns for search:",
+            schemaInfo && schemaInfo.length > 0
+              ? Object.keys(schemaInfo[0])
+              : []
+          );
         }
-        
+
         // Build a search condition for name
         try {
           console.log("Applying name search with:", searchQuery);
@@ -138,18 +143,20 @@ export async function POST(req: NextRequest) {
     if (dateFilter && dateFilter.trim() !== "") {
       try {
         console.log(`Processing date filter: "${dateFilter}"`);
-        
+
         // Validate dateFilter format (should be YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFilter)) {
-          console.error(`Invalid date format: ${dateFilter}. Expected YYYY-MM-DD.`);
+          console.error(
+            `Invalid date format: ${dateFilter}. Expected YYYY-MM-DD.`
+          );
           // Don't apply invalid date filter
           return NextResponse.json(
-            { 
+            {
               error: `Invalid date format: ${dateFilter}. Expected YYYY-MM-DD.`,
               appointments: [], // Return empty array to prevent cascading errors
               totalCount: 0,
               page,
-              pageSize
+              pageSize,
             },
             { status: 200 } // Return 200 to allow client to display "no results" rather than error
           );
@@ -165,39 +172,41 @@ export async function POST(req: NextRequest) {
           endOfDay,
           dateFilter,
         });
-        
+
         // First check if any records exist with this date at all
         const { data: dateCheck, error: dateCheckError } = await supabase
-          .from('cases')
-          .select('id')
+          .from("cases")
+          .select("id")
           .gte("dateTime", startOfDay)
           .lte("dateTime", endOfDay)
           .limit(1);
-          
+
         if (dateCheckError) {
           console.error("Error checking records for date:", dateCheckError);
         } else {
-          console.log(`Found ${dateCheck?.length || 0} records for date ${dateFilter}`);
-          
+          console.log(
+            `Found ${dateCheck?.length || 0} records for date ${dateFilter}`
+          );
+
           if (!dateCheck || dateCheck.length === 0) {
             console.log(`No records found for date: ${dateFilter}`);
             // Continue with the filter anyway - it's valid even if no results
           }
         }
-        
+
         // Verify the column exists and try to get a record
         const { data: columnCheck, error: columnError } = await supabase
-          .from('cases')
-          .select('dateTime')
+          .from("cases")
+          .select("dateTime")
           .limit(1);
-          
+
         if (columnError) {
           console.error("Error checking dateTime column:", columnError);
           throw new Error(`DateTime column error: ${columnError.message}`);
         }
-        
+
         console.log("Using date range for query:", startOfDay, "to", endOfDay);
-        
+
         // Using only dateTime for consistency and handling all cases
         query = query.gte("dateTime", startOfDay).lte("dateTime", endOfDay);
       } catch (error) {
@@ -205,18 +214,24 @@ export async function POST(req: NextRequest) {
         // Don't throw, just log and continue without the filter
       }
     }
-    
+
     // Apply status filter if provided
     if (statusFilter && statusFilter.trim() !== "") {
       try {
         console.log("Filtering by status:", statusFilter);
-        
+
         // IMPORTANT: Only valid values are: ongoing, completed, reviewed, exported
-        if (["ongoing", "completed", "reviewed", "exported"].includes(statusFilter.toLowerCase())) {
+        if (
+          ["ongoing", "completed", "reviewed", "exported"].includes(
+            statusFilter.toLowerCase()
+          )
+        ) {
           console.log(`Applying status filter for: ${statusFilter}`);
           query = query.eq("status", statusFilter.toLowerCase());
         } else {
-          console.warn(`Invalid status filter value: ${statusFilter}. Will not apply filter.`);
+          console.warn(
+            `Invalid status filter value: ${statusFilter}. Will not apply filter.`
+          );
           // Don't apply an invalid filter
         }
       } catch (error) {
@@ -234,49 +249,55 @@ export async function POST(req: NextRequest) {
     try {
       // Log the SQL query for debugging (if possible)
       console.log("Executing query with pagination:", { from, to });
-      
+
       // First try without any filters to check if the table works at all
       if (searchQuery || dateFilter || statusFilter) {
         // Only run this check when filters are applied
         const { data: baseCheck, error: baseError } = await supabase
-          .from('cases')
-          .select('*')
+          .from("cases")
+          .select("*")
           .limit(1);
-          
+
         if (baseError) {
           console.error("ERROR: Cannot access cases table:", baseError);
-          return NextResponse.json({ 
-            error: "Database access error: " + baseError.message,
-            details: "Cannot access the base cases table"
-          }, { status: 500 });
+          return NextResponse.json(
+            {
+              error: "Database access error: " + baseError.message,
+              details: "Cannot access the base cases table",
+            },
+            { status: 500 }
+          );
         } else {
           console.log("Base table check: Success - cases table is accessible");
         }
       }
-      
+
       // Now run the actual query with all filters
       const { data, error } = await query.range(from, to);
 
       if (error) {
         console.error("Error fetching cases:", error);
-        
+
         // Don't return raw error - instead return empty appointments with debugging info
         // This ensures the UI can still show "No appointments" instead of crashing
-        return NextResponse.json({ 
-          appointments: [],
-          totalCount: 0,
-          page,
-          pageSize,
-          debug: {
-            error: true,
-            errorDetails: {
-              message: error.message,
-              code: error.code,
-              hint: error.hint || "No hint available"
+        return NextResponse.json(
+          {
+            appointments: [],
+            totalCount: 0,
+            page,
+            pageSize,
+            debug: {
+              error: true,
+              errorDetails: {
+                message: error.message,
+                code: error.code,
+                hint: error.hint || "No hint available",
+              },
+              requestParams: { searchQuery, dateFilter, statusFilter },
             },
-            requestParams: { searchQuery, dateFilter, statusFilter }
-          }
-        }, { status: 200 });
+          },
+          { status: 200 }
+        );
       }
 
       casesData = data;
@@ -294,9 +315,9 @@ export async function POST(req: NextRequest) {
     } catch (error) {
       console.error("Exception during query execution:", error);
       return NextResponse.json(
-        { 
+        {
           error: "Database query failed",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         },
         { status: 500 }
       );
@@ -446,7 +467,7 @@ export async function POST(req: NextRequest) {
 
               // Map to exact Supabase values
               if (normalized.includes("ongoing")) return "ongoing";
-              if (normalized.includes("complet")) return "completed";
+              if (normalized.includes("complete")) return "completed";
               if (normalized.includes("review")) return "reviewed";
               if (normalized.includes("export")) return "exported";
 
@@ -570,17 +591,20 @@ export async function POST(req: NextRequest) {
         })
         .filter(Boolean); // Remove any null items from failed mappings
     }
-    
+
     // Final safety check for valid appointments array
     if (!Array.isArray(appointments)) {
       console.error("Appointments is not an array:", appointments);
       appointments = [];
     }
-    
+
     // Log final appointment data for debugging
     console.log(`Returning ${appointments.length} appointments`);
     if (appointments.length > 0) {
-      console.log("First appointment sample:", JSON.stringify(appointments[0], null, 2));
+      console.log(
+        "First appointment sample:",
+        JSON.stringify(appointments[0], null, 2)
+      );
     }
 
     // Add debugging metadata to the response
@@ -597,11 +621,11 @@ export async function POST(req: NextRequest) {
           statusFilter: statusFilter ? statusFilter : null,
         },
         appointmentsFound: appointments.length,
-      }
+      },
     };
-    
+
     console.log("API: Responding with", JSON.stringify(response.debug));
-    
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error processing request:", error);

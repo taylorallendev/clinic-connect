@@ -60,8 +60,8 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
 
   if (isLoading || isAppointmentLoading) {
     return (
-      <div className="flex items-center justify-center h-full text-blue-50">
-        <Loader2 className="w-8 h-8 mr-2 animate-spin" />
+      <div className="flex items-center justify-center h-full text-[#1A202C]">
+        <Loader2 className="w-8 h-8 mr-2 animate-spin text-[#2A9D8F]" />
         <span>Loading case data...</span>
       </div>
     );
@@ -69,21 +69,21 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
 
   if (appointmentId && error) {
     return (
-      <div className="flex items-center justify-center h-full text-red-400">
+      <div className="flex items-center justify-center h-full text-[#E76F51]">
         <span>Error loading case: {error.message}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col space-y-4 p-6">
+    <div className="flex flex-col space-y-4 p-6 bg-white light current-case-page">
       {/* Back to Appointments button - only show when coming from appointments page */}
       {isFromAppointments && appointmentId && (
         <div className="mb-4">
           <Button 
             variant="outline" 
             size="sm"
-            className="bg-blue-900/20 border-blue-700/30 text-blue-100 hover:bg-blue-800/30"
+            className="bg-[#2A9D8F]/10 border-[#2A9D8F]/30 text-[#2A9D8F] hover:bg-[#2A9D8F]/20"
             asChild
           >
             <Link href="/app/dashboard/appointments">

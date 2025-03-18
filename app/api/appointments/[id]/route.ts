@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     console.log("API: Updating appointment case actions for ID:", params.id);
-    
+
     // Create Supabase client
     const supabase = await createClient();
 
@@ -25,7 +25,7 @@ export async function POST(
 
     // Get request body
     const body = await req.json();
-    
+
     // Validate request body
     if (!body.case_actions || !Array.isArray(body.case_actions)) {
       return NextResponse.json(
@@ -49,12 +49,12 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: { 
+    return NextResponse.json({
+      success: true,
+      data: {
         id: params.id,
-        case_actions: data?.[0]?.case_actions || body.case_actions 
-      } 
+        case_actions: data?.[0]?.case_actions || body.case_actions,
+      },
     });
   } catch (error) {
     console.error("Error processing update request:", error);
@@ -120,7 +120,7 @@ export async function GET(
     let caseActions = [];
     if (caseData.case_actions && Array.isArray(caseData.case_actions)) {
       caseActions = caseData.case_actions
-        .map((action) => {
+        .map((action: Record<string, any>) => {
           if (!action || typeof action !== "object") return null;
 
           // Process SOAP notes that might be stored as JSON strings
