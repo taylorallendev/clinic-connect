@@ -11,6 +11,13 @@ import { Plus, Search, Calendar, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { AppointmentData } from "@/store/use-case-store";
 import { DatePickerDemo } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
@@ -260,29 +267,6 @@ export default function AppointmentsPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-foreground">Appointments</h1>
-        <Button
-          variant="outline"
-          onClick={() => {
-            console.log("Refresh button clicked");
-            // Reset all filters and fetch fresh data
-            setSearchQuery("");
-            setDateFilter(null);
-            setStatusFilter("");
-            setPage(0);
-
-            // Use our direct fetch function for immediate results
-            setTimeout(() => {
-              fetchAppointmentsDirectly();
-            }, 100); // Slight delay to ensure state updates have processed
-          }}
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
-        >
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
       </div>
 
       {/* Add filter controls section */}
@@ -325,20 +309,24 @@ export default function AppointmentsPage() {
 
         {/* Add status filter dropdown */}
         <div className="flex items-center gap-2">
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
+          <Select
+            value={statusFilter || "all"}
+            onValueChange={(value) => {
+              setStatusFilter(value === "all" ? "" : value);
               setPage(0); // Reset to first page when changing status
             }}
           >
-            <option value="">All Statuses</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="no-show">No Show</option>
-          </select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="ongoing">Ongoing</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="reviewed">Reviewed</SelectItem>
+              <SelectItem value="exported">Exported</SelectItem>
+            </SelectContent>
+          </Select>
           {statusFilter && (
             <Button
               variant="ghost"
@@ -350,6 +338,30 @@ export default function AppointmentsPage() {
             </Button>
           )}
         </div>
+
+        <Button
+          variant="outline"
+          onClick={() => {
+            console.log("Refresh button clicked");
+            // Reset all filters and fetch fresh data
+            setSearchQuery("");
+            setDateFilter(null);
+            setStatusFilter("");
+            setPage(0);
+
+            // Use our direct fetch function for immediate results
+            setTimeout(() => {
+              fetchAppointmentsDirectly();
+            }, 100); // Slight delay to ensure state updates have processed
+          }}
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700"
+        >
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
+          Refresh
+        </Button>
       </div>
 
       {loading ? (
