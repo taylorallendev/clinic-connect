@@ -235,12 +235,29 @@ export default function AppointmentsPage() {
 
   // Handle date filter change
   const handleDateChange = (date: Date | null) => {
-    setDateFilter(date);
+    // Ensure the date is properly set in the state
+    if (date && date instanceof Date && !isNaN(date.getTime())) {
+      console.log("Setting parent date filter to:", date);
+      setDateFilter(date);
+    } else if (typeof date === 'string' && date) {
+      try {
+        const [year, month, day] = date.split("-").map(Number);
+        const newDate = new Date(year, month - 1, day);
+        console.log("Parsed string date to:", newDate);
+        setDateFilter(newDate);
+      } catch (e) {
+        console.error("Error parsing date string:", e, date);
+        setDateFilter(null);
+      }
+    } else {
+      console.log("Clearing parent date filter");
+      setDateFilter(null);
+    }
     setPage(0); // Reset to first page when changing date filter
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-foreground">Appointments</h1>
         <Button
