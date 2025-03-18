@@ -331,7 +331,10 @@ export function AppointmentsTable({
                 placeholder="Search appointments..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-muted/20 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                className={cn(
+                  "w-full bg-muted/20 border-input focus-visible:ring-ring",
+                  search ? "text-foreground font-medium" : "text-muted-foreground"
+                )}
               />
               <Button
                 type="submit"
@@ -378,8 +381,18 @@ export function AppointmentsTable({
                     );
                   }}
                 >
-                  <SelectTrigger className="bg-muted/20 border-input text-foreground w-[140px]">
-                    <SelectValue placeholder="Filter Status" />
+                  <SelectTrigger className="bg-muted/20 border-input text-foreground w-[160px]">
+                    <SelectValue>
+                      {(() => {
+                        switch(activeTab) {
+                          case 'ongoing': return 'Ongoing';
+                          case 'completed': return 'Completed';
+                          case 'exported': return 'Exported';
+                          case 'reviewed': return 'Reviewed';
+                          case 'all': default: return 'All Status';
+                        }
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     <SelectItem value="all">All Status</SelectItem>
@@ -396,8 +409,8 @@ export function AppointmentsTable({
                     <Button
                       variant="outline"
                       className={cn(
-                        "bg-muted/20 border-input text-foreground w-[140px]",
-                        !date && "text-muted-foreground"
+                        "bg-muted/20 border-input w-[160px]",
+                        date ? "text-foreground font-medium" : "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -408,16 +421,28 @@ export function AppointmentsTable({
                     className="w-auto p-0 bg-card border-border"
                     align="end"
                   >
-                    <Calendar
-                      mode="single"
-                      selected={date || undefined}
-                      onSelect={(newDate) => {
-                        console.log("Calendar date selected:", newDate);
-                        // Call handleDateSelect which will update the UI and trigger the filter
-                        handleDateSelect(newDate);
-                      }}
-                      initialFocus
-                    />
+                    <div className="p-2">
+                      <Calendar
+                        mode="single"
+                        selected={date || undefined}
+                        onSelect={(newDate) => {
+                          console.log("Calendar date selected:", newDate);
+                          // Call handleDateSelect which will update the UI and trigger the filter
+                          handleDateSelect(newDate);
+                        }}
+                        initialFocus
+                      />
+                      {date && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="mt-2 w-full text-muted-foreground"
+                          onClick={() => handleDateSelect(undefined)}
+                        >
+                          Clear Date
+                        </Button>
+                      )}
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
@@ -435,9 +460,15 @@ export function AppointmentsTable({
                   // Then call the handler
                   handleClearFilters();
                 }}
-                className="whitespace-nowrap bg-secondary hover:bg-secondary/90 text-secondary-foreground border-border"
+                className={cn(
+                  "whitespace-nowrap border-border",
+                  (search || date || activeTab !== "all") 
+                    ? "bg-secondary hover:bg-secondary/90 text-secondary-foreground font-medium" 
+                    : "bg-muted/20 hover:bg-muted/30 text-muted-foreground"
+                )}
+                disabled={!search && !date && activeTab === "all"}
               >
-                Clear Filters
+                {(search || date || activeTab !== "all") ? "Clear Filters" : "No Filters"}
               </Button>
             </div>
           </div>

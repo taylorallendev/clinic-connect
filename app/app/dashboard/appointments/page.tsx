@@ -239,7 +239,7 @@ export default function AppointmentsPage() {
     if (date && date instanceof Date && !isNaN(date.getTime())) {
       console.log("Setting parent date filter to:", date);
       setDateFilter(date);
-    } else if (typeof date === 'string' && date) {
+    } else if (typeof date === "string" && date) {
       try {
         const [year, month, day] = date.split("-").map(Number);
         const newDate = new Date(year, month - 1, day);
@@ -333,19 +333,19 @@ export default function AppointmentsPage() {
               }}
             />
           ) : (
-            <Card className="bg-gradient-to-br from-blue-950 to-indigo-950 border-blue-800/30">
+            <Card className="bg-gradient-to-br from-[hsl(174,59%,25%)] to-[hsl(197,37%,24%)] border-[hsl(174,59%,39%)]/30">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center justify-center h-64 text-center">
-                  <p className="text-lg text-blue-100 mb-4">
+                  <p className="text-lg text-white mb-4">
                     No appointments found
                   </p>
-                  <p className="text-sm text-blue-300 max-w-md">
+                  <p className="text-sm text-[hsl(174,59%,80%)] max-w-md">
                     {searchQuery || dateFilter || statusFilter
                       ? "Try adjusting your search filters or click Refresh to see all appointments"
                       : "No appointments are available. Try again later or create a new appointment."}
                   </p>
                   <Button
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="mt-4 bg-[hsl(174,59%,39%)] hover:bg-[hsl(174,59%,34%)] text-white"
                     onClick={() => {
                       console.log(
                         "Clearing all filters from No Appointments card"
