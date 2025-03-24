@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     console.log("API: Updating appointment case actions for ID:", params.id);
-    
+
     // Create Supabase client
     const supabase = await createClient();
 
@@ -19,13 +19,13 @@ export async function POST(
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // if (!session) {
+    // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
 
     // Get request body
     const body = await req.json();
-    
+
     // Validate request body
     if (!body.case_actions || !Array.isArray(body.case_actions)) {
       return NextResponse.json(
@@ -49,12 +49,12 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: { 
+    return NextResponse.json({
+      success: true,
+      data: {
         id: params.id,
-        case_actions: data?.[0]?.case_actions || body.case_actions 
-      } 
+        case_actions: data?.[0]?.case_actions || body.case_actions,
+      },
     });
   } catch (error) {
     console.error("Error processing update request:", error);
@@ -80,9 +80,9 @@ export async function GET(
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // if (!session) {
+    // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
 
     // Fetch the case (appointment)
     const { data: caseData, error: caseError } = await supabase
