@@ -1045,110 +1045,114 @@ export function CurrentCaseContent() {
           Current Case
         </h1>
         <div className="flex items-center gap-3">
-          {/* Reset button moved to the left */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-3">
+              {/* Save button (moved to left position) */}
               <Button
-                variant="ghost"
-                className="text-card-foreground hover:bg-muted/30 hover:text-card-foreground"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="bg-card border-border">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-card-foreground">
-                  Reset case?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-muted-foreground">
-                  This will clear all case information, transcripts, and SOAP
-                  notes. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-muted text-card-foreground border-muted hover:bg-muted/30">
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                  onClick={() => {
-                    // Reset without saving
-                    useCaseStore.getState().reset();
-                    form.reset({
-                      name: "",
-                      dateTime: new Date().toISOString().slice(0, 16),
-                      assignedTo: "",
-                      type: "checkup",
-                      status: "ongoing",
-                      visibility: "private",
-                    });
-
-                    // Ensure we're in edit mode
-                    setIsEditMode(true);
-
-                    toast({
-                      title: "Case reset",
-                      description: "All case data has been cleared",
-                    });
-                  }}
-                >
-                  Reset
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          {/* Save button */}
-          <Button
-            onClick={form.handleSubmit(
-              currentCaseId ? handleUpdateCase : onSubmit
-            )}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            {currentCaseId ? "Update Case" : "Save Case"}
-          </Button>
-
-          {/* New Case button */}
-          <Button
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={async () => {
-              // If there's a current case or unsaved changes, save them first
-              if (actions.length > 0 || form.formState.isDirty) {
-                await form.handleSubmit(
+                onClick={form.handleSubmit(
                   currentCaseId ? handleUpdateCase : onSubmit
-                )();
-              }
+                )}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {currentCaseId ? "Update Case" : "Save Case"}
+              </Button>
 
-              // Reset store and form to start fresh
-              useCaseStore.getState().reset();
-              form.reset({
-                name: "",
-                dateTime: new Date().toISOString().slice(0, 16),
-                assignedTo: "",
-                type: "checkup",
-                status: "ongoing",
-                visibility: "private",
-              });
+              {/* New Case button (moved to right position) */}
+              <Button
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={async () => {
+                  // If there's a current case or unsaved changes, save them first
+                  if (actions.length > 0 || form.formState.isDirty) {
+                    await form.handleSubmit(
+                      currentCaseId ? handleUpdateCase : onSubmit
+                    )();
+                  }
 
-              // Ensure we're ready for a new case
-              setIsEditMode(true);
+                  // Reset store and form to start fresh
+                  useCaseStore.getState().reset();
+                  form.reset({
+                    name: "",
+                    dateTime: new Date().toISOString().slice(0, 16),
+                    assignedTo: "",
+                    type: "checkup",
+                    status: "ongoing",
+                    visibility: "private",
+                  });
 
-              toast({
-                title: "New case created",
-                description: "You can now start working on a new case",
-              });
-            }}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            New Case
-          </Button>
+                  // Ensure we're ready for a new case
+                  setIsEditMode(true);
+
+                  toast({
+                    title: "New case created",
+                    description: "You can now start working on a new case",
+                  });
+                }}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                New Case
+              </Button>
+            </div>
+
+            {/* Reset button (moved below) */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-card-foreground hover:bg-muted/30 hover:text-card-foreground"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-card border-border">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-card-foreground">
+                    Reset case?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-muted-foreground">
+                    This will clear all case information, transcripts, and SOAP
+                    notes. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-muted text-card-foreground border-muted hover:bg-muted/30">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                    onClick={() => {
+                      // Reset without saving
+                      useCaseStore.getState().reset();
+                      form.reset({
+                        name: "",
+                        dateTime: new Date().toISOString().slice(0, 16),
+                        assignedTo: "",
+                        type: "checkup",
+                        status: "ongoing",
+                        visibility: "private",
+                      });
+
+                      // Ensure we're in edit mode
+                      setIsEditMode(true);
+
+                      toast({
+                        title: "Case reset",
+                        description: "All case data has been cleared",
+                      });
+                    }}
+                  >
+                    Reset
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
 
