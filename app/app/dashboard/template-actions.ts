@@ -21,10 +21,10 @@ export async function createTemplate(values: TemplateFormValues) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.error("Create template authorization error: No user");
-      return { error: "Unauthorized" };
-    }
+    // if (!user) {
+    //   console.error("Create template authorization error: No user");
+    //   return { error: "Unauthorized" };
+    // }
 
     const validatedFields = templateFormSchema.parse(values);
     console.log("Validated template fields:", validatedFields);
@@ -68,9 +68,9 @@ export async function updateTemplate(id: number, values: TemplateFormValues) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { error: "Unauthorized" };
-    }
+    // if (!user) {
+    //   return { error: "Unauthorized" };
+    // }
 
     const validatedFields = templateFormSchema.parse(values);
 
@@ -106,9 +106,9 @@ export async function deleteTemplate(id: number) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { error: "Unauthorized" };
-    }
+    // if (!user) {
+    //   return { error: "Unauthorized" };
+    // }
 
     const { error } = await supabase.from("templates").delete().eq("id", id);
 
@@ -132,9 +132,9 @@ export async function getTemplates(type?: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { error: "Unauthorized" };
-    }
+    // if (!user) {
+    //   return { error: "Unauthorized" };
+    // }
 
     let query = supabase.from("templates").select();
 
@@ -165,9 +165,9 @@ export async function getTemplateById(id: number) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { error: "Unauthorized" };
-    }
+    // if (!user) {
+    //   return { error: "Unauthorized" };
+    // }
 
     const { data: template, error } = await supabase
       .from("templates")
@@ -198,7 +198,7 @@ export type Template = {
   createdAt: string;
   createdBy: string;
   updated_at?: string;
-}
+};
 
 export async function getEmailTemplates() {
   try {
@@ -207,29 +207,29 @@ export async function getEmailTemplates() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { error: "Unauthorized" } as const;
-    }
+    // if (!user) {
+    //   return { error: "Unauthorized" } as const;
+    // }
 
     const { data: templates, error } = await supabase
       .from("templates")
       .select()
-      .order('name', { ascending: true });
+      .order("name", { ascending: true });
 
     if (error) {
       console.error("Email template fetch error:", error);
       return { error: error.message } as const;
     }
 
-    return { 
+    return {
       templates: templates as Template[],
-      error: null
+      error: null,
     };
   } catch (error) {
     console.error("Failed to fetch email templates:", error);
-    return { 
+    return {
       templates: null,
-      error: "Failed to fetch email templates." 
+      error: "Failed to fetch email templates.",
     };
   }
 }
@@ -245,9 +245,9 @@ export async function ensureDefaultTemplates() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { error: "Unauthorized" };
-    }
+    // if (!user) {
+    //   return { error: "Unauthorized" };
+    // }
 
     // Check if SOAP template already exists
     const { data: existingTemplates, error: checkError } = await supabase
@@ -274,7 +274,7 @@ Subjective: Summarize the patient history and owner's description of the problem
 Objective: Document physical examination findings, vital signs, and test results.
 Assessment: Provide clinical assessment and differential diagnoses.
 Plan: Outline the treatment plan, medications, and follow-up recommendations.`,
-          createdBy: user.id,
+          createdBy: "db109256-9541-427b-9cb3-b14c0c7682ff",
         })
         .select()
         .single();
@@ -291,9 +291,9 @@ Plan: Outline the treatment plan, medications, and follow-up recommendations.`,
     return { success: true, message: "SOAP template already exists" };
   } catch (error) {
     console.error("Error ensuring default templates:", error);
-    return { 
+    return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error" 
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
