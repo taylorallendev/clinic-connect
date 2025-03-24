@@ -493,6 +493,8 @@ export async function createCase(
       caseData.assigned_to = parsedData.assignedTo;
     }
 
+    caseData.assignedTo = "db109256-9541-427b-9cb3-b14c0c7682ff";
+
     // Set the patient ID using the dynamically determined column name, if it exists
     if (Object.keys(columnStructure).includes(columnName)) {
       caseData[columnName] = patientId;
