@@ -140,22 +140,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
       </button>
 
+      {/* Sidebar overlay for mobile - closes sidebar when clicking outside */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar - desktop: controlled by isSidebarOpen, mobile: controlled by isMobileSidebarOpen */}
       <div
         className={`fixed inset-0 z-30 transform transition-all duration-300 ease-in-out md:relative 
           ${isSidebarOpen ? "md:w-64" : "md:w-0"} 
           ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
           flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl`}
+        style={{
+          width: isMobileSidebarOpen ? "85%" : isSidebarOpen ? "16rem" : "0",
+        }}
       >
-        {/* Sidebar overlay for mobile - closes sidebar when clicking outside */}
-        {isMobileSidebarOpen && (
-          <div
-            className="fixed inset-0 z-20 bg-black/50 md:hidden"
-            onClick={() => setIsMobileSidebarOpen(false)}
-            aria-hidden="true"
-          />
-        )}
-
         <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2a9d8f]/20">
