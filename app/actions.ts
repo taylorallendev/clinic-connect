@@ -45,7 +45,12 @@ export const signUpAction = async (formData: FormData) => {
 
   if (signUpError) {
     console.error(signUpError.code + " " + signUpError.message);
-    return encodedRedirect("error", "/sign-up", signUpError.message);
+    return encodedRedirect(
+      "error",
+      "/sign-up",
+      signUpError.message,
+      signUpError.code
+    );
   }
 
   // Immediately sign in the user after successful sign-up
@@ -56,7 +61,12 @@ export const signUpAction = async (formData: FormData) => {
 
   if (signInError) {
     console.error(signInError.code + " " + signInError.message);
-    return encodedRedirect("error", "/sign-up", signInError.message);
+    return encodedRedirect(
+      "error",
+      "/sign-up",
+      signInError.message,
+      signInError.code
+    );
   }
 
   // Redirect to dashboard after successful sign-up and sign-in
@@ -68,16 +78,52 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    return encodedRedirect("error", "/sign-in", error.message);
+  // Basic validation
+  if (!email || !password) {
+    console.error("Sign-in attempt with missing credentials");
+    return encodedRedirect(
+      "error",
+      "/sign-in",
+      "Email and password are required"
+    );
   }
 
-  return redirect("/app/dashboard");
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      // Log detailed error information
+      console.error(`Authentication error: [${error.code}] ${error.message}`);
+
+      // Provide user-friendly error messages based on error code
+      let userMessage = error.message;
+      let errorCode = error.code;
+
+      if (error.code === "invalid_credentials") {
+        userMessage = "Invalid email or password. Please try again.";
+      } else if (error.code === "user_not_found") {
+        userMessage = "No account found with this email address.";
+      } else if (error.code === "too_many_attempts") {
+        userMessage = "Too many login attempts. Please try again later.";
+      }
+
+      return encodedRedirect("error", "/sign-in", userMessage, errorCode);
+    }
+
+    console.log(`User successfully signed in: ${email}`);
+    return redirect("/app/dashboard");
+  } catch (unexpectedError) {
+    // Handle unexpected errors
+    console.error("Unexpected authentication error:", unexpectedError);
+    return encodedRedirect(
+      "error",
+      "/sign-in",
+      "An unexpected error occurred. Please try again."
+    );
+  }
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

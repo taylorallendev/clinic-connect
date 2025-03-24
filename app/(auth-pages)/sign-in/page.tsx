@@ -8,6 +8,7 @@ import Link from "next/link";
 
 export default async function Login(props: { searchParams: Promise<Message> }) {
   const searchParams = await props.searchParams;
+
   return (
     <div className="flex min-h-[80vh] items-center justify-center w-full">
       <form className="flex flex-col w-full max-w-md p-8 rounded-lg border bg-white shadow-sm">
@@ -18,6 +19,24 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
             Sign up
           </Link>
         </p>
+
+        {searchParams?.type === "error" && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+            <p className="font-medium">Authentication Error</p>
+            <p>{searchParams.message}</p>
+            {searchParams.code && (
+              <p className="text-xs mt-1 text-red-500/80">
+                {searchParams.code === "invalid_credentials" &&
+                  "Please check your email and password."}
+                {searchParams.code === "too_many_attempts" &&
+                  "Too many login attempts. Please try again later."}
+                {searchParams.code === "user_not_found" &&
+                  "No account found with this email address."}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-col gap-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">
@@ -74,7 +93,6 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
           </div>
 
           <GoogleLoginButton />
-          <FormMessage message={searchParams} />
         </div>
       </form>
     </div>
