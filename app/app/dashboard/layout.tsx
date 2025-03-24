@@ -11,8 +11,6 @@ import {
   Calendar,
   Users,
   FileBarChart2,
-  Menu,
-  X,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -38,8 +36,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -50,26 +46,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     fetchUser();
-  }, []);
-
-  // Close mobile sidebar when route changes
-  useEffect(() => {
-    setIsMobileSidebarOpen(false);
-  }, [pathname]);
-
-  // Check if we're on mobile and set initial sidebar state
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      }
-    };
-
-    // Set initial state
-    handleResize();
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const navigation = [
@@ -126,61 +102,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Mobile sidebar toggle button */}
-      <button
-        type="button"
-        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        className="fixed left-4 top-4 z-40 rounded-md bg-[#1e3a47] p-2 text-white shadow-md md:hidden"
-        aria-label={isMobileSidebarOpen ? "Close sidebar" : "Open sidebar"}
-      >
-        {isMobileSidebarOpen ? (
-          <X className="h-5 w-5" />
-        ) : (
-          <Menu className="h-5 w-5" />
-        )}
-      </button>
-
-      {/* Sidebar overlay for mobile - closes sidebar when clicking outside */}
-      {isMobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/50 md:hidden"
-          onClick={() => setIsMobileSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar - desktop: controlled by isSidebarOpen, mobile: controlled by isMobileSidebarOpen */}
-      <div
-        className={`fixed inset-y-0 left-0 z-30 transform transition-all duration-300 ease-in-out md:relative 
-          ${isSidebarOpen ? "md:w-64" : "md:w-0"} 
-          ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-          flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl
-          ${!isMobileSidebarOpen && "md:visible invisible"}`}
-        style={{
-          width: isMobileSidebarOpen ? "85%" : isSidebarOpen ? "16rem" : "0",
-          overflow: "hidden",
-        }}
-      >
-        <div className="flex min-w-64 items-center justify-between border-b border-[#2a4a5a] p-5">
+      {/* Sidebar */}
+      <div className="flex w-64 flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2a9d8f]/20">
               <PawPrint className="h-5 w-5 text-[#2a9d8f]" />
             </div>
             <h1 className="text-xl font-medium text-white">ClinicConnect</h1>
           </div>
-          {/* Mobile close button inside sidebar header */}
-          <button
-            type="button"
-            onClick={() => setIsMobileSidebarOpen(false)}
-            className="text-white md:hidden"
-            aria-label="Close sidebar"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
-        {/* Sidebar content */}
-        <nav className="flex-1 min-w-64 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 p-3">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
 
@@ -204,7 +137,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="min-w-64 border-t border-[#2a4a5a] p-4">
+        <div className="border-t border-[#2a4a5a] p-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9 border border-[#2a4a5a]">
               <AvatarImage src="/placeholder-user.jpg" />
@@ -241,54 +174,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </div>
 
-      {/* Toggle sidebar button for desktop */}
-      <button
-        type="button"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed z-40 hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-[#1e3a47] text-white shadow-md transition-all duration-300 ${
-          isSidebarOpen ? "left-60" : "left-5"
-        }`}
-        aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-      >
-        {isSidebarOpen ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-        )}
-      </button>
-
-      {/* Main Content Area - adjust padding based on sidebar state */}
-      <div
-        className={`flex-1 overflow-auto transition-all duration-300 ${
-          isSidebarOpen ? "md:ml-0" : "md:ml-0"
-        } pt-16 md:pt-0`}
-      >
-        {children}
-      </div>
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto">{children}</div>
     </div>
   );
 }

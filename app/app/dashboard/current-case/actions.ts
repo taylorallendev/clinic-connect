@@ -35,7 +35,7 @@ import { getTemplateById } from "../template-actions";
 const createCaseSchema = z.object({
   name: z.string().min(1),
   dateTime: z.string().min(1),
-  assignedTo: z.string().default("db109256-9541-427b-9cb3-b14c0c7682ff"),
+  assignedTo: z.string(),
   type: z.enum(["checkup", "emergency", "surgery", "follow_up"]),
   // Use exact status values from Supabase database
   status: z
@@ -486,8 +486,12 @@ export async function createCase(
       console.log(`Using status value: ${caseData.status}`);
     }
 
-    // Always use this specific ID regardless of what's passed from the client
-    caseData.assignedTo = "db109256-9541-427b-9cb3-b14c0c7682ff";
+    // Only add assignedTo if it exists in the schema
+    if (Object.keys(columnStructure).includes("assignedTo")) {
+      caseData.assignedTo = parsedData.assignedTo;
+    } else if (Object.keys(columnStructure).includes("assigned_to")) {
+      caseData.assigned_to = parsedData.assignedTo;
+    }
 
     // Set the patient ID using the dynamically determined column name, if it exists
     if (Object.keys(columnStructure).includes(columnName)) {
