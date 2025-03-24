@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <div 
+      <div
         className={`flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-16" : "w-64"
         }`}
@@ -137,7 +137,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <h1 className="text-xl font-medium text-white">ClinicConnect</h1>
             )}
           </div>
-          {!isMobile && (
+          {
             <Button
               variant="ghost"
               size="icon"
@@ -150,7 +150,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <ChevronLeft className="h-5 w-5" />
               )}
             </Button>
-          )}
+          }
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
