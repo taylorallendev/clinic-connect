@@ -35,7 +35,7 @@ export async function createTemplate(values: TemplateFormValues) {
         name: validatedFields.name,
         type: validatedFields.type,
         content: validatedFields.content,
-        createdBy: user.id,
+        createdBy: "db109256-9541-427b-9cb3-b14c0c7682ff",
       })
       .select()
       .single();
