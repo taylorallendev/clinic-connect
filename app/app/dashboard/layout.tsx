@@ -11,6 +11,8 @@ import {
   Calendar,
   Users,
   FileBarChart2,
+  Menu,
+  X,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -36,6 +38,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -47,6 +50,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     fetchUser();
   }, []);
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
 
   const navigation = [
     {
@@ -102,8 +110,35 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="flex w-64 flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl">
+      {/* Mobile sidebar toggle button */}
+      <button
+        type="button"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="fixed left-4 top-4 z-40 rounded-md bg-[#1e3a47] p-2 text-white shadow-md md:hidden"
+        aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        {isSidebarOpen ? (
+          <X className="h-5 w-5" />
+        ) : (
+          <Menu className="h-5 w-5" />
+        )}
+      </button>
+
+      {/* Sidebar - hidden on mobile by default, shown when isSidebarOpen is true */}
+      <div
+        className={`fixed inset-0 z-30 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } flex w-64 flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl`}
+      >
+        {/* Sidebar overlay for mobile - closes sidebar when clicking outside */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/50 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2a9d8f]/20">
@@ -111,6 +146,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             <h1 className="text-xl font-medium text-white">ClinicConnect</h1>
           </div>
+          {/* Mobile close button inside sidebar header */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(false)}
+            className="text-white md:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
@@ -174,8 +218,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto">{children}</div>
+      {/* Main Content Area - add padding on mobile when sidebar is hidden */}
+      <div className="flex-1 overflow-auto pt-16 md:pt-0">{children}</div>
     </div>
   );
 }
