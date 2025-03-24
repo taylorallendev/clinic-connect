@@ -1143,7 +1143,7 @@ export function CurrentCaseContent() {
 
                       toast({
                         title: "Case reset",
-                        description: "All case data has been cleared",
+                        desiption: "All case data has been cleared",
                       });
                     }}
                   >

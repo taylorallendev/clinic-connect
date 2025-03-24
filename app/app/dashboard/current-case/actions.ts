@@ -348,18 +348,10 @@ export async function createCase(
       "====================== CASE CREATION START ======================"
     );
 
-    // Authenticate the user making the request
+    // Create Supabase client without authentication check
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.error("Authentication failed - no user found");
-      throw new Error("Unauthorized");
-    }
-
-    console.log("User authenticated successfully:", user.id);
+    console.log("Supabase client created");
 
     // Validate input data against the schema
     const parsedData = createCaseWithActionsSchema.parse(data);
