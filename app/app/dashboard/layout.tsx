@@ -151,15 +151,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar - desktop: controlled by isSidebarOpen, mobile: controlled by isMobileSidebarOpen */}
       <div
-        className={`fixed inset-0 z-30 transform transition-all duration-300 ease-in-out md:relative 
+        className={`fixed inset-y-0 left-0 z-30 transform transition-all duration-300 ease-in-out md:relative 
           ${isSidebarOpen ? "md:w-64" : "md:w-0"} 
           ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-          flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl`}
+          flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl
+          ${!isMobileSidebarOpen && "md:visible invisible"}`}
         style={{
           width: isMobileSidebarOpen ? "85%" : isSidebarOpen ? "16rem" : "0",
+          overflow: "hidden",
         }}
       >
-        <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
+        <div className="flex min-w-64 items-center justify-between border-b border-[#2a4a5a] p-5">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2a9d8f]/20">
               <PawPrint className="h-5 w-5 text-[#2a9d8f]" />
@@ -178,7 +180,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Sidebar content */}
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 min-w-64 space-y-1 p-3">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
 
@@ -202,7 +204,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="border-t border-[#2a4a5a] p-4">
+        <div className="min-w-64 border-t border-[#2a4a5a] p-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9 border border-[#2a4a5a]">
               <AvatarImage src="/placeholder-user.jpg" />
