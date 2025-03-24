@@ -16,15 +16,17 @@ export async function middleware(request: NextRequest) {
   // If user is signed in and trying to access the landing page or auth pages, redirect to appointments
   if (session) {
     if (pathname === "/" || pathname.startsWith("/(auth-pages)")) {
-      return NextResponse.redirect(new URL("/app/dashboard/appointments", request.url));
+      return NextResponse.redirect(
+        new URL("/app/dashboard/current-case", request.url)
+      );
     }
   }
 
   // If user is not signed in and trying to access protected routes, redirect to sign-in
   if (!session) {
-    if (pathname.startsWith("/app")) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
-    }
+    // if (pathname.startsWith("/app")) {
+    //   return NextResponse.redirect(new URL("/sign-in", request.url));
+    // }
   }
 
   // Return the response for all other cases

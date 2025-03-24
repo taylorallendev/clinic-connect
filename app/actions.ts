@@ -60,7 +60,7 @@ export const signUpAction = async (formData: FormData) => {
   }
 
   // Redirect to dashboard after successful sign-up and sign-in
-  return redirect("/app/dashboard");
+  return redirect("/app/dashboard/current-case");
 };
 
 export const signInAction = async (formData: FormData) => {
@@ -77,7 +77,7 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  return redirect("/app/dashboard");
+  return redirect("/app/dashboard/current-case");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
