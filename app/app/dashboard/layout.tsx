@@ -125,7 +125,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <div
         className={`flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl transition-all duration-300 ${
-          sidebarCollapsed ? "w-16" : "w-64"
+          sidebarCollapsed ? "w-0" : "w-64"
         }`}
       >
         <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
