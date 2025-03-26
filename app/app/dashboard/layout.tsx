@@ -11,8 +11,8 @@ import {
   Calendar,
   Users,
   FileBarChart2,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -54,19 +54,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     fetchUser();
   }, []);
 
-  // Load sidebar state from localStorage
+  // Check for saved sidebar state in localStorage
   useEffect(() => {
-    const savedState = localStorage.getItem("sidebar:collapsed");
-    if (savedState !== null) {
-      setSidebarCollapsed(savedState === "true");
+    const savedState = localStorage.getItem("sidebar:state");
+    if (savedState === "collapsed") {
+      setIsCollapsed(true);
     }
   }, []);
 
-  // Save sidebar state to localStorage
+  // Toggle sidebar collapse state
   const toggleSidebar = () => {
-    const newState = !sidebarCollapsed;
-    setSidebarCollapsed(newState);
-    localStorage.setItem("sidebar:collapsed", String(newState));
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem("sidebar:state", newState ? "collapsed" : "expanded");
   };
 
   const navigation = [
@@ -124,101 +124,94 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <div
+      <div 
         className={`flex flex-col border-r border-border bg-[#1e3a47] backdrop-blur-xl transition-all duration-300 ${
-          sidebarCollapsed ? "w-0" : "w-64"
+          isCollapsed ? 'w-16' : 'w-64'
         }`}
       >
-        <div className="flex items-center justify-between border-b border-[#2a4a5a] p-5">
+        <div className="flex items-center justify-between p-5">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2a9d8f]/20">
               <PawPrint className="h-5 w-5 text-[#2a9d8f]" />
             </div>
-            {!sidebarCollapsed && (
+            {!isCollapsed && (
               <h1 className="text-xl font-medium text-white">ClinicConnect</h1>
             )}
           </div>
-          {
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="h-8 w-8 text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
-            >
-              {sidebarCollapsed ? (
-                <ChevronRight className="h-5 w-5" />
-              ) : (
-                <ChevronLeft className="h-5 w-5" />
-              )}
-            </Button>
-          }
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
+            onClick={toggleSidebar}
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="h-5 w-5" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5" />
+            )}
+          </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 p-3">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
+        {!isCollapsed && (
+          <>
+            <nav className="flex-1 space-y-1 p-3">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
 
-            return (
-              <Button
-                key={item.name}
-                variant="ghost"
-                className={`w-full justify-start gap-3 rounded-lg py-2.5 text-gray-300 hover:bg-[#2a4a5a] hover:text-white ${
-                  isActive ? "bg-[#2a4a5a] font-medium text-white" : ""
-                } ${sidebarCollapsed ? "px-2" : ""}`}
-                asChild
-              >
-                <Link href={item.href}>
-                  <item.icon
-                    className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-300"}`}
-                  />
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </Link>
-              </Button>
-            );
-          })}
-        </nav>
+                return (
+                  <Button
+                    key={item.name}
+                    variant="ghost"
+                    className={`w-full justify-start gap-3 rounded-lg py-2.5 text-gray-300 hover:bg-[#2a4a5a] hover:text-white ${
+                      isActive ? "bg-[#2a4a5a] font-medium text-white" : ""
+                    }`}
+                    asChild
+                  >
+                    <Link href={item.href}>
+                      <item.icon
+                        className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-300"}`}
+                      />
+                      <span>{item.name}</span>
+                    </Link>
+                  </Button>
+                );
+              })}
+            </nav>
 
-        <div className="border-t border-[#2a4a5a] p-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 border border-[#2a4a5a]">
-              <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback className="bg-[#2a4a5a] text-white">
-                {isLoading ? "..." : getUserInitials()}
-              </AvatarFallback>
-            </Avatar>
-            {!sidebarCollapsed && (
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white">
-                  {isLoading ? "Loading..." : getDisplayName()}
-                </p>
-                <p className="text-xs text-gray-300">{user?.email || ""}</p>
+            <div className="border-t border-[#2a4a5a] p-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-9 w-9 border border-[#2a4a5a]">
+                  <AvatarImage src="/placeholder-user.jpg" />
+                  <AvatarFallback className="bg-[#2a4a5a] text-white">
+                    {isLoading ? "..." : getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">
+                    {isLoading ? "Loading..." : getDisplayName()}
+                  </p>
+                  <p className="text-xs text-gray-300">{user?.email || ""}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-            {!sidebarCollapsed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
 
-          {/* Logout Button */}
-          <form action={() => signOut()} className="mt-3">
-            <Button
-              type="submit"
-              variant="ghost"
-              className={`w-full justify-start gap-3 rounded-lg py-2.5 text-gray-300 hover:bg-[#2a4a5a] hover:text-white ${
-                sidebarCollapsed ? "px-2" : ""
-              }`}
-            >
-              <LogOut className="h-5 w-5" />
-              {!sidebarCollapsed && <span>Sign out</span>}
-            </Button>
-          </form>
-        </div>
+              {/* Logout Button */}
+              <button
+                onClick={() => signOut()}
+                className="mt-3 w-full flex items-center justify-start gap-3 rounded-lg py-2.5 px-2 text-gray-300 hover:bg-[#2a4a5a] hover:text-white"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>Sign out</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Main Content Area */}
