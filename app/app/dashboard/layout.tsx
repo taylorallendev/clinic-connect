@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { signOutAction } from "@/app/actions";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useClerk } from "@clerk/nextjs";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -36,6 +36,7 @@ interface UserData {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { signOut } = useClerk();
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -205,7 +206,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* Logout Button */}
-          <form action={signOutAction} className="mt-3">
+          <form action={() => signOut()} className="mt-3">
             <Button
               type="submit"
               variant="ghost"
