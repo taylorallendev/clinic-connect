@@ -1,18 +1,18 @@
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 
-export const getCurrentUserId = () => {
-  const { userId } = auth();
-  
+export const getCurrentUserId = async () => {
+  const { userId } = await auth();
+
   if (!userId) {
     throw new Error("User not authenticated");
   }
-  
+
   return userId;
 };
 
 export const getUserMetadata = async () => {
-  const { userId } = auth();
-  
+  const { userId } = await auth();
+
   if (!userId) {
     throw new Error("User not authenticated");
   }
@@ -20,6 +20,6 @@ export const getUserMetadata = async () => {
   // In a real implementation, you would fetch user data from Clerk
   // For now, we'll just return the user ID
   return {
-    id: userId
+    id: userId,
   };
 };
