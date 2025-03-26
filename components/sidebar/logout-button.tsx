@@ -1,22 +1,18 @@
 "use client";
 
-import { signOutAction } from "@/app/actions";
+import { SignOutButton, useClerk } from "@clerk/nextjs";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 
 export function SidebarLogoutButton() {
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSignOut = async () => {
-    setIsLoading(true);
-    await signOutAction();
-  };
+  const { signOut } = useClerk();
 
   return (
-    <form action={signOutAction}>
+    <SignOutButton signOutCallback={() => window.location.href = "/"}>
       <Button
-        type="submit"
+        type="button"
         variant="ghost"
         className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
         disabled={isLoading}
@@ -25,6 +21,6 @@ export function SidebarLogoutButton() {
         <LogOut size={18} />
         <span>{isLoading ? "Signing out..." : "Sign out"}</span>
       </Button>
-    </form>
+    </SignOutButton>
   );
 }

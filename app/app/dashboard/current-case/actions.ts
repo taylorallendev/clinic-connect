@@ -23,6 +23,7 @@ import { z } from "zod";
 import { generateObject, generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { getTemplateById } from "../template-actions";
+import { getCurrentUserId } from "@/utils/clerk/server";
 
 /**
  * Schema for creating a new case
@@ -618,11 +619,9 @@ export async function saveCaseAction(caseId: number, action: ClientCaseAction) {
   try {
     // Authenticate the user making the request
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       throw new Error("Unauthorized");
     }
 
@@ -740,12 +739,9 @@ export async function generateContentFromTemplate(
 ) {
   try {
     // Authenticate the user making the request
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       throw new Error("Unauthorized");
     }
 
@@ -1749,11 +1745,9 @@ export async function addTreatmentTask(data: TreatmentTask) {
   try {
     // Authenticate the user making the request
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userId = getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       throw new Error("Unauthorized");
     }
 
@@ -1783,7 +1777,7 @@ export async function addTreatmentTask(data: TreatmentTask) {
         case_id: parsedData.caseId,
         description: parsedData.description,
         status: parsedData.status,
-        assigned_to: parsedData.assignedTo || user.id,
+        assigned_to: parsedData.assignedTo || userId,
       })
       .select()
       .single();

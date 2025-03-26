@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getCurrentUserId } from "@/utils/clerk/server";
 
 // Patient Schema
 const patientSchema = z.object({
@@ -21,12 +22,10 @@ export type PatientFormValues = z.infer<typeof patientSchema>;
 // Create patient
 export async function createPatient(data: PatientFormValues) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -72,12 +71,10 @@ export async function createPatient(data: PatientFormValues) {
 // Get patient by ID
 export async function getPatient(id: number) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -111,12 +108,10 @@ export async function updatePatient(
   data: Partial<PatientFormValues>
 ) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -186,12 +181,10 @@ export async function updatePatient(
 // Search patients
 export async function searchPatients(searchTerm: string) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -227,12 +220,10 @@ export async function searchPatients(searchTerm: string) {
 // Get all patients with pagination
 export async function getPatients(page = 1, limit = 20) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 

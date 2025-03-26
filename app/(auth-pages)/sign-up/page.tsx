@@ -1,73 +1,34 @@
-import { signUpAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
-import { SmtpMessage } from "../smtp-message";
-import { GoogleLoginButton } from "@/components/social-login-buttons";
 
-export default async function Signup(props: {
-  searchParams: Promise<Message>;
-}) {
-  const searchParams = await props.searchParams;
-  if ("message" in searchParams) {
-    return (
-      <div className="w-full flex-1 flex items-center h-screen sm:max-w-md justify-center gap-2 p-4">
-        <FormMessage message={searchParams} />
-      </div>
-    );
-  }
-
+export default function Signup() {
   return (
-    <>
-      <form className="flex flex-col min-w-64 max-w-64 mx-auto">
-        <h1 className="text-2xl font-medium">Sign up</h1>
-        <p className="text-sm text text-foreground">
+    <div className="flex min-h-[80vh] items-center justify-center w-full">
+      <div className="flex flex-col w-full max-w-md p-8 rounded-lg border bg-white shadow-sm">
+        <h1 className="text-2xl font-medium text-center">Sign up</h1>
+        <p className="text-sm text-foreground text-center mt-2 mb-6">
           Already have an account?{" "}
           <Link className="text-primary font-medium underline" href="/sign-in">
             Sign in
           </Link>
         </p>
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input name="firstName" placeholder="John" required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input name="lastName" placeholder="Doe" required />
-            </div>
-          </div>
-          <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
-          <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            name="password"
-            placeholder="Your password"
-            minLength={6}
-            required
-          />
-          <SubmitButton formAction={signUpAction} pendingText="Signing up...">
-            Sign up
-          </SubmitButton>
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t"></span>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          <GoogleLoginButton />
-          <FormMessage message={searchParams} />
-        </div>
-      </form>
-      <SmtpMessage />
-    </>
+        <SignUp 
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              card: "shadow-none p-0",
+              headerTitle: "hidden",
+              headerSubtitle: "hidden",
+              socialButtonsBlockButton: "h-11 font-medium",
+              formButtonPrimary: "h-11 mt-2 bg-[#0ea5e9] hover:bg-[#0ea5e9]/90 text-white font-medium",
+              formFieldInput: "h-11 bg-slate-100/50 border-slate-200 rounded-md px-3",
+              footerAction: "hidden"
+            }
+          }}
+          routing="path"
+          path="/sign-up"
+        />
+      </div>
+    </div>
   );
 }

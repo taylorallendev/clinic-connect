@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getCurrentUserId } from "@/utils/clerk/server";
 
 const templateFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -16,12 +17,10 @@ export async function createTemplate(values: TemplateFormValues) {
   console.log("Server action createTemplate called with:", values);
 
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       console.error("Create template authorization error: No user");
       return { error: "Unauthorized" };
     }
@@ -35,7 +34,7 @@ export async function createTemplate(values: TemplateFormValues) {
         name: validatedFields.name,
         type: validatedFields.type,
         content: validatedFields.content,
-        createdBy: "db109256-9541-427b-9cb3-b14c0c7682ff",
+        createdBy: userId,
       })
       .select()
       .single();
@@ -63,12 +62,10 @@ export async function createTemplate(values: TemplateFormValues) {
 
 export async function updateTemplate(id: number, values: TemplateFormValues) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { error: "Unauthorized" };
     }
 
@@ -101,12 +98,10 @@ export async function updateTemplate(id: number, values: TemplateFormValues) {
 
 export async function deleteTemplate(id: number) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { error: "Unauthorized" };
     }
 
@@ -127,12 +122,10 @@ export async function deleteTemplate(id: number) {
 
 export async function getTemplates(type?: string) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { error: "Unauthorized" };
     }
 
@@ -160,12 +153,10 @@ export async function getTemplates(type?: string) {
 
 export async function getTemplateById(id: number) {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { error: "Unauthorized" };
     }
 
@@ -202,12 +193,10 @@ export type Template = {
 
 export async function getEmailTemplates() {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { error: "Unauthorized" } as const;
     }
 
@@ -240,12 +229,10 @@ export async function getEmailTemplates() {
  */
 export async function ensureDefaultTemplates() {
   try {
+    const userId = getCurrentUserId();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userId) {
       return { error: "Unauthorized" };
     }
 
@@ -274,7 +261,7 @@ Subjective: Summarize the patient history and owner's description of the problem
 Objective: Document physical examination findings, vital signs, and test results.
 Assessment: Provide clinical assessment and differential diagnoses.
 Plan: Outline the treatment plan, medications, and follow-up recommendations.`,
-          createdBy: user.id,
+          createdBy: userId,
         })
         .select()
         .single();
