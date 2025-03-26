@@ -6,7 +6,6 @@ export default async function Home() {
   const supabase = await createClient();
   const user = await supabase.auth.getUser();
 
-
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16 md:py-24">
@@ -26,7 +25,7 @@ export default async function Home() {
               size="lg"
               className="px-8 bg-[#2a9d8f] hover:bg-[#2a9d8f]/90"
             >
-              <Link href={user.data.user ? "/app/dashboard/current-case" : '/sign-in'}>Get Started</Link>
+              <Link href={"/app/dashboard/current-case"}>Get Started</Link>
             </Button>
 
             <Button asChild variant="outline" size="lg" className="px-8">
