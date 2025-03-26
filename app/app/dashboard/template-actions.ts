@@ -189,7 +189,7 @@ export type Template = {
   createdAt: string;
   createdBy: string;
   updated_at?: string;
-}
+};
 
 export async function getEmailTemplates() {
   try {
@@ -203,22 +203,22 @@ export async function getEmailTemplates() {
     const { data: templates, error } = await supabase
       .from("templates")
       .select()
-      .order('name', { ascending: true });
+      .order("name", { ascending: true });
 
     if (error) {
       console.error("Email template fetch error:", error);
       return { error: error.message } as const;
     }
 
-    return { 
+    return {
       templates: templates as Template[],
-      error: null
+      error: null,
     };
   } catch (error) {
     console.error("Failed to fetch email templates:", error);
-    return { 
+    return {
       templates: null,
-      error: "Failed to fetch email templates." 
+      error: "Failed to fetch email templates.",
     };
   }
 }
@@ -278,9 +278,9 @@ Plan: Outline the treatment plan, medications, and follow-up recommendations.`,
     return { success: true, message: "SOAP template already exists" };
   } catch (error) {
     console.error("Error ensuring default templates:", error);
-    return { 
+    return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error" 
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
