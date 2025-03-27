@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Copy, CheckCircle, ClipboardCheck, Clipboard } from "lucide-react";
+import {
+  FileText,
+  Copy,
+  CheckCircle,
+  ClipboardCheck,
+  Clipboard,
+} from "lucide-react";
 import { AppointmentData, CaseAction } from "@/store/use-case-store";
 import { useAppointment } from "@/hooks/use-appointment";
 import { MarkdownRenderer } from "@/components/ui/markdown";
@@ -17,24 +23,28 @@ interface CaseViewProps {
 
 export function CaseView({ appointmentId }: CaseViewProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [expandedSoapSections, setExpandedSoapSections] = useState<Record<string, Record<string, boolean>>>({});
+  const [expandedSoapSections, setExpandedSoapSections] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
   const { appointment, isLoading, error } = useAppointment(appointmentId);
 
   // Initialize expanded state for SOAP sections when appointment loads
   useEffect(() => {
     if (appointment && appointment.case_actions) {
-      const soapActions = appointment.case_actions.filter(action => action.type === "soap");
-      
+      const soapActions = appointment.case_actions.filter(
+        (action) => action.type === "soap"
+      );
+
       const initialExpandedState: Record<string, Record<string, boolean>> = {};
-      soapActions.forEach(action => {
+      soapActions.forEach((action) => {
         initialExpandedState[action.id] = {
           subjective: true,
           objective: true,
           assessment: true,
-          plan: true
+          plan: true,
         };
       });
-      
+
       setExpandedSoapSections(initialExpandedState);
     }
   }, [appointment]);
@@ -155,7 +165,7 @@ export function CaseView({ appointmentId }: CaseViewProps) {
     appointment.case_actions?.filter((action) => action.type === "soap") || [];
 
   return (
-    <div className="flex flex-col space-y-6 p-6 bg-background">
+    <div className="flex flex-col space-y-6 py-6 bg-background">
       <div className="space-y-6">
         {/* Case Details Card */}
         <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
@@ -194,7 +204,7 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                   </p>
                 </div>
               </div>
-              
+
               {/* Right Column */}
               <div className="space-y-4">
                 <div>
@@ -237,32 +247,47 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                   size="sm"
                   onClick={() => {
                     // Check if at least one section is collapsed
-                    const allExpanded = soapActions.every(action => {
+                    const allExpanded = soapActions.every((action) => {
                       const sections = expandedSoapSections[action.id];
-                      return sections && (sections.subjective && sections.objective && 
-                                        sections.assessment && sections.plan);
+                      return (
+                        sections &&
+                        sections.subjective &&
+                        sections.objective &&
+                        sections.assessment &&
+                        sections.plan
+                      );
                     });
-                    
+
                     // Toggle all sections
-                    const newExpandedState: Record<string, Record<string, boolean>> = {};
-                    soapActions.forEach(action => {
+                    const newExpandedState: Record<
+                      string,
+                      Record<string, boolean>
+                    > = {};
+                    soapActions.forEach((action) => {
                       newExpandedState[action.id] = {
                         subjective: !allExpanded,
                         objective: !allExpanded,
                         assessment: !allExpanded,
-                        plan: !allExpanded
+                        plan: !allExpanded,
                       };
                     });
-                    
+
                     setExpandedSoapSections(newExpandedState);
                   }}
                   className="h-8 px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 >
-                  {soapActions.every(action => {
+                  {soapActions.every((action) => {
                     const sections = expandedSoapSections[action.id];
-                    return sections && (sections.subjective && sections.objective && 
-                                      sections.assessment && sections.plan);
-                  }) ? 'Collapse All' : 'Expand All'}
+                    return (
+                      sections &&
+                      sections.subjective &&
+                      sections.objective &&
+                      sections.assessment &&
+                      sections.plan
+                    );
+                  })
+                    ? "Collapse All"
+                    : "Expand All"}
                 </Button>
               )}
             </div>
@@ -273,12 +298,18 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                 {soapActions.map((action, index) => {
                   const parsedSoap = parseSoapNotes(action);
                   if (!parsedSoap) return null;
-                  
-                  const isSoapFormat = parsedSoap.subjective && parsedSoap.objective && 
-                                      parsedSoap.assessment && parsedSoap.plan;
-                  
+
+                  const isSoapFormat =
+                    parsedSoap.subjective &&
+                    parsedSoap.objective &&
+                    parsedSoap.assessment &&
+                    parsedSoap.plan;
+
                   return (
-                    <Card key={action.id} className="bg-muted/20 border-muted/30 shadow-sm">
+                    <Card
+                      key={action.id}
+                      className="bg-muted/20 border-muted/30 shadow-sm"
+                    >
                       <CardHeader className="p-4 pb-2">
                         <div className="flex justify-between items-center w-full">
                           <div className="flex items-center gap-2 flex-1">
@@ -317,20 +348,20 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                           </div>
                         </div>
                       </CardHeader>
-                      
+
                       <CardContent className="p-4">
                         <div className="space-y-3">
                           {/* Subjective Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div 
+                            <div
                               className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                               onClick={() => {
-                                setExpandedSoapSections(prev => ({
+                                setExpandedSoapSections((prev) => ({
                                   ...prev,
                                   [action.id]: {
                                     ...prev[action.id],
-                                    subjective: !prev[action.id]?.subjective
-                                  }
+                                    subjective: !prev[action.id]?.subjective,
+                                  },
                                 }));
                               }}
                             >
@@ -346,7 +377,9 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigator.clipboard.writeText(`## Subjective\n${parsedSoap.subjective || ""}`);
+                                    navigator.clipboard.writeText(
+                                      `## Subjective\n${parsedSoap.subjective || ""}`
+                                    );
                                     setCopiedId(`${action.id}-subjective`);
                                     setTimeout(() => setCopiedId(null), 2000);
                                   }}
@@ -363,25 +396,25 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                             </div>
                             {expandedSoapSections[action.id]?.subjective && (
                               <div className="p-3 text-muted-foreground text-sm">
-                                <MarkdownRenderer 
-                                  content={parsedSoap.subjective || ""} 
-                                  className="text-muted-foreground" 
+                                <MarkdownRenderer
+                                  content={parsedSoap.subjective || ""}
+                                  className="text-muted-foreground"
                                 />
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Objective Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div 
+                            <div
                               className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                               onClick={() => {
-                                setExpandedSoapSections(prev => ({
+                                setExpandedSoapSections((prev) => ({
                                   ...prev,
                                   [action.id]: {
                                     ...prev[action.id],
-                                    objective: !prev[action.id]?.objective
-                                  }
+                                    objective: !prev[action.id]?.objective,
+                                  },
                                 }));
                               }}
                             >
@@ -397,7 +430,9 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigator.clipboard.writeText(`## Objective\n${parsedSoap.objective || ""}`);
+                                    navigator.clipboard.writeText(
+                                      `## Objective\n${parsedSoap.objective || ""}`
+                                    );
                                     setCopiedId(`${action.id}-objective`);
                                     setTimeout(() => setCopiedId(null), 2000);
                                   }}
@@ -414,25 +449,25 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                             </div>
                             {expandedSoapSections[action.id]?.objective && (
                               <div className="p-3 text-muted-foreground text-sm">
-                                <MarkdownRenderer 
-                                  content={parsedSoap.objective || ""} 
-                                  className="text-muted-foreground" 
+                                <MarkdownRenderer
+                                  content={parsedSoap.objective || ""}
+                                  className="text-muted-foreground"
                                 />
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Assessment Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div 
+                            <div
                               className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                               onClick={() => {
-                                setExpandedSoapSections(prev => ({
+                                setExpandedSoapSections((prev) => ({
                                   ...prev,
                                   [action.id]: {
                                     ...prev[action.id],
-                                    assessment: !prev[action.id]?.assessment
-                                  }
+                                    assessment: !prev[action.id]?.assessment,
+                                  },
                                 }));
                               }}
                             >
@@ -448,7 +483,9 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigator.clipboard.writeText(`## Assessment\n${parsedSoap.assessment || ""}`);
+                                    navigator.clipboard.writeText(
+                                      `## Assessment\n${parsedSoap.assessment || ""}`
+                                    );
                                     setCopiedId(`${action.id}-assessment`);
                                     setTimeout(() => setCopiedId(null), 2000);
                                   }}
@@ -465,25 +502,25 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                             </div>
                             {expandedSoapSections[action.id]?.assessment && (
                               <div className="p-3 text-muted-foreground text-sm">
-                                <MarkdownRenderer 
-                                  content={parsedSoap.assessment || ""} 
-                                  className="text-muted-foreground" 
+                                <MarkdownRenderer
+                                  content={parsedSoap.assessment || ""}
+                                  className="text-muted-foreground"
                                 />
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Plan Section */}
                           <div className="border border-muted/30 rounded-lg overflow-hidden">
-                            <div 
+                            <div
                               className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                               onClick={() => {
-                                setExpandedSoapSections(prev => ({
+                                setExpandedSoapSections((prev) => ({
                                   ...prev,
                                   [action.id]: {
                                     ...prev[action.id],
-                                    plan: !prev[action.id]?.plan
-                                  }
+                                    plan: !prev[action.id]?.plan,
+                                  },
                                 }));
                               }}
                             >
@@ -499,7 +536,9 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigator.clipboard.writeText(`## Plan\n${parsedSoap.plan || ""}`);
+                                    navigator.clipboard.writeText(
+                                      `## Plan\n${parsedSoap.plan || ""}`
+                                    );
                                     setCopiedId(`${action.id}-plan`);
                                     setTimeout(() => setCopiedId(null), 2000);
                                   }}
@@ -516,9 +555,9 @@ export function CaseView({ appointmentId }: CaseViewProps) {
                             </div>
                             {expandedSoapSections[action.id]?.plan && (
                               <div className="p-3 text-muted-foreground text-sm">
-                                <MarkdownRenderer 
-                                  content={parsedSoap.plan || ""} 
-                                  className="text-muted-foreground" 
+                                <MarkdownRenderer
+                                  content={parsedSoap.plan || ""}
+                                  className="text-muted-foreground"
                                 />
                               </div>
                             )}

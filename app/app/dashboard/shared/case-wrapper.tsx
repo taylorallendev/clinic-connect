@@ -25,7 +25,7 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
   const [isLoading, setIsLoading] = useState(!!appointmentId);
   const { loadAppointmentData, reset } = useCaseStore();
   const searchParams = useSearchParams();
-  const isFromAppointments = searchParams.get('from') === 'appointments';
+  const isFromAppointments = searchParams.get("from") === "appointments";
 
   // If an appointmentId is provided, we're in view/edit mode for an existing case
   // If not, we're in creation mode for a new case
@@ -76,12 +76,12 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
   }
 
   return (
-    <div className="flex flex-col space-y-4 p-6">
+    <div className="flex flex-col space-y-4">
       {/* Back to Appointments button - only show when coming from appointments page */}
       {isFromAppointments && appointmentId && (
         <div className="mb-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             className="bg-muted/20 border-border text-muted-foreground hover:bg-muted/40"
             asChild
@@ -93,7 +93,7 @@ export function CaseWrapper({ appointmentId }: CaseWrapperProps) {
           </Button>
         </div>
       )}
-      
+
       {/* Render the CurrentCaseContent component for both new and existing cases */}
       <CurrentCaseContent />
     </div>

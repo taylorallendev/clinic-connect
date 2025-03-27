@@ -811,13 +811,13 @@ export function CurrentCaseContent() {
   }, []);
 
   return (
-    <div className="flex flex-col space-y-6 p-6 bg-background">
+    <div className="flex flex-col space-y-6 py-6 bg-background">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-card-foreground">
           Current Case
         </h1>
         <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end gap-2">
+          <div className="hidden md:flex flex-col items-end gap-2">
             <div className="flex items-center gap-3">
               {/* Save button (moved to left position) */}
               <Button
@@ -927,6 +927,113 @@ export function CurrentCaseContent() {
           </div>
         </div>
       </div>
+
+      {/* Mobile action buttons - fixed at bottom of screen */}
+      <div className="md:hidden fixed bottom-4 left-0 right-0 z-50 px-4 flex justify-center gap-3">
+        <Button
+          onClick={form.handleSubmit(
+            currentCaseId ? handleUpdateCase : onSubmit
+          )}
+          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {currentCaseId ? "Update" : "Save"}
+        </Button>
+
+        <Button
+          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+          onClick={async () => {
+            // If there's a current case or unsaved changes, save them first
+            if (actions.length > 0 || form.formState.isDirty) {
+              await form.handleSubmit(
+                currentCaseId ? handleUpdateCase : onSubmit
+              )();
+            }
+
+            // Reset store and form to start fresh
+            useCaseStore.getState().reset();
+            form.reset({
+              name: "",
+              dateTime: new Date().toISOString().slice(0, 16),
+              assignedTo: "",
+              type: "checkup",
+              status: "ongoing",
+              visibility: "private",
+            });
+
+            // Ensure we're ready for a new case
+            setIsEditMode(true);
+
+            toast({
+              title: "New case created",
+              description: "You can now start working on a new case",
+            });
+          }}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          New
+        </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="bg-muted/20 text-card-foreground hover:bg-muted/30 hover:text-card-foreground shadow-lg"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-card-foreground">
+                Reset case?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground">
+                This will clear all case information, transcripts, and SOAP
+                notes. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-muted text-card-foreground border-muted hover:bg-muted/30">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                onClick={() => {
+                  // Reset without saving
+                  useCaseStore.getState().reset();
+                  form.reset({
+                    name: "",
+                    dateTime: new Date().toISOString().slice(0, 16),
+                    assignedTo: "",
+                    type: "checkup",
+                    status: "ongoing",
+                    visibility: "private",
+                  });
+
+                  // Ensure we're in edit mode
+                  setIsEditMode(true);
+
+                  toast({
+                    title: "Case reset",
+                    description: "All case data has been cleared",
+                  });
+                }}
+              >
+                Reset
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* Add padding at the bottom to prevent content from being hidden behind fixed buttons */}
+      <div className="md:hidden h-16"></div>
 
       {/* Unified layout with all content visible at once */}
       <div className="grid grid-cols-1 gap-6">
@@ -1116,13 +1223,13 @@ export function CurrentCaseContent() {
         {/* Case Actions Section */}
         <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
           <CardHeader className="border-b border-border bg-muted/20">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <CardTitle className="text-card-foreground flex items-center">
                 <ClipboardCheck className="h-5 w-5 mr-2 text-card-foreground" />
                 Case Actions
               </CardTitle>
               {actions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1184,19 +1291,19 @@ export function CurrentCaseContent() {
                   {/* Template Selector */}
                   {actions.filter((action) => action.type === "recording")
                     .length > 0 && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       <Select
                         value={selectedTemplateId}
                         onValueChange={setSelectedTemplateId}
                       >
                         <SelectTrigger
-                          className="w-[180px] bg-primary hover:bg-primary/90 border-muted/50 font-normal text-sm text-white focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                          style={{ color: "white" }} // Force white text color for all states
+                          className="w-full sm:w-[180px] bg-primary hover:bg-primary/90 border-muted/50 font-normal text-sm text-white focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          style={{ color: "white" }}
                         >
                           <SelectValue
                             placeholder="Select Template"
                             className="!text-white white-placeholder"
-                            style={{ color: "white" }} // Force white text color
+                            style={{ color: "white" }}
                           />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -1265,7 +1372,7 @@ export function CurrentCaseContent() {
                 {/* Separate Transcriptions and Generations sections */}
                 <div className="space-y-6">
                   {/* Transcriptions Section */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 w-full">
                     <h3 className="text-lg font-medium text-card-foreground border-b border-muted/30 pb-2">
                       Transcriptions
                     </h3>
@@ -1290,7 +1397,7 @@ export function CurrentCaseContent() {
                           return (
                             <Card
                               key={action.id}
-                              className={`bg-muted/20 border-muted/30 ${
+                              className={`bg-muted/20 border-muted/30 w-full ${
                                 isSelected ? "ring-2 ring-blue-400" : ""
                               }`}
                             >
@@ -1385,7 +1492,7 @@ export function CurrentCaseContent() {
                           );
                         })
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <div className="flex flex-col items-center justify-center py-6 text-center w-full">
                         <Clipboard className="h-12 w-12 text-muted-foreground/50 mb-3" />
                         <h3 className="text-lg font-medium text-card-foreground mb-1">
                           No Transcriptions Yet
@@ -1398,7 +1505,7 @@ export function CurrentCaseContent() {
                   </div>
 
                   {/* Generations Section */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 w-full">
                     <h3 className="text-lg font-medium text-card-foreground border-b border-muted/30 pb-2">
                       Generations
                     </h3>
@@ -1485,7 +1592,7 @@ export function CurrentCaseContent() {
                           return (
                             <Card
                               key={action.id}
-                              className={`bg-muted/20 border-muted/30 ${
+                              className={`bg-muted/20 border-muted/30 w-full ${
                                 isSoapSelected ? "ring-2 ring-green-400" : ""
                               }`}
                             >
@@ -1612,7 +1719,7 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Subjective */}
-                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden w-full">
                                           <div
                                             className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
@@ -1684,7 +1791,7 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Objective */}
-                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden w-full">
                                           <div
                                             className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
@@ -1756,7 +1863,7 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Assessment */}
-                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden w-full">
                                           <div
                                             className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
@@ -1828,7 +1935,7 @@ export function CurrentCaseContent() {
                                         </div>
 
                                         {/* Plan */}
-                                        <div className="border border-muted/30 rounded-lg overflow-hidden">
+                                        <div className="border border-muted/30 rounded-lg overflow-hidden w-full">
                                           <div
                                             className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
                                             onClick={(e) => {
@@ -1945,7 +2052,7 @@ export function CurrentCaseContent() {
                           );
                         })
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <div className="flex flex-col items-center justify-center py-6 text-center w-full">
                         <Clipboard className="h-12 w-12 text-muted-foreground/50 mb-3" />
                         <h3 className="text-lg font-medium text-card-foreground mb-1">
                           No Generations Yet
@@ -1957,19 +2064,6 @@ export function CurrentCaseContent() {
                       </div>
                     )}
                   </div>
-
-                  {actions.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Clipboard className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-xl font-medium text-card-foreground mb-2">
-                        No Case Actions Yet
-                      </h3>
-                      <p className="text-muted-foreground max-w-md">
-                        Record your case notes to create transcripts and
-                        generate SOAP notes.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
@@ -2018,7 +2112,7 @@ export function CurrentCaseContent() {
             {!caseSummaryCollapsed && (
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20">
+                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20 w-full">
                     <div className="flex items-center">
                       <div className="rounded-full bg-muted/30 p-2 mr-2">
                         <Clock className="h-5 w-5 text-card-foreground" />
@@ -2040,7 +2134,7 @@ export function CurrentCaseContent() {
                       </p>
                     </div>
                   </div>
-                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20">
+                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20 w-full">
                     <div className="flex items-center">
                       <div className="rounded-full bg-muted/30 p-2 mr-2">
                         <FileText className="h-5 w-5 text-card-foreground" />
@@ -2072,7 +2166,7 @@ export function CurrentCaseContent() {
                       </p>
                     </div>
                   </div>
-                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20">
+                  <div className="bg-muted/30 backdrop-blur-sm border-muted/20 rounded-xl p-4 shadow-md shadow-muted/20 w-full">
                     <div className="flex items-center">
                       <div className="rounded-full bg-muted/30 p-2 mr-2">
                         <ClipboardCheck className="h-5 w-5 text-card-foreground" />
