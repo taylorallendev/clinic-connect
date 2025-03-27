@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calendar, FileText, PawPrint } from "lucide-react";
+import {
+  CheckCircle,
+  Calendar,
+  FileText,
+  PawPrint,
+  Copy,
+  Wand2,
+  RefreshCw,
+} from "lucide-react";
 
 // Extract animation variants for reuse
 const fadeInUp = {
@@ -99,10 +106,77 @@ function FloatingCard({
 
 export function EnhancedHero() {
   const [isVisible, setIsVisible] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    subjective: true,
+    objective: true,
+    assessment: true,
+    plan: true,
+  });
+  const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
+  // Complete SOAP data
+  const completeSoapData = {
+    subjective: {
+      title: "Subjective",
+      badge: "S",
+      badgeColor: "bg-muted text-muted-foreground",
+      content:
+        "Max, 5yo neutered male Golden Retriever, limping on right hind leg for 3 days after play at dog park. Worse in mornings and after exercise.",
+    },
+    objective: {
+      title: "Objective",
+      badge: "O",
+      badgeColor: "bg-success text-success-foreground",
+      content:
+        "T: 101.2°F, HR: 88bpm, RR: 22rpm\nMild discomfort on right stifle palpation\nPositive drawer sign\nWeight-bearing lameness on right hind",
+    },
+    assessment: {
+      title: "Assessment",
+      badge: "A",
+      badgeColor: "bg-info text-info-foreground",
+      content:
+        "1. Suspected partial CCL tear\n2. Possible mild osteoarthritis\n3. Otherwise healthy",
+    },
+    plan: {
+      title: "Plan",
+      badge: "P",
+      badgeColor: "bg-accent text-accent-foreground",
+      content:
+        "1. Radiographs of right stifle\n2. Carprofen 75mg PO q12h x7d\n3. Rest for 2 weeks\n4. Recheck in 10-14 days",
+    },
+  };
+
+  // Initialize visibility
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Simulate copy functionality
+  const handleCopy = (section: string) => {
+    setCopiedSection(section);
+    setTimeout(() => setCopiedSection(null), 2000);
+  };
+
+  // Simulate regeneration without animation
+  const simulateGeneration = () => {
+    if (isGenerating) return;
+
+    setIsGenerating(true);
+
+    // Simulate a brief loading state
+    setTimeout(() => {
+      setIsGenerating(false);
+    }, 800);
+
+    // Ensure all sections are expanded
+    setExpandedSections({
+      subjective: true,
+      objective: true,
+      assessment: true,
+      plan: true,
+    });
+  };
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-background to-muted pt-20 pb-32 md:pt-32 md:pb-40 lg:pt-40 lg:pb-48">
@@ -226,7 +300,7 @@ export function EnhancedHero() {
             </AnimatePresence>
           </div>
 
-          {/* Right column - Image and floating cards */}
+          {/* Right column - SOAP Notes Demo */}
           <div className="relative">
             <AnimatePresence>
               {isVisible && (
@@ -234,17 +308,223 @@ export function EnhancedHero() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.7, delay: 0.3 }}
-                  className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-border"
+                  className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-border bg-card"
                 >
-                  <div className="relative w-full aspect-[4/3] overflow-hidden">
-                    <Image
-                      src="/placeholder.svg?height=600&width=800"
-                      alt="Veterinarian with pet"
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent"></div>
+                  <div className="p-4 border-b border-border bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">SOAP Notes</h3>
+                        <Badge className="bg-green-700/50 text-green-100 border-0 text-xs">
+                          AI Generated
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          Max • Golden Retriever • 5y
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={simulateGeneration}
+                          disabled={isGenerating}
+                        >
+                          {isGenerating ? (
+                            <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-3.5 w-3.5 mr-1" />
+                          )}
+                          {isGenerating ? "Generating..." : "Regenerate"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    {/* Subjective Section */}
+                    <div className="border border-muted/30 rounded-lg overflow-hidden">
+                      <div
+                        className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                        onClick={() => {
+                          setExpandedSections((prev) => ({
+                            ...prev,
+                            subjective: !prev.subjective,
+                          }));
+                        }}
+                      >
+                        <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                          <Badge
+                            className={`${completeSoapData.subjective.badgeColor} mr-2 h-5 w-5 flex items-center justify-center p-0`}
+                          >
+                            {completeSoapData.subjective.badge}
+                          </Badge>
+                          {completeSoapData.subjective.title}
+                        </h4>
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy("subjective");
+                            }}
+                            className="h-6 text-xs text-muted-foreground"
+                            disabled={isGenerating}
+                          >
+                            {copiedSection === "subjective" ? (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Copy className="h-3 w-3 mr-1" />
+                            )}
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                      {expandedSections.subjective && (
+                        <div className="p-3 text-muted-foreground text-xs whitespace-pre-line min-h-[50px]">
+                          {completeSoapData.subjective.content}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Objective Section */}
+                    <div className="border border-muted/30 rounded-lg overflow-hidden">
+                      <div
+                        className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                        onClick={() => {
+                          setExpandedSections((prev) => ({
+                            ...prev,
+                            objective: !prev.objective,
+                          }));
+                        }}
+                      >
+                        <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                          <Badge
+                            className={`${completeSoapData.objective.badgeColor} mr-2 h-5 w-5 flex items-center justify-center p-0`}
+                          >
+                            {completeSoapData.objective.badge}
+                          </Badge>
+                          {completeSoapData.objective.title}
+                        </h4>
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy("objective");
+                            }}
+                            className="h-6 text-xs text-muted-foreground"
+                            disabled={isGenerating}
+                          >
+                            {copiedSection === "objective" ? (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Copy className="h-3 w-3 mr-1" />
+                            )}
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                      {expandedSections.objective && (
+                        <div className="p-3 text-muted-foreground text-xs whitespace-pre-line min-h-[50px]">
+                          {completeSoapData.objective.content}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Assessment Section */}
+                    <div className="border border-muted/30 rounded-lg overflow-hidden">
+                      <div
+                        className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                        onClick={() => {
+                          setExpandedSections((prev) => ({
+                            ...prev,
+                            assessment: !prev.assessment,
+                          }));
+                        }}
+                      >
+                        <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                          <Badge
+                            className={`${completeSoapData.assessment.badgeColor} mr-2 h-5 w-5 flex items-center justify-center p-0`}
+                          >
+                            {completeSoapData.assessment.badge}
+                          </Badge>
+                          {completeSoapData.assessment.title}
+                        </h4>
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy("assessment");
+                            }}
+                            className="h-6 text-xs text-muted-foreground"
+                            disabled={isGenerating}
+                          >
+                            {copiedSection === "assessment" ? (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Copy className="h-3 w-3 mr-1" />
+                            )}
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                      {expandedSections.assessment && (
+                        <div className="p-3 text-muted-foreground text-xs whitespace-pre-line min-h-[50px]">
+                          {completeSoapData.assessment.content}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Plan Section */}
+                    <div className="border border-muted/30 rounded-lg overflow-hidden">
+                      <div
+                        className="flex items-center justify-between bg-muted/40 px-3 py-2 cursor-pointer"
+                        onClick={() => {
+                          setExpandedSections((prev) => ({
+                            ...prev,
+                            plan: !prev.plan,
+                          }));
+                        }}
+                      >
+                        <h4 className="text-muted-foreground flex items-center text-sm font-medium">
+                          <Badge
+                            className={`${completeSoapData.plan.badgeColor} mr-2 h-5 w-5 flex items-center justify-center p-0`}
+                          >
+                            {completeSoapData.plan.badge}
+                          </Badge>
+                          {completeSoapData.plan.title}
+                        </h4>
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy("plan");
+                            }}
+                            className="h-6 text-xs text-muted-foreground"
+                            disabled={isGenerating}
+                          >
+                            {copiedSection === "plan" ? (
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Copy className="h-3 w-3 mr-1" />
+                            )}
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                      {expandedSections.plan && (
+                        <div className="p-3 text-muted-foreground text-xs whitespace-pre-line min-h-[50px]">
+                          {completeSoapData.plan.content}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               )}

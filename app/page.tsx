@@ -7,7 +7,9 @@ import { EnhancedHero } from "./components/landing/hero";
 import { PricingCard } from "./components/landing/pricing-card";
 import { SectionHeading } from "./components/landing/section-heading";
 import { TestimonialCard } from "./components/landing/testimonial-card";
+import { SoapNotesDemo } from "./components/landing/soap-notes-demo";
 import { UserButton } from "@clerk/nextjs";
+import { AnimatedTestimonials } from "./components/landing/animated-testimonials";
 
 // Data for testimonials
 const testimonials = [
@@ -16,18 +18,24 @@ const testimonials = [
       "ClinicConnect has revolutionized our practice. We save hours each day on documentation, allowing us to focus on what matters most - our patients.",
     name: "Dr. Sarah Johnson",
     title: "Lakeside Veterinary Clinic",
+    designation: "Veterinarian",
+    src: "/images/testimonials/vet-1.jpg",
   },
   {
     quote:
       "The AI-powered note generation is incredibly accurate. It captures all the important details from our appointments without us having to type a single word.",
     name: "Dr. Michael Chen",
     title: "Urban Pet Hospital",
+    designation: "Chief Veterinarian",
+    src: "/images/testimonials/vet-2.jpg",
   },
   {
     quote:
       "Our scheduling efficiency has improved dramatically. No more double-bookings or long wait times. Our clients and staff are much happier.",
     name: "Lisa Rodriguez",
-    title: "Practice Manager, Valley Vet Care",
+    title: "Valley Vet Care",
+    designation: "Practice Manager",
+    src: "/images/testimonials/vet-3.jpg",
   },
 ];
 
@@ -160,6 +168,17 @@ export default function LandingPage() {
         {/* Features Section */}
         <section id="features" className="w-full">
           <FeatureSection />
+
+          {/* SOAP Notes Demo Section */}
+          <div className="container px-4 md:px-6 py-12">
+            <SectionHeading
+              title="AI-Powered SOAP Notes"
+              description="Automatically generate comprehensive SOAP notes from your appointments, saving hours of documentation time."
+            />
+            <div className="mt-12">
+              <SoapNotesDemo />
+            </div>
+          </div>
         </section>
 
         {/* Benefits Section */}
@@ -202,15 +221,11 @@ export default function LandingPage() {
               description="Hear what veterinarians and practice managers have to say about ClinicConnect."
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-              {testimonials.map((testimonial, index) => (
-                <TestimonialCard
-                  key={index}
-                  quote={testimonial.quote}
-                  name={testimonial.name}
-                  title={testimonial.title}
-                />
-              ))}
+            <div className="mt-12">
+              <AnimatedTestimonials
+                testimonials={testimonials}
+                autoplay={true}
+              />
             </div>
           </div>
         </section>
