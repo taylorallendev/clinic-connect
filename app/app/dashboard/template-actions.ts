@@ -137,7 +137,7 @@ export async function getTemplates(type?: string) {
     }
 
     // Execute the query with ordering
-    const { data: templates, error } = await query.order("createdAt");
+    const { data: templates, error } = await query.order("created_at");
 
     if (error) {
       console.error("Template fetch error:", error);
