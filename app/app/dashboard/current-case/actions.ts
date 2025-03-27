@@ -2409,11 +2409,6 @@ export async function getCase(caseId: number) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.log("Authentication failed in getCase");
-      return { success: false, error: "Unauthorized" };
-    }
-
     // Fetch the case from the database
     console.log(`Fetching case with ID: ${caseId}`);
     const { data: caseData, error } = await supabase
