@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/components/ui/use-toast";
-import { useCaseStore } from "@/store/use-case-store";
+import { CaseAction, useCaseStore } from "@/store/use-case-store";
 import {
   createCase,
   updateCase,
   getCase,
-  diagnoseDatabaseSchema,
   generateContentFromTemplate,
 } from "./actions";
 import { caseFormSchema } from "./case-form";
@@ -65,10 +64,8 @@ import {
   Mail,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useRouter } from "next/navigation";
 import { SoapNotesEditor } from "@/components/ui/soap-notes-editor";
 import { MarkdownRenderer } from "@/components/ui/markdown";
-import { useEmailButton } from "@/context/EmailButtonContext";
 import { simpleSendEmail } from "./email-actions";
 import {
   Dialog,
@@ -80,36 +77,7 @@ import {
 } from "@/components/ui/dialog";
 import { getEmailTemplates, ensureDefaultTemplates } from "../template-actions";
 import { Checkbox } from "@/components/ui/checkbox";
-
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
-
-type SpeechRecognitionType =
-  | typeof window.SpeechRecognition
-  | typeof window.webkitSpeechRecognition;
-
-// Add these interfaces for the event types
-interface SpeechRecognitionEvent {
-  resultIndex: number;
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-      isFinal?: boolean;
-      length: number;
-    };
-    length: number;
-  };
-}
-
-interface SpeechRecognitionErrorEvent {
-  error: string;
-}
+import { RecordingCard } from "./components/recording-card";
 
 type FormValues = z.infer<typeof caseFormSchema>;
 
@@ -120,38 +88,11 @@ interface SoapResponse {
   plan: string;
 }
 
-interface ActionContent {
-  transcript?: string;
-  soap?: SoapResponse;
-}
-
-interface CaseAction {
-  id: string;
-  type: "recording" | "soap";
-  content: ActionContent;
-  timestamp: number;
-}
-
-// Helper function to format time in MM:SS format
-function formatTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
 export function CurrentCaseContent() {
   const { toast } = useToast();
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingSoap, setIsGeneratingSoap] = useState(false);
   const [isEditMode, setIsEditMode] = useState(true);
   const [savedCaseData, setSavedCaseData] = useState<FormValues | null>(null);
-  const router = useRouter();
-  const [recognition, setRecognition] = useState<SpeechRecognitionType | null>(
-    null
-  );
-  const [transcriptText, setTranscriptText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   // Add state for expanded transcripts and SOAP sections
@@ -174,11 +115,7 @@ export function CurrentCaseContent() {
     useState<boolean>(true);
 
   // Access case store
-  const {
-    caseActions: actions,
-    addCaseAction: addAction,
-    currentCaseId,
-  } = useCaseStore();
+  const { caseActions: actions, currentCaseId } = useCaseStore();
 
   // Initialize SOAP section states when actions change
   useEffect(() => {
@@ -299,83 +236,6 @@ export function CurrentCaseContent() {
       visibility: "private",
     },
   });
-
-  // Recording timer effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    }
-
-    return () => clearInterval(interval);
-  }, [isRecording]);
-
-  // Initialize speech recognition when component mounts
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
-    ) {
-      // Use the appropriate constructor with proper type casting
-      const SpeechRecognitionAPI = (window.SpeechRecognition ||
-        window.webkitSpeechRecognition) as SpeechRecognitionType;
-      const recognitionInstance = new SpeechRecognitionAPI();
-
-      // Configure recognition
-      recognitionInstance.continuous = true;
-      recognitionInstance.interimResults = true;
-      recognitionInstance.lang = "en-US";
-
-      // Set up event handlers
-      // Note: fullTranscriptRef is now defined outside the function
-
-      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
-        // Use continuous mode approach - build the complete transcript in real-time
-        let transcript = "";
-
-        // Process all results currently available in this session
-        for (let i = 0; i < event.results.length; i++) {
-          // Get the transcribed text from this result segment
-          const result = event.results[i][0].transcript;
-
-          // Add it to our complete transcript
-          transcript += result + " ";
-        }
-
-        // Store and display the complete transcript
-        fullTranscriptRef.current = transcript.trim();
-        setTranscriptText(fullTranscriptRef.current);
-      };
-
-      recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error("Speech recognition error:", event.error);
-        toast({
-          title: "Recognition Error",
-          description: `Error: ${event.error}`,
-          variant: "destructive",
-        });
-        setIsRecording(false);
-      };
-
-      setRecognition(recognitionInstance);
-    } else {
-      toast({
-        title: "Browser Not Supported",
-        description: "Speech recognition is not supported in this browser.",
-        variant: "destructive",
-      });
-    }
-
-    // Clean up
-    return () => {
-      if (recognition) {
-        recognition.stop();
-      }
-    };
-  }, [toast]);
 
   // Add this effect to load case data when currentCaseId changes
   useEffect(() => {
@@ -530,100 +390,6 @@ export function CurrentCaseContent() {
       });
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // Create refs outside the function
-  const finalResultsRef = useRef<string[]>([]);
-  const interimResultRef = useRef<string>("");
-  const fullTranscriptRef = useRef<string>("");
-
-  // Update the toggleRecording function
-  const toggleRecording = async () => {
-    if (isRecording) {
-      // Stop recording
-      setIsRecording(false);
-      setIsProcessing(true);
-
-      if (recognition) {
-        recognition.stop();
-      }
-
-      try {
-        // Wait a moment to ensure all transcription is processed
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Generate a unique ID for this recording
-        const actionId = crypto.randomUUID();
-
-        // Add the recording to our actions using the correct store method
-        addAction({
-          id: actionId,
-          type: "recording",
-          content: {
-            transcript: transcriptText.trim() || "No transcription available",
-          },
-          timestamp: Date.now(),
-        });
-
-        // Update status to "ongoing" automatically
-        if (form.getValues("status") !== "ongoing") {
-          form.setValue("status", "ongoing");
-          // If case already exists, update it
-          if (currentCaseId) {
-            handleUpdateCase(form.getValues());
-          }
-        }
-
-        // Reset recording time and transcript
-        setRecordingTime(0);
-
-        toast({
-          title: "Recording saved",
-          description: "Your recording has been processed and saved.",
-        });
-
-        // Clear the transcript for the next recording
-        setTranscriptText("");
-
-        // Reset the transcript tracking refs
-        finalResultsRef.current = [];
-        interimResultRef.current = "";
-        fullTranscriptRef.current = "";
-      } catch (error) {
-        console.error("Error processing recording:", error);
-        toast({
-          title: "Error",
-          description: "Failed to process recording",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-      }
-    } else {
-      // Start recording
-      setIsRecording(true);
-      setRecordingTime(0);
-      setTranscriptText("");
-
-      // Reset the transcript tracking refs
-      finalResultsRef.current = [];
-      interimResultRef.current = "";
-      fullTranscriptRef.current = "";
-
-      if (recognition) {
-        try {
-          recognition.start();
-        } catch (error) {
-          console.error("Error starting speech recognition:", error);
-          toast({
-            title: "Error",
-            description: "Failed to start speech recognition",
-            variant: "destructive",
-          });
-          setIsRecording(false);
-        }
-      }
     }
   };
 
@@ -1038,6 +804,12 @@ export function CurrentCaseContent() {
     }
   };
 
+  const formatTime = useCallback((seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }, []);
+
   return (
     <div className="flex flex-col space-y-6 p-6 bg-background">
       <div className="flex justify-between items-center">
@@ -1143,7 +915,7 @@ export function CurrentCaseContent() {
 
                       toast({
                         title: "Case reset",
-                        desiption: "All case data has been cleared",
+                        description: "All case data has been cleared",
                       });
                     }}
                   >
@@ -1339,63 +1111,7 @@ export function CurrentCaseContent() {
           </CardContent>
         </Card>
 
-        {/* Recording Section */}
-        <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
-          <CardHeader className="border-b border-border bg-muted/20">
-            <CardTitle className="text-card-foreground flex items-center">
-              <Mic className="h-5 w-5 mr-2 text-card-foreground inline" />
-              Voice Recording
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center justify-center py-8">
-              {/* Recording button */}
-              <div className="mb-6">
-                <Button
-                  onClick={toggleRecording}
-                  disabled={isProcessing}
-                  className={`relative z-10 w-20 h-20 rounded-full ${
-                    isRecording
-                      ? "bg-red-500 hover:bg-red-600 text-white"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-                >
-                  {isProcessing ? (
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  ) : isRecording ? (
-                    <MicOff className="h-8 w-8" />
-                  ) : (
-                    <Mic className="h-8 w-8" />
-                  )}
-                </Button>
-              </div>
-
-              <div className="text-3xl font-mono text-card-foreground mb-2">
-                {formatTime(recordingTime)}
-              </div>
-
-              <p className="text-muted-foreground text-center max-w-md">
-                {isRecording
-                  ? "Recording in progress. Click the button to stop recording."
-                  : isProcessing
-                    ? "Processing your recording..."
-                    : "Click the microphone button to start recording your case notes."}
-              </p>
-
-              {/* Live transcription display */}
-              {isRecording && (
-                <div className="mt-6 w-full">
-                  <h3 className="text-muted-foreground text-sm font-medium mb-2">
-                    Live Transcription
-                  </h3>
-                  <div className="bg-muted/30 border border-muted/30 rounded-lg p-4 text-card-foreground min-h-[100px] max-h-[200px] overflow-y-auto">
-                    {transcriptText || "Listening..."}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <RecordingCard />
 
         {/* Case Actions Section */}
         <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">

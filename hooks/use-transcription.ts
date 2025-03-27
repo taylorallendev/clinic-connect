@@ -1,8 +1,7 @@
-// Create a new file: hooks/use-transcription.ts
+// hooks/use-transcription.ts
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   useDeepgram,
-  SOCKET_STATES,
   LiveTranscriptionEvents,
   LiveTranscriptionEvent,
 } from "@/context/DeepgramContextProvider";
@@ -11,9 +10,14 @@ import {
   MicrophoneEvents,
   MicrophoneState,
 } from "@/context/MicrophoneContextProvider";
+import { LiveSchema } from "@deepgram/sdk";
+import { DEEPGRAM_CONFIG } from "@/lib/constants";
 
 interface UseTranscriptionOptions {
-  onTranscriptUpdate?: (transcript: string) => void;
+  onTranscriptUpdate?: (
+    transcript: string,
+    speakers?: Record<string, string>
+  ) => void;
   onError?: (error: Error) => void;
 }
 
@@ -23,9 +27,13 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<Error | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [speakerSegments, setSpeakerSegments] = useState<
+    Record<string, string>
+  >({});
 
   const finalTranscriptRef = useRef<string>("");
   const interimTranscriptRef = useRef<string>("");
+  const speakerSegmentsRef = useRef<Record<string, string>>({});
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageIdRef = useRef<string>("");
 
@@ -45,34 +53,159 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     microphoneState,
   } = useMicrophone();
 
-  // Set up transcription listener with improved handling
+  // Get optimized Deepgram settings for veterinary use case
+  const getDeepgramSettings = useCallback((): LiveSchema => {
+    return DEEPGRAM_CONFIG;
+  }, []);
+
+  // Set up transcription listener with improved handling for speaker diarization
   useEffect(() => {
     if (!connection) return;
-
     const handleTranscript = (data: LiveTranscriptionEvent) => {
+      // Extract key information from the event
       const { is_final: isFinal } = data;
       const transcriptText = data.channel?.alternatives?.[0]?.transcript ?? "";
+      const confidence = data.channel?.alternatives?.[0]?.confidence ?? 0;
 
+      // Skip processing if transcript is empty
       if (!transcriptText || !transcriptText.trim()) return;
 
-      // Generate a unique ID for this message that includes more context
+      // Log the full response for debugging (useful during development)
+      console.log(
+        "Deepgram Response:",
+        JSON.stringify(
+          {
+            is_final: isFinal,
+            transcript: transcriptText,
+            confidence: confidence,
+            // Include additional useful data without logging the entire payload
+            metadata: {
+              start_time: data.start,
+              duration: data.duration,
+              num_channels: data.channel?.alternatives?.length ?? 0,
+            },
+          },
+          null,
+          2
+        )
+      );
+
+      // Generate a unique ID for this message to prevent duplicate processing
       const messageId = `${Date.now()}-${transcriptText.substring(0, 20)}`;
 
       // Skip if we've already processed this exact message
       if (messageId === lastMessageIdRef.current) return;
       lastMessageIdRef.current = messageId;
 
+      // Extract and process word-level information with speaker diarization
+      const words = data.channel?.alternatives?.[0]?.words || [];
+
+      // Log diarization data
+      if (words.length > 0) {
+        console.log("===== Speaker Diarization Data =====");
+
+        // Group words by speaker for better visualization
+        const speakerUtterances: Record<string, string[]> = {};
+
+        words.forEach((word) => {
+          const speakerKey =
+            word.speaker !== undefined
+              ? `speaker_${word.speaker}`
+              : "unknown_speaker";
+
+          if (!speakerUtterances[speakerKey]) {
+            speakerUtterances[speakerKey] = [];
+          }
+
+          speakerUtterances[speakerKey].push(word.word);
+
+          console.log(
+            `Word: "${word.word}", Speaker: ${word.speaker}, Confidence: ${word.confidence?.toFixed(2)}, Time: ${word.start}s - ${word.end}s`
+          );
+        });
+
+        // Log grouped utterances by speaker
+        console.log("\n===== Speaker Utterances =====");
+        Object.entries(speakerUtterances).forEach(([speaker, utterances]) => {
+          console.log(`${speaker}: "${utterances.join(" ")}"`);
+        });
+        console.log("================================");
+      }
+
+      // Process speaker segments from word-level data
+      // This builds up a more complete picture of what each speaker has said
+      if (words.length > 0) {
+        // Track current speaker for contiguous utterances
+        let currentSpeaker: string | null = null;
+        let currentUtterance: string[] = [];
+
+        words.forEach((word) => {
+          const speakerKey =
+            word.speaker !== undefined
+              ? `speaker_${word.speaker}`
+              : "unknown_speaker";
+
+          // If we've changed speakers, store the previous utterance
+          if (
+            currentSpeaker !== null &&
+            currentSpeaker !== speakerKey &&
+            currentUtterance.length > 0
+          ) {
+            // Add the completed utterance to this speaker's transcript
+            if (!speakerSegmentsRef.current[currentSpeaker]) {
+              speakerSegmentsRef.current[currentSpeaker] =
+                currentUtterance.join(" ");
+            } else {
+              // Check if this utterance is already at the end of the speaker's transcript to avoid duplication
+              const existingText = speakerSegmentsRef.current[currentSpeaker];
+              const newUtterance = currentUtterance.join(" ");
+
+              if (!existingText.endsWith(newUtterance)) {
+                speakerSegmentsRef.current[currentSpeaker] +=
+                  ` ${newUtterance}`;
+              }
+            }
+
+            // Reset for the new speaker
+            currentUtterance = [];
+          }
+
+          // Update current speaker and add word to current utterance
+          currentSpeaker = speakerKey;
+          currentUtterance.push(word.word);
+        });
+
+        // Don't forget to add the last utterance
+        if (currentSpeaker !== null && currentUtterance.length > 0) {
+          if (!speakerSegmentsRef.current[currentSpeaker]) {
+            speakerSegmentsRef.current[currentSpeaker] =
+              currentUtterance.join(" ");
+          } else {
+            const existingText = speakerSegmentsRef.current[currentSpeaker];
+            const newUtterance = currentUtterance.join(" ");
+
+            if (!existingText.endsWith(newUtterance)) {
+              speakerSegmentsRef.current[currentSpeaker] += ` ${newUtterance}`;
+            }
+          }
+        }
+
+        // Update the speaker segments state
+        setSpeakerSegments({ ...speakerSegmentsRef.current });
+      }
+
+      // Process the main transcript based on whether it's final or interim
       if (isFinal) {
-        // For final results, we need to be careful about duplicates
+        // For final results, handle potential duplicates carefully
         const cleanedText = transcriptText.trim();
 
-        // If our final transcript already ends with this text, don't add it again
+        // Check if our final transcript already contains this text
         if (!finalTranscriptRef.current.endsWith(cleanedText)) {
-          // If there's some overlap, try to find where the overlap starts
+          // Check for partial overlaps to avoid duplication
           const words = cleanedText.split(" ");
           let overlap = false;
 
-          // Check for overlapping phrases (up to 5 words)
+          // Try to detect partial overlaps (up to 5 words)
           for (let i = 1; i < Math.min(words.length, 5); i++) {
             const phrase = words.slice(0, i).join(" ");
             if (finalTranscriptRef.current.endsWith(phrase)) {
@@ -96,8 +229,15 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         // Update the displayed transcript
         setTranscript(finalTranscriptRef.current);
 
-        // Call the optional callback
-        options?.onTranscriptUpdate?.(finalTranscriptRef.current);
+        // Log a summary of the current state
+        console.log("Final transcript updated:", finalTranscriptRef.current);
+        console.log("Current speaker segments:", speakerSegmentsRef.current);
+
+        // Call the optional callback with transcript and speaker segments
+        options?.onTranscriptUpdate?.(
+          finalTranscriptRef.current,
+          speakerSegmentsRef.current
+        );
       } else {
         // For interim results, replace the current interim text
         interimTranscriptRef.current = transcriptText.trim();
@@ -110,8 +250,9 @@ export function useTranscription(options?: UseTranscriptionOptions) {
 
         setTranscript(displayText);
 
-        // Call the optional callback
-        options?.onTranscriptUpdate?.(displayText);
+        // For interim results, we can still call the callback but with a lower frequency
+        // to avoid overwhelming the UI with updates
+        options?.onTranscriptUpdate?.(displayText, speakerSegmentsRef.current);
       }
     };
 
@@ -132,7 +273,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
       LiveTranscriptionEvents.Transcript,
       handleTranscript
     );
-    // connection.addListener(LiveTranscriptionEvents.Error, handleError);
+    connection.addListener(LiveTranscriptionEvents.Error, handleError);
 
     // Clean up all listeners when component unmounts or connection changes
     return () => {
@@ -140,7 +281,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         LiveTranscriptionEvents.Transcript,
         handleTranscript
       );
-      // connection.removeListener(LiveTranscriptionEvents.Error, handleError);
+      connection.removeListener(LiveTranscriptionEvents.Error, handleError);
     };
   }, [connection, options]);
 
@@ -193,7 +334,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     };
   }, [isRecording]);
 
-  // Start recording function
+  // Start recording function with optimized settings
   const startRecording = useCallback(async () => {
     if (isRecording || isLoading) return;
 
@@ -201,10 +342,12 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     setError(null);
 
     try {
-      // Reset transcript
+      // Reset transcript and speaker data
       setTranscript("");
+      setSpeakerSegments({});
       finalTranscriptRef.current = "";
       interimTranscriptRef.current = "";
+      speakerSegmentsRef.current = {};
       setElapsedTime(0);
 
       // Set up microphone if needed
@@ -212,25 +355,11 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         await setupMicrophone();
       }
 
-      // Connect to Deepgram
-      await connectToDeepgram({
-        model: "nova-3",
-        interim_results: true,
-        smart_format: true,
-        punctuate: true,
-        language: "en",
-        encoding: "linear16",
-        channels: 1,
-        sample_rate: 16000,
-      });
+      // Connect to Deepgram with optimized veterinary settings
+      await connectToDeepgram(getDeepgramSettings());
 
       // Start the microphone
       startMicrophone();
-
-      // Start timer
-      timerIntervalRef.current = setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
-      }, 1000);
 
       // Update state
       setIsRecording(true);
@@ -263,6 +392,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     startMicrophone,
     stopMicrophone,
     disconnectFromDeepgram,
+    getDeepgramSettings,
     options,
   ]);
 
@@ -284,8 +414,11 @@ export function useTranscription(options?: UseTranscriptionOptions) {
       // Update state
       setIsRecording(false);
 
-      // Return the final transcript
-      return finalTranscriptRef.current;
+      // Return the final transcript and speaker segments
+      return {
+        transcript: finalTranscriptRef.current,
+        speakerSegments: speakerSegmentsRef.current,
+      };
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       console.error("Error stopping recording:", error);
@@ -304,11 +437,13 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     setIsRecording(false);
     setIsLoading(false);
     setTranscript("");
+    setSpeakerSegments({});
     setError(null);
     setElapsedTime(0);
 
     finalTranscriptRef.current = "";
     interimTranscriptRef.current = "";
+    speakerSegmentsRef.current = {};
 
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -327,6 +462,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     isRecording,
     isLoading,
     transcript,
+    speakerSegments,
     error,
     elapsedTime,
     formattedTime: formatTime(elapsedTime),

@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
+
     return NextResponse.json({
       key: process.env.DEEPGRAM_API_KEY,
     } satisfies DeepgramKeyResponse);
