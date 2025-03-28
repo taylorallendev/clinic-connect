@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Mic } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   LiveTranscriptionEvent,
@@ -15,16 +15,16 @@ import {
 import { LiveTranscriptionEvents, SOCKET_STATES } from "@deepgram/sdk";
 import { DEEPGRAM_CONFIG } from "@/lib/constants";
 import { useTranscriptionStore } from "@/store/use-transcription-store";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCaseStore } from "@/store/use-case-store";
 
 export function RecordingCard() {
   // State for continuous transcript
   const [continuousTranscript, setContinuousTranscript] = useState<string>("");
-
   // State for current interim transcript
   const [interimTranscript, setInterimTranscript] = useState<string>("");
+  // State for controlling recording
+  const [isRecording, setIsRecording] = useState<boolean>(false);
 
   // Reference to help manage transcript building
   const finalTranscriptRef = useRef<string>("");
@@ -32,7 +32,7 @@ export function RecordingCard() {
   const lastProcessedTextRef = useRef<string>("");
 
   // Using store for sharing transcript with other components
-  const { setStreamingContent } = useTranscriptionStore();
+  const { setStreamingContent, setIsRecording: setStoreIsRecording } = useTranscriptionStore();
 
   // Use case store for saving transcript as a case action
   const {
@@ -44,8 +44,13 @@ export function RecordingCard() {
 
   // Deepgram and microphone setup
   const { connection, connectToDeepgram, connectionState } = useDeepgram();
-  const { setupMicrophone, microphone, startMicrophone, microphoneState } =
-    useMicrophone();
+  const { 
+    setupMicrophone, 
+    microphone, 
+    startMicrophone, 
+    stopMicrophone,
+    microphoneState 
+  } = useMicrophone();
 
   // References for intervals and timeouts
   const keepAliveInterval = useRef<NodeJS.Timeout | null>(null);
@@ -80,19 +85,17 @@ export function RecordingCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionState]);
 
-  // Set up listeners when connection is established
+  // Update isRecording state based on microphone state
   useEffect(() => {
-    if (!microphone) {
-      console.log("No microphone available");
+    setIsRecording(microphoneState === MicrophoneState.Open);
+    setStoreIsRecording(microphoneState === MicrophoneState.Open);
+  }, [microphoneState, setStoreIsRecording]);
+
+  // Set up listeners when connection is established and recording is started
+  useEffect(() => {
+    if (!microphone || !connection || connectionState !== SOCKET_STATES.open) {
       return;
     }
-
-    if (!connection) {
-      console.log("No Deepgram connection available");
-      return;
-    }
-
-    console.log(`Connection state changed: ${connectionState}`);
 
     // Function to handle audio data and send to Deepgram
     const onData = (e: BlobEvent) => {
@@ -105,15 +108,12 @@ export function RecordingCard() {
 
     // Function to handle transcript events from Deepgram
     const onTranscript = (data: LiveTranscriptionEvent) => {
-      console.log("Received transcript event:", data);
-
       // Extract key data from the event
       const { is_final: isFinal } = data;
       const transcriptText = data.channel?.alternatives?.[0]?.transcript ?? "";
 
       // Skip empty transcripts
       if (!transcriptText || !transcriptText.trim()) {
-        console.log("Empty transcript received, skipping");
         return;
       }
 
@@ -126,7 +126,6 @@ export function RecordingCard() {
 
       // Skip if this is a duplicate of the last processed text
       if (messageId === lastProcessedTextRef.current) {
-        console.log("Duplicate transcript, skipping");
         return;
       }
 
@@ -149,9 +148,6 @@ export function RecordingCard() {
             if (finalTranscriptRef.current.endsWith(phrase)) {
               // Found overlap, only add the non-overlapping part
               finalTranscriptRef.current += " " + words.slice(i).join(" ");
-              console.log(
-                `Found overlap: "${phrase}" - adding only non-overlapping part`
-              );
               overlap = true;
               break;
             }
@@ -164,10 +160,7 @@ export function RecordingCard() {
               !finalTranscriptRef.current.endsWith(" ");
 
             finalTranscriptRef.current += (needsSpace ? " " : "") + cleanedText;
-            console.log(`Adding to final transcript: "${cleanedText}"`);
           }
-        } else {
-          console.log("Text already in transcript, not adding");
         }
 
         // Clear interim transcript since we have a final result
@@ -182,10 +175,6 @@ export function RecordingCard() {
 
         // Update the transcript text in the case store
         setTranscriptText(finalTranscriptRef.current);
-
-        console.log(
-          `Updated continuous transcript: "${finalTranscriptRef.current}"`
-        );
       } else {
         // For interim results, update the interim transcript
         interimTranscriptRef.current = transcriptText.trim();
@@ -203,28 +192,17 @@ export function RecordingCard() {
         // Update continuous transcript and store
         setContinuousTranscript(displayText);
         setStreamingContent(displayText);
-
-        console.log(`Updated interim display: "${displayText}"`);
       }
     };
 
-    // Only set up listeners if the connection is open
-    if (connectionState === SOCKET_STATES.open) {
-      console.log(
-        "Connection is open, adding listeners and starting microphone"
-      );
-
+    if (isRecording && microphoneState === MicrophoneState.Open) {
       // Add event listeners
       connection.addListener(LiveTranscriptionEvents.Transcript, onTranscript);
       microphone.addEventListener(MicrophoneEvents.DataAvailable, onData);
-
-      // Start the microphone
-      startMicrophone();
     }
 
     // Cleanup function to remove listeners
     return () => {
-      console.log("Cleaning up event listeners");
       connection.removeListener(
         LiveTranscriptionEvents.Transcript,
         onTranscript
@@ -232,16 +210,13 @@ export function RecordingCard() {
       microphone.removeEventListener(MicrophoneEvents.DataAvailable, onData);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionState]);
+  }, [isRecording, microphoneState, connectionState]);
 
   // Keep the connection alive
   useEffect(() => {
     if (!connection) return;
 
-    if (
-      microphoneState !== MicrophoneState.Open &&
-      connectionState === SOCKET_STATES.open
-    ) {
+    if (connectionState === SOCKET_STATES.open) {
       connection.keepAlive();
 
       keepAliveInterval.current = setInterval(() => {
@@ -259,7 +234,16 @@ export function RecordingCard() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [microphoneState, connectionState]);
+  }, [connectionState]);
+
+  // Function to toggle recording
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopMicrophone();
+    } else if (connectionState === SOCKET_STATES.open) {
+      startMicrophone();
+    }
+  };
 
   // Function to clear transcript
   const handleClearTranscript = () => {
@@ -283,40 +267,6 @@ export function RecordingCard() {
     }
   };
 
-  // Get connection status display
-  const getConnectionStatus = () => {
-    if (connectionState === SOCKET_STATES.open) {
-      return <Badge className="bg-green-500">Connected</Badge>;
-    } else if (connectionState === SOCKET_STATES.connecting) {
-      return <Badge variant="outline">Connecting...</Badge>;
-    } else {
-      return (
-        <Badge variant="outline" className="bg-muted/20">
-          Disconnected
-        </Badge>
-      );
-    }
-  };
-
-  // Get microphone status
-  const getMicrophoneStatus = () => {
-    if (microphoneState === MicrophoneState.Open) {
-      return <Badge className="bg-blue-500">Recording</Badge>;
-    } else if (microphoneState === MicrophoneState.Ready) {
-      return (
-        <Badge variant="outline" className="bg-muted/30">
-          Ready
-        </Badge>
-      );
-    } else {
-      return (
-        <Badge variant="outline" className="bg-muted/20">
-          Not Ready
-        </Badge>
-      );
-    }
-  };
-
   return (
     <div>
       <Card className="bg-card border-border shadow-md rounded-xl overflow-hidden">
@@ -326,14 +276,32 @@ export function RecordingCard() {
               <Mic className="h-5 w-5 mr-2 text-card-foreground inline" />
               Voice Recording
             </CardTitle>
-            <div className="flex items-center gap-2">
-              {getMicrophoneStatus()}
-              {getConnectionStatus()}
-            </div>
           </div>
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex flex-col items-center justify-center py-4">
+            {/* Mic button for starting/stopping recording */}
+            <div className="mb-6 flex justify-center">
+              <button
+                onClick={toggleRecording}
+                disabled={connectionState !== SOCKET_STATES.open}
+                className={`flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 ${
+                  isRecording 
+                    ? "bg-red-500 hover:bg-red-600" 
+                    : connectionState === SOCKET_STATES.open
+                      ? "bg-primary hover:bg-primary/90"
+                      : "bg-gray-300 cursor-not-allowed"
+                }`}
+                aria-label={isRecording ? "Stop recording" : "Start recording"}
+              >
+                {isRecording ? (
+                  <MicOff className="h-6 w-6 text-white" />
+                ) : (
+                  <Mic className="h-6 w-6 text-white" />
+                )}
+              </button>
+            </div>
+            
             {/* Continuous transcript display */}
             <div className="w-full">
               <div className="flex justify-between items-center mb-2">
@@ -369,6 +337,14 @@ export function RecordingCard() {
                 <div className="mt-2 text-sm font-medium text-muted-foreground flex items-center">
                   <div className="animate-pulse mr-2 h-2 w-2 rounded-full bg-blue-500"></div>
                   Processing: {interimTranscript}
+                </div>
+              )}
+
+              {/* Recording indicator */}
+              {isRecording && (
+                <div className="mt-2 text-sm font-medium text-red-500 flex items-center">
+                  <div className="animate-pulse mr-2 h-2 w-2 rounded-full bg-red-500"></div>
+                  Recording in progress...
                 </div>
               )}
 
