@@ -283,7 +283,11 @@ export default function AppointmentsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" variant="secondary">
+            <Button 
+              type="submit" 
+              variant="default"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
               Search
             </Button>
           </form>

@@ -285,7 +285,7 @@ export function RecordingCard() {
               <button
                 onClick={toggleRecording}
                 disabled={connectionState !== SOCKET_STATES.open}
-                className={`flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 ${
+                className={`flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 ${
                   isRecording 
                     ? "bg-red-500 hover:bg-red-600" 
                     : connectionState === SOCKET_STATES.open
@@ -295,9 +295,9 @@ export function RecordingCard() {
                 aria-label={isRecording ? "Stop recording" : "Start recording"}
               >
                 {isRecording ? (
-                  <MicOff className="h-6 w-6 text-white" />
+                  <MicOff className="h-8 w-8 text-white" />
                 ) : (
-                  <Mic className="h-6 w-6 text-white" />
+                  <Mic className="h-8 w-8 text-white" />
                 )}
               </button>
             </div>
@@ -331,14 +331,6 @@ export function RecordingCard() {
                 readOnly
                 placeholder="Transcript will appear here as you speak..."
               />
-
-              {/* Interim word display to show what's currently being processed */}
-              {interimTranscript && (
-                <div className="mt-2 text-sm font-medium text-muted-foreground flex items-center">
-                  <div className="animate-pulse mr-2 h-2 w-2 rounded-full bg-blue-500"></div>
-                  Processing: {interimTranscript}
-                </div>
-              )}
 
               {/* Recording indicator */}
               {isRecording && (
