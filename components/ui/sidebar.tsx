@@ -306,33 +306,12 @@ const SidebarRail = React.forwardRef<
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
+        "opacity-0", // Make the rail button invisible
         className
       )}
       {...props}
     >
-      <div 
-        className={cn(
-          "bg-muted text-muted-foreground rounded-full p-1 shadow-sm transition-transform",
-          state === "collapsed" 
-            ? "rotate-0 group-data-[side=right]:rotate-180" 
-            : "rotate-180 group-data-[side=right]:rotate-0"
-        )}
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-          className="size-3"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </div>
+      {/* Button visual elements removed */}
     </button>
   )
 })
