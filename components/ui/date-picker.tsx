@@ -28,6 +28,18 @@ export function DatePickerDemo({
     date instanceof Date ? date : undefined
   );
 
+  // Update internalDate when the date prop changes
+  React.useEffect(() => {
+    // If date is null, clear the internal date
+    if (date === null) {
+      setInternalDate(undefined);
+    } 
+    // Otherwise, if it's a valid date, update internal date
+    else if (date instanceof Date && !isNaN(date.getTime())) {
+      setInternalDate(date);
+    }
+  }, [date]);
+
   const handleSelect = (selectedDate: Date | undefined) => {
     setInternalDate(selectedDate);
     if (setDate) {

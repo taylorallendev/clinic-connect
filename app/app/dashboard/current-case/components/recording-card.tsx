@@ -258,6 +258,11 @@ export function RecordingCard() {
   // Function to save transcript as a case action
   const handleSaveTranscript = () => {
     if (finalTranscriptRef.current.trim()) {
+      // If still recording, stop the microphone first
+      if (isRecording) {
+        stopMicrophone();
+      }
+      
       // Save the transcript to the case store
       setTranscriptText(finalTranscriptRef.current);
       handleRecordingFinished();
@@ -285,7 +290,7 @@ export function RecordingCard() {
               <button
                 onClick={toggleRecording}
                 disabled={connectionState !== SOCKET_STATES.open}
-                className={`flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 ${
+                className={`flex items-center justify-center w-24 h-24 rounded-full transition-all duration-300 ${
                   isRecording 
                     ? "bg-red-500 hover:bg-red-600" 
                     : connectionState === SOCKET_STATES.open
@@ -295,9 +300,9 @@ export function RecordingCard() {
                 aria-label={isRecording ? "Stop recording" : "Start recording"}
               >
                 {isRecording ? (
-                  <MicOff className="h-8 w-8 text-white" />
+                  <div className="h-8 w-8 bg-white rounded-sm" aria-label="Stop recording" />
                 ) : (
-                  <Mic className="h-8 w-8 text-white" />
+                  <Mic className="h-10 w-10 text-white" />
                 )}
               </button>
             </div>
@@ -308,22 +313,7 @@ export function RecordingCard() {
                 <h3 className="text-muted-foreground text-sm font-medium">
                   Transcript
                 </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleClearTranscript}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Clear
-                  </button>
-                  {continuousTranscript.trim() && (
-                    <button
-                      onClick={handleSaveTranscript}
-                      className="text-xs text-primary hover:text-primary/90"
-                    >
-                      Save
-                    </button>
-                  )}
-                </div>
+                <div></div>
               </div>
               <textarea
                 className="bg-muted/30 border border-muted/30 rounded-lg p-4 text-card-foreground w-full min-h-[150px] font-medium resize-none focus:outline-none focus:ring-1 focus:ring-primary"
@@ -340,9 +330,15 @@ export function RecordingCard() {
                 </div>
               )}
 
-              {/* Save button for transcript */}
+              {/* Save and Clear buttons for transcript */}
               {continuousTranscript.trim() && (
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex justify-end items-center gap-4">
+                  <button
+                    onClick={handleClearTranscript}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
                   <Button
                     onClick={handleSaveTranscript}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"

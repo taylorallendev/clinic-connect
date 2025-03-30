@@ -342,16 +342,50 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Then get count for pagination
-      const { count, error } = await supabase
-        .from("cases")
-        .select("id", { count: "exact", head: true });
+      // Clone our filtered query but just get the count
+      // This ensures the count reflects the current filter state
+      let countQuery = supabase.from("cases").select("id", { count: "exact", head: true });
+      
+      // Re-apply the same filters we used for the main query
+      if (searchQuery && searchQuery.trim() !== "") {
+        try {
+          countQuery = countQuery.ilike("name", `%${searchQuery}%`);
+        } catch (e) {
+          console.error("Error applying search filter to count query:", e);
+        }
+      }
+      
+      // Apply date filter to count query
+      if (dateFilter && dateFilter.trim() !== "") {
+        try {
+          const startOfDay = `${dateFilter}T00:00:00.000Z`;
+          const endOfDay = `${dateFilter}T23:59:59.999Z`;
+          countQuery = countQuery.gte("dateTime", startOfDay).lte("dateTime", endOfDay);
+        } catch (e) {
+          console.error("Error applying date filter to count query:", e);
+        }
+      }
+      
+      // Apply status filter to count query
+      if (statusFilter && statusFilter.trim() !== "") {
+        try {
+          if (["ongoing", "completed", "reviewed", "exported"].includes(statusFilter.toLowerCase())) {
+            countQuery = countQuery.eq("status", statusFilter.toLowerCase());
+          }
+        } catch (e) {
+          console.error("Error applying status filter to count query:", e);
+        }
+      }
+      
+      // Execute the count query with all filters applied
+      const { count, error } = await countQuery;
 
       if (error) {
-        console.error("Error counting cases:", error);
+        console.error("Error counting filtered cases:", error);
+        totalCount = 0; // Default to 0 if there's an error
       } else {
         totalCount = count || 0;
-        console.log(`Total case count: ${totalCount}`);
+        console.log(`Total filtered case count: ${totalCount}`);
       }
     } catch (error) {
       console.error("Exception during count query:", error);
