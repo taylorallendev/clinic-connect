@@ -202,11 +202,12 @@ const Sidebar = React.forwardRef<
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                "backgroundColor": "var(--sidebar)" // Ensure solid background color
               } as React.CSSProperties
             }
             side={side}
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <div className="flex h-full w-full flex-col bg-sidebar">{children}</div>
           </SheetContent>
         </Sheet>
       )
