@@ -39,12 +39,9 @@ export function PricingCard({
           <h3 className="text-2xl font-bold">{title}</h3>
           <p className="text-muted-foreground">{description}</p>
           <div className="flex items-baseline">
-            <span className="text-4xl font-bold">
-              {typeof price === "number" ? `$${price}` : price}
+            <span className="text-2xl font-bold">
+              Contact Us
             </span>
-            {period && (
-              <span className="text-muted-foreground ml-1">{period}</span>
-            )}
           </div>
         </div>
         <ul className="space-y-2 flex-1 mb-6">
