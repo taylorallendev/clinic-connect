@@ -283,13 +283,6 @@ export function EnhancedHero() {
                     delay={0.9}
                   />
                   <StatCircle
-                    value="500+"
-                    label="Clinics"
-                    bgColor="bg-primary/10"
-                    textColor="text-primary"
-                    delay={1.0}
-                  />
-                  <StatCircle
                     value="99%"
                     label="Accuracy"
                     bgColor="bg-muted"
