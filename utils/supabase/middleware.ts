@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { Database } from "@/database.types";
 
 export function createClient(request: NextRequest) {
   // Create an unmodified response
   const response = NextResponse.next();
 
   // Create a Supabase client configured to use cookies
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -58,7 +59,9 @@ export async function middleware(request: NextRequest) {
   // If user is signed in and trying to access the landing page or auth pages, redirect to appointments
   if (session) {
     if (pathname === "/" || pathname.startsWith("/(auth-pages)")) {
-      return NextResponse.redirect(new URL("/app/dashboard/appointments", request.url));
+      return NextResponse.redirect(
+        new URL("/app/dashboard/appointments", request.url)
+      );
     }
   }
 
