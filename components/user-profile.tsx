@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/utils/supabase/client-hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -24,17 +24,38 @@ export function UserProfile() {
   }
 
   // Get user initials for avatar fallback
-  const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`;
-  
+  // Supabase doesn't have firstName/lastName fields by default
+  // We'll use the email or name if available
+  const email = user.email || "";
+  const name = user.user_metadata?.name || "";
+
+  let initials = "";
+  if (name) {
+    // Extract initials from full name
+    const nameParts = name.split(" ");
+    initials = nameParts
+      .map((part: string) => part[0])
+      .join("")
+      .toUpperCase();
+  } else if (email) {
+    // Use first letter of email
+    initials = email[0].toUpperCase();
+  }
+
   return (
     <div className="flex items-center gap-2">
       <Avatar className="h-8 w-8">
-        <AvatarImage src={user.imageUrl} alt={user.fullName || "User"} />
+        <AvatarImage
+          src={user.user_metadata?.avatar_url}
+          alt={name || email || "User"}
+        />
         <AvatarFallback>{initials || "U"}</AvatarFallback>
       </Avatar>
       <div className="flex flex-col">
-        <p className="text-sm font-medium leading-none">{user.fullName || "User"}</p>
-        <p className="text-xs text-muted-foreground">{user.primaryEmailAddress?.emailAddress || ""}</p>
+        <p className="text-sm font-medium leading-none">
+          {name || email || "User"}
+        </p>
+        <p className="text-xs text-muted-foreground">{email || ""}</p>
       </div>
     </div>
   );

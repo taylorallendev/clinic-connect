@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,39 +11,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  CalendarIcon,
-  SearchIcon,
-  RefreshCw,
-  Plus,
-  CheckCircle,
-  PlusCircle,
-  PlayCircle,
-  FileText,
-  Mic,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { AppointmentSidebar } from "./appointment-sidebar";
-import { AppointmentData } from "@/store/use-case-store";
+
+// Updated interface to match the server action response
+interface AppointmentData {
+  id: string;
+  name: string;
+  date: string;
+  time: string;
+  type: string;
+  status: string;
+  patients: {
+    id: string | null;
+    name: string;
+    first_name: string;
+    last_name: string;
+  };
+  users: {
+    id: string;
+    name: string;
+    first_name: string;
+    last_name: string;
+  };
+  metadata: {
+    hasTranscriptions: boolean;
+    hasSoapNotes: boolean;
+    hasGenerations: boolean;
+  };
+}
 
 interface AppointmentsTableProps {
   appointments: AppointmentData[];
@@ -53,6 +50,9 @@ interface AppointmentsTableProps {
   pageSize: number;
   totalCount: number;
   onPageChange: (page: number) => void;
+  onStatusChange?: (status: string) => void;
+  onSearchChange?: (search: string) => void;
+  onDateChange?: (date: string) => void;
   isLoading?: boolean;
 }
 
@@ -63,49 +63,40 @@ export function AppointmentsTable({
   pageSize,
   totalCount,
   onPageChange,
+  onStatusChange,
+  onSearchChange,
+  onDateChange,
   isLoading = false,
 }: AppointmentsTableProps) {
   const { toast } = useToast();
-
-  // Sidebar state
   const [selectedAppointment, setSelectedAppointment] =
     useState<AppointmentData | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  // Updated to match the CaseStatus enum from your database schema
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
-        return "bg-success hover:bg-success/90";
+        return "bg-green-600 hover:bg-green-700";
       case "ongoing":
-        return "bg-info hover:bg-info/90";
-      case "exported":
-        return "bg-primary hover:bg-primary/90";
+        return "bg-blue-600 hover:bg-blue-700";
       case "reviewed":
-        return "bg-warning hover:bg-warning/90";
-      case "scheduled":
-        return "bg-muted hover:bg-muted/90";
+        return "bg-amber-600 hover:bg-amber-700";
       default:
-        return "bg-muted hover:bg-muted/90";
+        return "bg-slate-600 hover:bg-slate-700";
     }
   };
 
-  // Handle appointment selection and sidebar open/close
+  // Handle appointment selection
   const handleViewAppointment = (appointment: AppointmentData) => {
     console.log("View appointment clicked for:", appointment.id);
-    // Update both local state and parent state
     setSelectedAppointment(appointment);
-    setIsSidebarOpen(true);
-    onSelectAppointment(appointment); // Notify parent component
-  };
-
-  const handleCloseSidebar = () => {
-    setIsSidebarOpen(false);
+    onSelectAppointment(appointment);
   };
 
   const handlePageChange = (newPage: number) => {
-    onPageChange(newPage + 1); // Convert to 1-indexed for parent
+    onPageChange(newPage);
   };
 
   return (
@@ -160,14 +151,10 @@ export function AppointmentsTable({
                         {appointment.time}
                       </TableCell>
                       <TableCell className="text-foreground">
-                        {appointment.patients
-                          ? appointment.patients.name
-                          : "Unknown Patient"}
+                        {appointment.patients?.name || "Unknown Patient"}
                       </TableCell>
                       <TableCell className="text-foreground">
-                        {appointment.users
-                          ? appointment.users.name
-                          : "Unassigned"}
+                        {appointment.users?.name || "Unassigned"}
                       </TableCell>
                       <TableCell className="text-foreground">
                         <Badge
@@ -218,22 +205,22 @@ export function AppointmentsTable({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handlePageChange(Math.max(0, page - 1))}
-                  disabled={page === 0}
+                  onClick={() => handlePageChange(Math.max(1, page))}
+                  disabled={page <= 1}
                   className="mr-2 border-input bg-muted/20 text-foreground hover:bg-muted/30"
                 >
                   Previous
                 </Button>
                 <div className="flex items-center mx-2 text-foreground">
-                  Page {page + 1} of {totalPages}
+                  Page {page} of {totalPages}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    handlePageChange(Math.min(totalPages - 1, page + 1))
+                    handlePageChange(Math.min(totalPages, page + 1))
                   }
-                  disabled={page >= totalPages - 1}
+                  disabled={page >= totalPages}
                   className="ml-2 border-input bg-muted/20 text-foreground hover:bg-muted/30"
                 >
                   Next
@@ -243,8 +230,6 @@ export function AppointmentsTable({
           )}
         </CardContent>
       </Card>
-
-      {/* Sidebar moved to parent component */}
     </div>
   );
 }

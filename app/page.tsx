@@ -4,11 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Clock, BarChart, Stethoscope, PawPrint } from "lucide-react";
 import { FeatureSection } from "./components/landing/feature-section";
 import { EnhancedHero } from "./components/landing/hero";
-import { PricingCard } from "./components/landing/pricing-card";
 import { SectionHeading } from "./components/landing/section-heading";
-import { TestimonialCard } from "./components/landing/testimonial-card";
 import { SoapNotesDemo } from "./components/landing/soap-notes-demo";
-import { UserButton } from "@clerk/nextjs";
 import { AnimatedTestimonials } from "./components/landing/animated-testimonials";
 
 // Data for testimonials
@@ -158,7 +155,6 @@ export default function LandingPage() {
             <Link href="/app/dashboard">
               <Button>Get Started</Button>
             </Link>
-            <UserButton afterSignOutUrl="/" />
           </div>
         </div>
       </header>
@@ -264,7 +260,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-{/* Pricing Section - Temporarily removed
+        {/* Pricing Section - Temporarily removed
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <SectionHeading

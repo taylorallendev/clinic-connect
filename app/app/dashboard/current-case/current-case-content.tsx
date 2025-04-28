@@ -452,9 +452,7 @@ export function CurrentCaseContent() {
     try {
       // Call the server action to generate content from the template
       // Use a default template ID if none is selected (1 is usually the default SOAP template)
-      const templateIdToUse = selectedTemplateId
-        ? parseInt(selectedTemplateId)
-        : 1;
+      const templateIdToUse = selectedTemplateId || "1";
       const result = await generateContentFromTemplate([transcript], {
         templateId: templateIdToUse,
       });
@@ -578,9 +576,7 @@ export function CurrentCaseContent() {
 
       // Call the server action to generate content from the template
       // Use a default template ID if none is selected (1 is usually the default SOAP template)
-      const templateIdToUse = selectedTemplateId
-        ? parseInt(selectedTemplateId)
-        : 1;
+      const templateIdToUse = selectedTemplateId || "1";
       const result = await generateContentFromTemplate(transcripts, {
         templateId: templateIdToUse,
       });

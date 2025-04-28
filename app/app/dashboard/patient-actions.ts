@@ -3,9 +3,22 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/utils/clerk/server";
+import { getCurrentUserId } from "@/app/actions";
+import { Tables, TablesInsert } from "@/database.types";
 
-// Patient Schema
+// Define type for the metadata structure
+interface PatientMetadata {
+  species?: string;
+  breed?: string;
+  owner?: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  notes?: string;
+}
+
+// Patient Schema with metadata
 const patientSchema = z.object({
   name: z.string().min(1, "Patient name is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
@@ -19,8 +32,14 @@ const patientSchema = z.object({
 
 export type PatientFormValues = z.infer<typeof patientSchema>;
 
-// Create patient
-export async function createPatient(data: PatientFormValues) {
+// Type-safe patient row type
+type PatientRow = Tables<"patients">;
+type PatientInsert = TablesInsert<"patients">;
+
+// Create patient with type safety
+export async function createPatient(
+  data: PatientFormValues
+): Promise<{ success: boolean; error?: string; data?: PatientRow }> {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -31,23 +50,15 @@ export async function createPatient(data: PatientFormValues) {
 
     const parsedData = patientSchema.parse(data);
 
-    // Insert patient into database
+    const patientData: PatientInsert = {
+      name: parsedData.name,
+      owner_name: parsedData.ownerName,
+      // Add other fields according to your database schema
+    };
+
     const { data: result, error } = await supabase
       .from("patients")
-      .insert({
-        name: parsedData.name,
-        date_of_birth: new Date(parsedData.dateOfBirth).toISOString(),
-        metadata: {
-          species: parsedData.species,
-          breed: parsedData.breed,
-          owner: {
-            name: parsedData.ownerName,
-            email: parsedData.ownerEmail,
-            phone: parsedData.ownerPhone,
-          },
-          notes: parsedData.notes,
-        },
-      })
+      .insert(patientData)
       .select()
       .single();
 
@@ -68,8 +79,10 @@ export async function createPatient(data: PatientFormValues) {
   }
 }
 
-// Get patient by ID
-export async function getPatient(id: number) {
+// Get patient by ID with type safety
+export async function getPatient(
+  id: string
+): Promise<{ success: boolean; error?: string; data?: PatientRow }> {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -85,16 +98,11 @@ export async function getPatient(id: number) {
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
-        return { success: false, error: "Patient not found" };
-      }
-      console.error("Error getting patient:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true, data: patient };
   } catch (error) {
-    console.error("Error getting patient:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to get patient",
@@ -102,11 +110,11 @@ export async function getPatient(id: number) {
   }
 }
 
-// Update patient
+// Update patient with type safety
 export async function updatePatient(
-  id: number,
+  id: string,
   data: Partial<PatientFormValues>
-) {
+): Promise<{ success: boolean; error?: string; data?: PatientRow }> {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -115,61 +123,27 @@ export async function updatePatient(
       return { success: false, error: "Not authenticated" };
     }
 
-    // Get existing patient data
-    const { data: existingPatient, error: getError } = await supabase
-      .from("patients")
-      .select()
-      .eq("id", id)
-      .single();
-
-    if (getError) {
-      if (getError.code === "PGRST116") {
-        return { success: false, error: "Patient not found" };
-      }
-      console.error("Error getting existing patient:", getError);
-      return { success: false, error: getError.message };
-    }
-
-    const currentMetadata = existingPatient.metadata || {};
-
-    // Merge updates with existing data
-    const updatedMetadata = {
-      ...currentMetadata,
-      species: data.species ?? currentMetadata.species,
-      breed: data.breed ?? currentMetadata.breed,
-      owner: {
-        ...currentMetadata.owner,
-        name: data.ownerName ?? currentMetadata.owner?.name,
-        email: data.ownerEmail ?? currentMetadata.owner?.email,
-        phone: data.ownerPhone ?? currentMetadata.owner?.phone,
-      },
-      notes: data.notes ?? currentMetadata.notes,
+    const updateData: Partial<PatientInsert> = {
+      name: data.name,
+      owner_name: data.ownerName,
+      updated_at: new Date().toISOString(),
+      // Add other fields according to your database schema
     };
 
-    // Update patient in database
-    const { data: result, error: updateError } = await supabase
+    const { data: result, error } = await supabase
       .from("patients")
-      .update({
-        name: data.name ?? existingPatient.name,
-        date_of_birth: data.dateOfBirth
-          ? new Date(data.dateOfBirth).toISOString()
-          : existingPatient.date_of_birth,
-        metadata: updatedMetadata,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();
 
-    if (updateError) {
-      console.error("Error updating patient:", updateError);
-      return { success: false, error: updateError.message };
+    if (error) {
+      return { success: false, error: error.message };
     }
 
     revalidatePath("/dashboard");
     return { success: true, data: result };
   } catch (error) {
-    console.error("Error updating patient:", error);
     return {
       success: false,
       error:
@@ -178,8 +152,10 @@ export async function updatePatient(
   }
 }
 
-// Search patients
-export async function searchPatients(searchTerm: string) {
+// Search patients with type safety
+export async function searchPatients(
+  searchTerm: string
+): Promise<{ success: boolean; error?: string; data?: PatientRow[] }> {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -192,23 +168,18 @@ export async function searchPatients(searchTerm: string) {
       return { success: true, data: [] };
     }
 
-    // Using Supabase's text search capabilities
     const { data: patients, error } = await supabase
       .from("patients")
       .select()
-      .or(
-        `name.ilike.%${searchTerm}%,metadata->species.ilike.%${searchTerm}%,metadata->breed.ilike.%${searchTerm}%,metadata->owner->name.ilike.%${searchTerm}%`
-      )
+      .or(`name.ilike.%${searchTerm}%,owner_name.ilike.%${searchTerm}%`)
       .limit(10);
 
     if (error) {
-      console.error("Error searching patients:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true, data: patients };
   } catch (error) {
-    console.error("Error searching patients:", error);
     return {
       success: false,
       error:
@@ -217,8 +188,23 @@ export async function searchPatients(searchTerm: string) {
   }
 }
 
-// Get all patients with pagination
-export async function getPatients(page = 1, limit = 20) {
+// Get all patients with pagination and type safety
+interface PaginationResult {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export async function getPatients(
+  page = 1,
+  limit = 20
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: PatientRow[];
+  pagination?: PaginationResult;
+}> {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -229,7 +215,6 @@ export async function getPatients(page = 1, limit = 20) {
 
     const offset = (page - 1) * limit;
 
-    // Get paginated patients
     const { data: patients, error: patientsError } = await supabase
       .from("patients")
       .select()
@@ -237,17 +222,14 @@ export async function getPatients(page = 1, limit = 20) {
       .range(offset, offset + limit - 1);
 
     if (patientsError) {
-      console.error("Error getting patients:", patientsError);
       return { success: false, error: patientsError.message };
     }
 
-    // Get total count for pagination
     const { count, error: countError } = await supabase
       .from("patients")
       .select("*", { count: "exact", head: true });
 
     if (countError) {
-      console.error("Error getting patient count:", countError);
       return { success: false, error: countError.message };
     }
 
@@ -262,7 +244,6 @@ export async function getPatients(page = 1, limit = 20) {
       },
     };
   } catch (error) {
-    console.error("Error getting patients:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to get patients",

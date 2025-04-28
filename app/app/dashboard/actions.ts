@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { Tables, Database } from "@/database.types";
 
 export interface CaseStatusCounts {
   total: number;
@@ -9,11 +10,6 @@ export interface CaseStatusCounts {
   reviewed: number;
   exported: number;
   scheduled: number;
-}
-
-// Update this interface to match your actual status values
-interface CaseStatusQueryResult {
-  status: string;
 }
 
 /**
@@ -25,7 +21,10 @@ export async function getCaseTypeStats(): Promise<CaseStatusCounts> {
 
   try {
     // Query to get all case statuses
-    const { data, error } = await supabase.from("cases").select("status");
+    const { data, error } = (await supabase.from("cases").select("status")) as {
+      data: Pick<Tables<"cases">, "status">[];
+      error: any;
+    };
 
     if (error) {
       console.error("Error fetching case type stats:", error);
@@ -46,22 +45,17 @@ export async function getCaseTypeStats(): Promise<CaseStatusCounts> {
     counts.total = data.length;
 
     // Count cases by status
-    data.forEach((item: CaseStatusQueryResult) => {
-      // Use type assertion to handle possible undefined status
-      const status = item.status as string;
+    data.forEach((item) => {
+      const status = item.status as Database["public"]["Enums"]["CaseStatus"];
 
       // Increment the appropriate counter based on status
-      if (status === "in_progress" || status === "Ongoing") counts.ongoing++;
-      else if (status === "completed" || status === "Completed")
-        counts.completed++;
-      else if (status === "reviewed" || status === "Reviewed")
-        counts.reviewed++;
-      else if (status === "exported" || status === "Exported")
-        counts.exported++;
-      else if (status === "scheduled" || status === "Scheduled")
-        counts.scheduled++;
+      if (status === "ongoing") counts.ongoing++;
+      else if (status === "completed") counts.completed++;
+      else if (status === "reviewed") counts.reviewed++;
+      else if (status === "exported") counts.exported++;
+      else if (status === "scheduled") counts.scheduled++;
     });
-    console.log(counts);
+
     return counts;
   } catch (error) {
     console.error("Failed to get case type stats:", error);
@@ -97,11 +91,22 @@ export async function getUpcomingAppointments(): Promise<Appointment[]> {
   const supabase = await createClient();
 
   try {
-    // Query the cases table for upcoming appointments
+    // Query the cases table for upcoming appointments with related patient data
     const { data: casesData, error: casesError } = await supabase
       .from("cases")
-      .select("id, name, dateTime, type, patientId, status")
-      .order("dateTime", { ascending: true })
+      .select(
+        `
+        id,
+        type,
+        created_at,
+        patients (
+          id,
+          name,
+          owner_name
+        )
+      `
+      )
+      .order("created_at", { ascending: true })
       .limit(5);
 
     if (casesError) {
@@ -109,50 +114,38 @@ export async function getUpcomingAppointments(): Promise<Appointment[]> {
       throw casesError;
     }
 
-    // We need to get patient information for each case
-    const patientIds = casesData
-      .map((c: CaseData) => c.patientId)
-      .filter(Boolean);
-
-    // Get patient data from the patients table
-    const { data: patientsData, error: patientsError } = await supabase
-      .from("patients")
-      .select("id, name, metadata")
-      .in("id", patientIds);
-
-    if (patientsError) {
-      console.error("Error fetching patient data:", patientsError);
-      throw patientsError;
-    }
-
-    // Create a map of patient data for quick lookup
-    const patientMap = new Map<string, PatientData>(
-      patientsData.map((patient: PatientData) => [patient.id, patient])
-    );
-
     // Map the database results to the Appointment interface
-    const appointments: Appointment[] = casesData.map((item: CaseData) => {
-      const patient = patientMap.get(item.patientId);
-      const dateTime = new Date(item.dateTime);
+    const appointments: Appointment[] = casesData.map(
+      (item: {
+        id: string;
+        type: string | null;
+        created_at: string;
+        patients:
+          | {
+              id: string;
+              name: string | null;
+              owner_name: string | null;
+            }[]
+          | null;
+      }) => {
+        const patient =
+          item.patients && item.patients.length > 0 ? item.patients[0] : null;
 
-      // Extract owner name from metadata if available
-      const ownerName =
-        patient?.metadata?.owner_name ||
-        patient?.metadata?.ownerName ||
-        "Unknown Owner";
+        const dateTime = new Date(item.created_at);
 
-      return {
-        id: item.id.toString(),
-        patient: patient?.name || "Unknown Patient",
-        owner: ownerName,
-        date: dateTime.toLocaleDateString(),
-        time: dateTime.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        type: item.type || "General",
-      };
-    });
+        return {
+          id: item.id,
+          patient: patient?.name || "Unknown Patient",
+          owner: patient?.owner_name || "Unknown Owner",
+          date: dateTime.toLocaleDateString(),
+          time: dateTime.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          type: item.type || "General",
+        };
+      }
+    );
 
     return appointments;
   } catch (error) {
@@ -175,25 +168,6 @@ export interface Case {
   time?: string;
 }
 
-interface PatientData {
-  id: string;
-  name: string;
-  metadata?: {
-    owner_name?: string;
-    ownerName?: string;
-    [key: string]: any;
-  };
-}
-
-interface CaseData {
-  id: string;
-  name: string;
-  patientId: string;
-  type: string;
-  dateTime: string;
-  status?: string;
-}
-
 /**
  * Gets all cases from the database
  * @returns An array of cases
@@ -204,54 +178,60 @@ export async function getAllCases(): Promise<Case[]> {
   try {
     const { data, error } = await supabase
       .from("cases")
-      .select("id, name, patientId, type, dateTime, status")
-      .order("dateTime", { ascending: false });
+      .select(
+        `
+        id,
+        type,
+        status,
+        created_at,
+        patients (
+          id,
+          name,
+          owner_name
+        )
+      `
+      )
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching cases:", error);
       throw error;
     }
 
-    // Get patient data for each case
-    const patientIds = data.map((c: CaseData) => c.patientId).filter(Boolean);
-
-    const { data: patientsData, error: patientsError } = await supabase
-      .from("patients")
-      .select("id, name")
-      .in("id", patientIds);
-
-    if (patientsError) {
-      console.error("Error fetching patient data:", patientsError);
-      throw patientsError;
-    }
-
-    // Create a map of patient data for quick lookup
-    const patientMap = new Map<string, { id: string; name: string }>(
-      patientsData.map((patient: { id: string; name: string }) => [
-        patient.id,
-        patient,
-      ])
-    );
-
     // Format the cases data
-    return data.map((item: CaseData) => {
-      const dateTime = new Date(item.dateTime);
-      const patient = patientMap.get(item.patientId);
+    return data.map(
+      (item: {
+        id: string;
+        type: string | null;
+        status: Database["public"]["Enums"]["CaseStatus"] | null;
+        created_at: string;
+        patients:
+          | {
+              id: string;
+              name: string | null;
+              owner_name: string | null;
+            }[]
+          | null;
+      }) => {
+        const dateTime = new Date(item.created_at);
+        const patient =
+          item.patients && item.patients.length > 0 ? item.patients[0] : null;
 
-      return {
-        id: item.id.toString(),
-        name: item.name,
-        patient: patient?.name || "Unknown Patient",
-        type: item.type,
-        date: dateTime.toLocaleDateString(),
-        time: dateTime.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        assignedTo: "Unassigned",
-        status: item.status || "Pending",
-      };
-    });
+        return {
+          id: item.id,
+          name: patient?.name || "Unknown Patient",
+          patient: patient?.name || "Unknown Patient",
+          type: item.type || "General",
+          date: dateTime.toLocaleDateString(),
+          time: dateTime.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          assignedTo: patient?.owner_name || "Unassigned",
+          status: item.status || "ongoing",
+        };
+      }
+    );
   } catch (error) {
     console.error("Error in getAllCases:", error);
     return [];

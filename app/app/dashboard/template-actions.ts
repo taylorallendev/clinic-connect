@@ -3,12 +3,14 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/utils/clerk/server";
+import { getCurrentUserId } from "@/app/actions";
 
 const templateFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.enum(["soap", "summary", "email", "structured"]),
   content: z.string().min(1, "Content is required"),
+  prompt: z.string().optional(),
+  model: z.string().optional(),
 });
 
 type TemplateFormValues = z.infer<typeof templateFormSchema>;
@@ -34,7 +36,10 @@ export async function createTemplate(values: TemplateFormValues) {
         name: validatedFields.name,
         type: validatedFields.type,
         content: validatedFields.content,
-        createdBy: userId,
+        prompt: validatedFields.prompt || null,
+        model: validatedFields.model || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -47,7 +52,7 @@ export async function createTemplate(values: TemplateFormValues) {
     console.log("Template insert result:", result);
 
     revalidatePath("/app/dashboard/templates");
-    return { success: true };
+    return { success: true, template: result };
   } catch (error) {
     console.error("Template creation error:", error);
     if (error instanceof z.ZodError) {
@@ -60,7 +65,7 @@ export async function createTemplate(values: TemplateFormValues) {
   }
 }
 
-export async function updateTemplate(id: number, values: TemplateFormValues) {
+export async function updateTemplate(id: string, values: TemplateFormValues) {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -71,15 +76,19 @@ export async function updateTemplate(id: number, values: TemplateFormValues) {
 
     const validatedFields = templateFormSchema.parse(values);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("templates")
       .update({
         name: validatedFields.name,
         type: validatedFields.type,
         content: validatedFields.content,
+        prompt: validatedFields.prompt || null,
+        model: validatedFields.model || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select()
+      .single();
 
     if (error) {
       console.error("Template update error:", error);
@@ -87,7 +96,7 @@ export async function updateTemplate(id: number, values: TemplateFormValues) {
     }
 
     revalidatePath("/app/dashboard/templates");
-    return { success: true };
+    return { success: true, template: data };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { error: error.errors[0].message };
@@ -96,7 +105,7 @@ export async function updateTemplate(id: number, values: TemplateFormValues) {
   }
 }
 
-export async function deleteTemplate(id: number) {
+export async function deleteTemplate(id: string) {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -151,7 +160,7 @@ export async function getTemplates(type?: string) {
   }
 }
 
-export async function getTemplateById(id: number) {
+export async function getTemplateById(id: string) {
   try {
     const userId = getCurrentUserId();
     const supabase = await createClient();
@@ -182,12 +191,13 @@ export async function getTemplateById(id: number) {
 }
 
 export type Template = {
-  id: number;
+  id: string;
   name: string;
   type: string;
   content: string;
-  createdAt: string;
-  createdBy: string;
+  prompt?: string;
+  model?: string;
+  created_at: string;
   updated_at?: string;
 };
 
@@ -261,7 +271,11 @@ Subjective: Summarize the patient history and owner's description of the problem
 Objective: Document physical examination findings, vital signs, and test results.
 Assessment: Provide clinical assessment and differential diagnoses.
 Plan: Outline the treatment plan, medications, and follow-up recommendations.`,
-          createdBy: userId,
+          prompt:
+            "Generate SOAP notes from the following veterinary consultation transcript:",
+          model: "gpt-4o",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
