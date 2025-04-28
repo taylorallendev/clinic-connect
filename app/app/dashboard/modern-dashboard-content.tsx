@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getUpcomingAppointments } from "./actions";
+import { getUpcomingAppointments } from "@/app/actions";
 
 // Add User interface
 interface User {

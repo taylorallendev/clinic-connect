@@ -11,7 +11,7 @@ import {
   updateCase,
   getCase,
   generateContentFromTemplate,
-} from "./actions";
+} from "@/app/actions";
 import { caseFormSchema } from "./case-form";
 import { ClientSideDate } from "./client-side-dates";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { SoapNotesEditor } from "@/components/ui/soap-notes-editor";
 import { MarkdownRenderer } from "@/components/ui/markdown";
-import { simpleSendEmail } from "./email-actions";
+import { simpleSendEmail } from "@/app/actions";
 import {
   Dialog,
   DialogContent,
@@ -75,7 +75,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getEmailTemplates, ensureDefaultTemplates } from "../template-actions";
+import { getEmailTemplates, ensureDefaultTemplates } from "@/app/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RecordingCard } from "./components/recording-card";
 

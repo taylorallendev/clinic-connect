@@ -1,4 +1,4 @@
-import { getAppointmentById } from "@/app/app/dashboard/appointments/actions";
+import { getAppointmentById } from "@/app/actions";
 import { useState, useEffect } from "react";
 
 // Define a more flexible interface that matches what your server actions return

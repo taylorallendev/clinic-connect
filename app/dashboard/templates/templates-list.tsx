@@ -11,7 +11,7 @@ import {
   Template,
   deleteTemplate,
   updateTemplate,
-} from "../../app/dashboard/template-actions";
+} from "@/app/actions";
 import { useEffect, useState } from "react";
 import {
   Dialog,

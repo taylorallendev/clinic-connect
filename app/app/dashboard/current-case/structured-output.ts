@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { getTemplates } from "../template-actions";
+import { getTemplates } from "@/app/actions";
 
 export type Template = {
   id: number;

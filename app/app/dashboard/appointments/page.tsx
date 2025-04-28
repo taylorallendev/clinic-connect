@@ -16,7 +16,7 @@ import {
 import { DatePickerDemo } from "@/components/ui/date-picker";
 import { AppointmentsTable } from "./appointments-table";
 import { AppointmentSidebar } from "./appointment-sidebar";
-import { getAppointments, debugListAllCases } from "./actions";
+import { getAppointments, debugListAllCases } from "@/app/actions";
 
 // Define the appointment data interface
 interface AppointmentData {

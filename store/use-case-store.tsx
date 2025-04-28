@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { SOCKET_STATES } from "@/context/DeepgramContextProvider";
 import { MicrophoneState } from "@/context/MicrophoneContextProvider";
-import { saveActionsToCase as saveActionsToCaseAction } from "@/app/app/dashboard/current-case/actions";
+import { saveActionsToCase as saveActionsToCaseAction } from "@/app/actions";
 
 export interface SoapResponse {
   subjective: string;
