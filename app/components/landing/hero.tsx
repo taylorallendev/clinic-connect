@@ -209,8 +209,8 @@ export function EnhancedHero() {
                     <span className="block">With AI</span>
                   </h1>
                   <p className="text-xl text-muted-foreground max-w-[600px] mb-8">
-                    ClinicConnect combines AI-powered appointment management,
-                    scribing, and note generation to save time and improve
+                    ClinicConnect combines AI-powered scribing, differential diagnosis,
+                    and note generation to save time and improve
                     patient care.
                   </p>
                 </motion.div>
@@ -240,57 +240,9 @@ export function EnhancedHero() {
               )}
             </AnimatePresence>
 
-            <AnimatePresence>
-              {isVisible && (
-                <motion.div
-                  variants={fadeInUp}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="flex flex-wrap gap-4 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                    <span>No credit card required</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                    <span>14-day free trial</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                    <span>Cancel anytime</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Free trial info removed as requested */}
 
-            {/* Stats circles */}
-            <AnimatePresence>
-              {isVisible && (
-                <motion.div
-                  variants={fadeIn}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ duration: 0.5, delay: 0.8 }}
-                  className="flex flex-wrap gap-4 mt-4"
-                >
-                  <StatCircle
-                    value="85%"
-                    label="Time Saved"
-                    bgColor="bg-accent/10"
-                    textColor="text-accent-foreground"
-                    delay={0.9}
-                  />
-                  <StatCircle
-                    value="99%"
-                    label="Accuracy"
-                    bgColor="bg-muted"
-                    delay={1.1}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Stats circles removed as requested */}
           </div>
 
           {/* Right column - SOAP Notes Demo */}
@@ -535,8 +487,8 @@ export function EnhancedHero() {
 
             <FloatingCard
               icon={Calendar}
-              title="Smart Scheduling"
-              subtitle="30% more appointments"
+              title="Pre-Appointment Summary"
+              subtitle="Patient insights at a glance"
               position="-top-6 -left-6"
               delay={1.0}
               iconColor="text-accent"
@@ -554,30 +506,31 @@ export function EnhancedHero() {
           </div>
         </div>
 
-        {/* Trusted by section */}
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              animate="visible"
-              transition={{ duration: 0.5, delay: 1.4 }}
-              className="mt-20 text-center"
-            >
-              <p className="text-sm text-muted-foreground mb-6">
-                Trusted by leading veterinary practices
-              </p>
+        {/* Support throughout lifecycle section - only visible on scroll */}
+        <div className="relative mt-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.7 }}
+            className="relative z-10"
+          >
+              <h3 className="text-xl md:text-2xl font-medium text-primary mb-6">
+                Support throughout the full appointment lifecycle
+              </h3>
               <div className="flex flex-wrap justify-center gap-8 md:gap-12">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div
+                  <motion.div
                     key={i}
-                    className="h-8 w-24 bg-muted/50 rounded-md"
-                  ></div>
+                    className="h-12 w-28 bg-muted/50 rounded-md flex items-center justify-center"
+                    whileInView={{ y: [20, 0], opacity: [0, 1] }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 * i }}
+                  ></motion.div>
                 ))}
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
       </div>
     </div>
   );
