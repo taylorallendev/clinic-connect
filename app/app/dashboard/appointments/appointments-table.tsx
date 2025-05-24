@@ -16,32 +16,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
-// Updated interface to match the server action response
-interface AppointmentData {
-  id: string;
-  name: string;
-  date: string;
-  time: string;
-  type: string;
-  status: string;
-  patients: {
-    id: string | null;
-    name: string;
-    first_name: string;
-    last_name: string;
-  };
-  users: {
-    id: string;
-    name: string;
-    first_name: string;
-    last_name: string;
-  };
-  metadata: {
-    hasTranscriptions: boolean;
-    hasSoapNotes: boolean;
-    hasGenerations: boolean;
-  };
-}
+// Import AppointmentData from the store to ensure consistency
+import { AppointmentData } from "@/store/use-case-store";
 
 interface AppointmentsTableProps {
   appointments: AppointmentData[];
@@ -151,10 +127,10 @@ export function AppointmentsTable({
                         {appointment.time}
                       </TableCell>
                       <TableCell className="text-foreground">
-                        {appointment.patients?.name || "Unknown Patient"}
+                        {appointment.patientName || appointment.patients?.name || "Unknown Patient"}
                       </TableCell>
                       <TableCell className="text-foreground">
-                        {appointment.users?.name || "Unassigned"}
+                        {appointment.ownerName || appointment.users?.name || "Unassigned"}
                       </TableCell>
                       <TableCell className="text-foreground">
                         <Badge

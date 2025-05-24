@@ -668,7 +668,7 @@ export function CurrentCaseContent() {
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailTo, setEmailTo] = useState("");
-  const [emailFrom, setEmailFrom] = useState("no-reply@clinicconnect.dev");
+  const [emailFrom, setEmailFrom] = useState("no-reply@odisai.dev");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // No longer needed as templates are loaded on component mount
@@ -676,7 +676,7 @@ export function CurrentCaseContent() {
   // Add email handling functions
   const handleEmailClick = () => {
     // Ensure the default email is set
-    setEmailFrom("no-reply@clinicconnect.dev");
+    setEmailFrom("no-reply@odisai.dev");
     setShowEmailDialog(true);
   };
 
@@ -699,7 +699,7 @@ export function CurrentCaseContent() {
 
       // Format the content to be sent
       let emailContent = "";
-      let subject = "Clinic Connect: Case Update";
+      let subject = "OdisAI: Case Update";
 
       // Add case information if available
       if (savedCaseData) {
@@ -715,7 +715,7 @@ export function CurrentCaseContent() {
       if (selectedAction.type === "recording") {
         // Add the recording transcript with some formatting
         if (selectedAction.content.transcript) {
-          subject = `Clinic Connect: Transcript for ${savedCaseData?.name || "Case"}`;
+          subject = `OdisAI: Transcript for ${savedCaseData?.name || "Case"}`;
           emailContent += `<h2>Recording Transcript</h2>
 <p><strong>Date:</strong> ${new Date(selectedAction.timestamp).toLocaleString()}</p>
 <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${selectedAction.content.transcript}</pre>`;
@@ -723,7 +723,7 @@ export function CurrentCaseContent() {
       }
       // If the selected action is a SOAP note or other generated content
       else if (selectedAction.type === "soap") {
-        subject = `Clinic Connect: ${savedCaseData?.name || "Case"} - Notes`;
+        subject = `OdisAI: ${savedCaseData?.name || "Case"} - Notes`;
 
         // First add the transcript if available
         if (selectedAction.content.transcript) {

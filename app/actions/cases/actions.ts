@@ -8,7 +8,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { Enums } from "@/database.types";
+import { Enums, TablesUpdate, TablesInsert } from "@/database.types";
 import {
   updateCaseSchema,
   ClientCaseAction,
@@ -33,15 +33,17 @@ export async function createCase(data: CreateCaseInput) {
     console.log("Supabase client created");
 
     // First, create the case
+    const caseData: TablesInsert<"cases"> = {
+      type: data.type,
+      status: data.status,
+      visibility: data.visibility,
+      created_at: new Date(data.dateTime).toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     const { data: newCase, error: caseError } = await supabase
       .from("cases")
-      .insert({
-        type: data.type as Enums<"CaseType">,
-        status: data.status as Enums<"CaseStatus">,
-        visibility: data.visibility as Enums<"CaseVisibility">,
-        created_at: new Date(data.dateTime).toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .insert(caseData)
       .select()
       .single();
 
@@ -56,15 +58,17 @@ export async function createCase(data: CreateCaseInput) {
     console.log(`Created new case with ID: ${newCase.id}`);
 
     // Then, create the patient
+    const patientData: TablesInsert<"patients"> = {
+      name: data.name,
+      owner_name: data.assignedTo,
+      case_id: newCase.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     const { data: newPatient, error: patientError } = await supabase
       .from("patients")
-      .insert({
-        name: data.name,
-        owner_name: data.assignedTo,
-        case_id: newCase.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .insert(patientData)
       .select()
       .single();
 
@@ -131,12 +135,17 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
     }
 
     // Build update object with only the fields that were provided
-    const updateData: Record<string, any> = {
+    // Using TablesUpdate type for type safety
+    const updateData: TablesUpdate<"cases"> = {
       updated_at: new Date().toISOString(),
     };
 
-    if (parsedData.status) updateData.status = parsedData.status;
-    if (parsedData.visibility) updateData.visibility = parsedData.visibility;
+    if (parsedData.status) {
+      updateData.status = parsedData.status as Enums<"CaseStatus">;
+    }
+    if (parsedData.visibility) {
+      updateData.visibility = parsedData.visibility as Enums<"CaseVisibility">;
+    }
 
     // Update the case data
     const { data: updatedCase, error: updateError } = await supabase
@@ -180,14 +189,42 @@ export async function getCase(caseId: string) {
   try {
     console.log(`getCase called with ID: ${caseId}`);
 
-    // Authenticate the user making the request
+    // Create Supabase client
     const supabase = await createClient();
 
-    // Fetch the case from the database
+    // Fetch the case with all related data
     console.log(`Fetching case with ID: ${caseId}`);
     const { data: caseData, error } = await supabase
       .from("cases")
-      .select("*")
+      .select(
+        `
+        *,
+        patients (
+          id,
+          name,
+          owner_name
+        ),
+        transcriptions (
+          id,
+          transcript,
+          created_at
+        ),
+        soap_notes (
+          id,
+          subjective,
+          objective,
+          assessment,
+          plan,
+          created_at
+        ),
+        generations (
+          id,
+          prompt,
+          content,
+          created_at
+        )
+      `
+      )
       .eq("id", caseId)
       .single();
 
@@ -207,23 +244,21 @@ export async function getCase(caseId: string) {
       };
     }
 
-    console.log("Case found:", caseData);
+    console.log("Case found with related data");
 
-    // Build a response based on available fields
-    const responseData: any = {
+    // Format the response
+    const responseData = {
       id: caseData.id,
-      name: caseData.name,
+      type: caseData.type,
+      status: caseData.status,
+      visibility: caseData.visibility,
+      created_at: caseData.created_at,
+      updated_at: caseData.updated_at,
+      patient: caseData.patients?.[0] || null,
+      transcriptions: caseData.transcriptions || [],
+      soap_notes: caseData.soap_notes || [],
+      generations: caseData.generations || [],
     };
-
-    // Add other fields only if they exist
-    if (caseData.dateTime) responseData.dateTime = caseData.dateTime;
-    if (caseData.visibility) responseData.visibility = caseData.visibility;
-    if (caseData.type) responseData.type = caseData.type;
-
-    // Include case actions if available
-    if (caseData.case_actions) {
-      responseData.actions = caseData.case_actions;
-    }
 
     return {
       success: true,
@@ -257,40 +292,57 @@ export async function saveActionsToCase(
       throw new Error("Unauthorized");
     }
 
-    console.log(
-      `Storing ${actions.length} actions in case_actions column for case ${caseId}`
-    );
+    console.log(`Processing ${actions.length} actions for case ${caseId}`);
 
     // Validate all actions against the schema
     const validatedActions = actions.map((action) =>
       caseActionSchema.parse(action)
     );
 
-    // Format actions for storage in the case_actions column
-    const formattedActions = validatedActions.map((action) => ({
-      id: action.id,
-      type: action.type,
-      content: {
-        transcript: action.content?.transcript || "",
-        soap: action.content?.soap,
-      },
-      timestamp: action.timestamp,
-    }));
+    // Begin a transaction to ensure all operations succeed or fail together
+    // Note: Supabase JS client doesn't support transactions directly, so we'll use individual operations
 
-    // Update the case with all actions at once
-    const { error } = await supabase
-      .from("cases")
-      .update({
-        case_actions: formattedActions,
-      })
-      .eq("id", caseId);
+    // Process each action based on its type
+    for (const action of validatedActions) {
+      if (action.type === "recording" && action.content?.transcript) {
+        // Store recording as a transcription
+        const transcriptionData: TablesInsert<"transcriptions"> = {
+          transcript: action.content.transcript,
+          case_id: caseId,
+          created_at: new Date(action.timestamp).toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
-    if (error) {
-      console.error("Failed to save case actions:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
+        const { error } = await supabase
+          .from("transcriptions")
+          .insert(transcriptionData);
+
+        if (error) {
+          console.error("Failed to save transcription:", error);
+          throw new Error(`Failed to save transcription: ${error.message}`);
+        }
+      } else if (action.type === "soap" && action.content?.soap) {
+        // Store SOAP note in the soap_notes table
+        const soapNoteData: TablesInsert<"soap_notes"> = {
+          transcript: action.content.transcript || "",
+          subjective: action.content.soap.subjective,
+          objective: action.content.soap.objective,
+          assessment: action.content.soap.assessment,
+          plan: action.content.soap.plan,
+          case_id: caseId,
+          created_at: new Date(action.timestamp).toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase
+          .from("soap_notes")
+          .insert(soapNoteData);
+
+        if (error) {
+          console.error("Failed to save SOAP note:", error);
+          throw new Error(`Failed to save SOAP note: ${error.message}`);
+        }
+      }
     }
 
     // Revalidate paths

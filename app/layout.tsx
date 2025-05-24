@@ -12,8 +12,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Clinic Connect",
-  description: "Connect with your clinic",
+  title: "OdisAI",
+  description: "AI-Powered Veterinary Platform",
 };
 
 const geistSans = Geist({

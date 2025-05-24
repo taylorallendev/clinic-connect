@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { Constants } from "@/database.types";
+import { Constants, Enums } from "@/database.types";
 
 /**
  * Schema for creating a new case that maps to our database structure
@@ -83,12 +83,14 @@ export interface ClientCaseAction {
 
 /**
  * TypeScript interface for creating a new case
+ * Using the Enums from database.types.ts for type safety
  */
 export interface CreateCaseInput {
   name: string;
   dateTime: string;
   assignedTo: string;
-  type: string;
-  status?: string;
-  visibility?: string;
+  type: Enums<"CaseType">;
+  status?: Enums<"CaseStatus">;
+  visibility?: Enums<"CaseVisibility">;
+  actions?: ClientCaseAction[];
 }

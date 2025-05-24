@@ -18,32 +18,8 @@ import { AppointmentsTable } from "./appointments-table";
 import { AppointmentSidebar } from "./appointment-sidebar";
 import { getAppointments, debugListAllCases } from "@/app/actions";
 
-// Define the appointment data interface
-interface AppointmentData {
-  id: string;
-  name: string;
-  date: string;
-  time: string;
-  type: string;
-  status: string;
-  patients: {
-    id: string | null;
-    name: string;
-    first_name: string;
-    last_name: string;
-  };
-  users: {
-    id: string;
-    name: string;
-    first_name: string;
-    last_name: string;
-  };
-  metadata: {
-    hasTranscriptions: boolean;
-    hasSoapNotes: boolean;
-    hasGenerations: boolean;
-  };
-}
+// Import AppointmentData from the store to ensure consistency
+import { AppointmentData } from "@/store/use-case-store";
 
 export default function AppointmentsPage() {
   // State for appointments data
@@ -82,6 +58,7 @@ export default function AppointmentsPage() {
           dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
           timestamp: Date.now(), // Add timestamp to bust cache
         });
+        console.log(result);
 
         if (!isMounted) return;
 

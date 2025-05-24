@@ -91,7 +91,7 @@ export function DashboardSidebar({
             <PawPrint className="h-5 w-5 text-[#2a9d8f]" />
           </div>
           {(state === "expanded" || isMobile) && (
-            <h1 className="text-xl font-medium text-white">ClinicConnect</h1>
+            <h1 className="text-xl font-medium text-white">OdisAI</h1>
           )}
         </div>
       </SidebarHeader>

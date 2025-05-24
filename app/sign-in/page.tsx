@@ -1,4 +1,4 @@
-import { signIn } from "@/app/actions";
+import { signIn } from "@/app/actions/common/auth";
 import { GoogleLoginButton } from "@/components/social-login-buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

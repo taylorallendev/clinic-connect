@@ -12,7 +12,7 @@ import { AnimatedTestimonials } from "./components/landing/animated-testimonials
 const testimonials = [
   {
     quote:
-      "ClinicConnect has revolutionized our practice. We save hours each day on documentation, allowing us to focus on what matters most - our patients.",
+      "OdisAI has revolutionized our practice. We save hours each day on documentation, allowing us to focus on what matters most - our patients.",
     name: "Dr. Sarah Johnson",
     title: "Lakeside Veterinary Clinic",
     designation: "Veterinarian",
@@ -114,7 +114,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Stethoscope className="h-6 w-6 text-primary" />
             <span className="text-xl font-boldonese font-bold">
-              ClinicConnect
+              OdisAI
             </span>
           </div>
           <nav className="hidden md:flex gap-6">
@@ -164,10 +164,9 @@ export default function LandingPage() {
         <EnhancedHero />
 
         {/* Features Section */}
-        <section id="features" className="w-full">
+        {/* <section id="features" className="w-full">
           <FeatureSection />
 
-          {/* SOAP Notes Demo Section */}
           <div className="container px-4 md:px-6 py-12">
             <SectionHeading
               title="AI-Powered SOAP Notes"
@@ -177,7 +176,7 @@ export default function LandingPage() {
               <SoapNotesDemo />
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Benefits Section */}
         <section
@@ -187,7 +186,7 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6">
             <SectionHeading
               title="Transform Your Practice Workflow"
-              description="See how ClinicConnect can help you save time, reduce stress, and improve patient care."
+              description="See how OdisAI can help you save time, reduce stress, and improve patient care."
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
@@ -216,7 +215,7 @@ export default function LandingPage() {
               badge="Testimonials"
               badgeVariant="accent"
               title="Trusted by Veterinary Professionals"
-              description="Hear what veterinarians and practice managers have to say about ClinicConnect."
+              description="Hear what veterinarians and practice managers have to say about OdisAI."
             />
 
             <div className="mt-12">
@@ -238,24 +237,9 @@ export default function LandingPage() {
                 </h2>
                 <p className="max-w-[900px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Join hundreds of veterinary clinics already using
-                  ClinicConnect to streamline their workflow.
+                  OdisAI to streamline their workflow.
                 </p>
               </div>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Button size="lg" variant="secondary" className="px-8">
-                  Start Free Trial
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-primary-foreground px-8 hover:bg-primary-foreground hover:text-primary"
-                >
-                  Schedule Demo
-                </Button>
-              </div>
-              <p className="text-sm">
-                No credit card required. 14-day free trial.
-              </p>
             </div>
           </div>
         </section>
@@ -298,7 +282,7 @@ export default function LandingPage() {
                     Get in Touch
                   </h2>
                   <p className="text-muted-foreground">
-                    Have questions about ClinicConnect? Our team is here to
+                    Have questions about OdisAI? Our team is here to
                     help.
                   </p>
                 </div>
@@ -310,7 +294,7 @@ export default function LandingPage() {
                     <div>
                       <p className="font-medium">Email</p>
                       <p className="text-sm text-muted-foreground">
-                        info@clinicconnect.com
+                        info@odisai.com
                       </p>
                     </div>
                   </div>
@@ -395,7 +379,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Stethoscope className="h-5 w-5 text-primary" />
             <span className="text-lg font-boldonese font-bold">
-              ClinicConnect
+              OdisAI
             </span>
           </div>
           <nav className="flex gap-4 sm:gap-6">
@@ -419,7 +403,7 @@ export default function LandingPage() {
             </Link>
           </nav>
           <div className="text-xs text-muted-foreground">
-            &copy; {currentYear} ClinicConnect. All rights reserved.
+            &copy; {currentYear} OdisAI. All rights reserved.
           </div>
         </div>
       </footer>

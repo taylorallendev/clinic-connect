@@ -202,9 +202,10 @@ export async function getAppointments({
       console.error("Error getting count:", countError);
     }
 
-    // Map cases to appointments format
+    // Map cases to appointments format that is compatible with AppointmentData in use-case-store.tsx
     let appointments: Array<{
       id: string;
+      name: string;
       patientName: string;
       ownerName: string;
       type: string;
@@ -239,6 +240,7 @@ export async function getAppointments({
 
             return {
               id: caseItem.id,
+              name: patient?.name || "Unknown Patient", // Add name for AppointmentData compatibility
               patientName: patient?.name || "Unknown Patient",
               ownerName: patient?.owner_name || "Unknown Owner",
               type: caseItem.type || "checkup",
@@ -254,6 +256,30 @@ export async function getAppointments({
               hasGeneration: Boolean(
                 caseItem.generations && caseItem.generations.length > 0
               ),
+              // Also add patients and users structure for AppointmentData compatibility
+              patients: {
+                id: patient?.id || null,
+                name: patient?.name || "Unknown Patient",
+                first_name: patient?.name?.split(" ")[0] || "",
+                last_name: patient?.name?.split(" ").slice(1).join(" ") || ""
+              },
+              users: {
+                id: "doctor-id",
+                name: patient?.owner_name || "Unknown Owner",
+                first_name: patient?.owner_name?.split(" ")[0] || "",
+                last_name: patient?.owner_name?.split(" ").slice(1).join(" ") || ""
+              },
+              metadata: {
+                hasTranscriptions: Boolean(
+                  caseItem.transcriptions && caseItem.transcriptions.length > 0
+                ),
+                hasSoapNotes: Boolean(
+                  caseItem.soap_notes && caseItem.soap_notes.length > 0
+                ),
+                hasGenerations: Boolean(
+                  caseItem.generations && caseItem.generations.length > 0
+                )
+              }
             };
           } catch (error) {
             console.error("Error mapping case to appointment:", error);
