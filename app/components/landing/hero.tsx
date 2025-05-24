@@ -209,28 +209,12 @@ export function EnhancedHero() {
                     <span className="block">With AI</span>
                   </h1>
                   <p className="text-xl text-muted-foreground max-w-[600px] mb-8">
-                    OdisAI combines AI-powered appointment management,
-                    scribing, and note generation to save time and improve
-                    patient care.
+                    OdisAI combines AI-powered appointment management, scribing,
+                    and note generation to save time and improve patient care.
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
-            
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              animate="visible"
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="flex flex-wrap gap-4"
-            >
-              <Button size="lg" className="bg-primary hover:bg-primary/90">
-                Get Started
-              </Button>
-              <Button size="lg" variant="outline">
-                Schedule a Demo
-              </Button>
-            </motion.div>
           </div>
 
           {/* Right column - SOAP Notes Demo */}
@@ -503,21 +487,21 @@ export function EnhancedHero() {
             transition={{ duration: 0.7 }}
             className="relative z-10"
           >
-              <h3 className="text-xl md:text-2xl font-medium text-primary mb-6">
-                Support throughout the full appointment lifecycle
-              </h3>
-              <div className="flex flex-wrap justify-center gap-8 md:gap-12">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="h-12 w-28 bg-muted/50 rounded-md flex items-center justify-center"
-                    whileInView={{ y: [20, 0], opacity: [0, 1] }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.2 * i }}
-                  ></motion.div>
-                ))}
-              </div>
-            </motion.div>
+            <h3 className="text-xl md:text-2xl font-medium text-primary mb-6">
+              Support throughout the full appointment lifecycle
+            </h3>
+            <div className="flex flex-wrap justify-center gap-8 md:gap-12">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-12 w-28 bg-muted/50 rounded-md flex items-center justify-center"
+                  whileInView={{ y: [20, 0], opacity: [0, 1] }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 * i }}
+                ></motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

@@ -113,9 +113,7 @@ export default function LandingPage() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-6 w-6 text-primary" />
-            <span className="text-xl font-boldonese font-bold">
-              OdisAI
-            </span>
+            <span className="text-xl font-boldonese font-bold">OdisAI</span>
           </div>
           <nav className="hidden md:flex gap-6">
             <Link
@@ -145,17 +143,6 @@ export default function LandingPage() {
             </Link>
             */}
           </nav>
-          <div className="flex items-center gap-4">
-            <Link
-              href="#contact"
-              className="hidden md:inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              Contact Us
-            </Link>
-            <Link href="/app/dashboard">
-              <Button>Get Started</Button>
-            </Link>
-          </div>
         </div>
       </header>
 
@@ -236,8 +223,8 @@ export default function LandingPage() {
                   Ready to Transform Your Veterinary Practice?
                 </h2>
                 <p className="max-w-[900px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Join hundreds of veterinary clinics already using
-                  OdisAI to streamline their workflow.
+                  Join hundreds of veterinary clinics already using OdisAI to
+                  streamline their workflow.
                 </p>
               </div>
             </div>
@@ -282,8 +269,7 @@ export default function LandingPage() {
                     Get in Touch
                   </h2>
                   <p className="text-muted-foreground">
-                    Have questions about OdisAI? Our team is here to
-                    help.
+                    Have questions about OdisAI? Our team is here to help.
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -378,9 +364,7 @@ export default function LandingPage() {
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row px-4 md:px-6">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-5 w-5 text-primary" />
-            <span className="text-lg font-boldonese font-bold">
-              OdisAI
-            </span>
+            <span className="text-lg font-boldonese font-bold">OdisAI</span>
           </div>
           <nav className="flex gap-4 sm:gap-6">
             <Link
