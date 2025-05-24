@@ -216,6 +216,22 @@ export function EnhancedHero() {
                 </motion.div>
               )}
             </AnimatePresence>
+            
+            <motion.div
+              variants={fadeInUp}
+              initial="hidden"
+              animate="visible"
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex flex-wrap gap-4"
+            >
+              <Button size="lg" className="bg-primary hover:bg-primary/90">
+                Get Started
+              </Button>
+              <Button size="lg" variant="outline">
+                Schedule a Demo
+              </Button>
+            </motion.div>
+          </div>
 
           {/* Right column - SOAP Notes Demo */}
           <div className="relative">
@@ -507,3 +523,5 @@ export function EnhancedHero() {
     </div>
   );
 }
+
+export default EnhancedHero;
