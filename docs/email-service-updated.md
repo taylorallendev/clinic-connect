@@ -14,7 +14,7 @@ Add the following environment variables to your `.env.local` file:
 
 ```
 RESEND_API_KEY=your-resend-api-key
-RESEND_DEFAULT_FROM=no-reply@odisai.com
+RESEND_DEFAULT_FROM=no-reply@odisai.net
 ```
 
 ### Installation
@@ -40,7 +40,7 @@ import { simpleSendEmail } from "@/app/actions";
 
 // Inside a server action or API route
 await simpleSendEmail(
-  "recipient@odisai.com",
+  "recipient@odisai.net",
   "Email Subject",
   "<p>HTML email content</p>"
 );
@@ -55,7 +55,7 @@ import { sendEmailWithTemplate } from "@/app/actions";
 
 // Inside a server action or API route
 await sendEmailWithTemplate({
-  to: "recipient@odisai.com",
+  to: "recipient@odisai.net",
   templateId: "template-id-from-database",
   templateData: {
     userName: "John Doe",
@@ -74,14 +74,14 @@ import { sendWelcomeEmail, sendPasswordResetEmail } from "@/app/actions";
 
 // Send welcome email
 await sendWelcomeEmail({
-  to: "new-user@odisai.com",
+  to: "new-user@odisai.net",
   userName: "John Doe"
 });
 
 // Send password reset email
 await sendPasswordResetEmail({
-  to: "user@odisai.com",
-  resetLink: "https://app.odisai.com/reset-password?token=123456"
+  to: "user@odisai.net",
+  resetLink: "https://app.odisai.net/reset-password?token=123456"
 });
 ```
 

@@ -4,7 +4,7 @@
 
 export const EMAIL_CONFIG = {
   // Default sender email address (fallback if not specified in environment variables)
-  DEFAULT_FROM: process.env.RESEND_DEFAULT_FROM || 'no-reply@odisai.com',
+  DEFAULT_FROM: process.env.RESEND_DEFAULT_FROM || 'no-reply@odisai.net',
   
   // Common email templates
   TEMPLATES: {

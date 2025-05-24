@@ -668,7 +668,7 @@ export function CurrentCaseContent() {
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailTo, setEmailTo] = useState("");
-  const [emailFrom, setEmailFrom] = useState("no-reply@odisai.com");
+  const [emailFrom, setEmailFrom] = useState("no-reply@odisai.net");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // No longer needed as templates are loaded on component mount
@@ -676,7 +676,7 @@ export function CurrentCaseContent() {
   // Add email handling functions
   const handleEmailClick = () => {
     // Ensure the default email is set
-    setEmailFrom("no-reply@odisai.com");
+    setEmailFrom("no-reply@odisai.net");
     setShowEmailDialog(true);
   };
 

@@ -19,7 +19,7 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({ userName }) => {
       <p>
         If you need any assistance, please don't hesitate to contact our support team.
       </p>
-      <a href="https://app.odisai.com/dashboard" className="button">
+      <a href="https://app.odisai.net/dashboard" className="button">
         Go to Dashboard
       </a>
       <p>

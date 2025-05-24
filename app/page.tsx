@@ -294,7 +294,7 @@ export default function LandingPage() {
                     <div>
                       <p className="font-medium">Email</p>
                       <p className="text-sm text-muted-foreground">
-                        info@odisai.com
+                        info@odisai.net
                       </p>
                     </div>
                   </div>

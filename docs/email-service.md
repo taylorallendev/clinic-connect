@@ -40,7 +40,7 @@ import { simpleSendEmail } from "@/app/actions";
 
 // Inside a server action or API route
 await simpleSendEmail(
-  "recipient@odisai.com",
+  "recipient@odisai.net",
   "Email Subject",
   "<p>HTML email content</p>"
 );
@@ -55,7 +55,7 @@ import { sendEmailWithTemplate } from "@/app/actions";
 
 // Inside a server action or API route
 await sendEmailWithTemplate({
-  to: "recipient@odisai.com",
+  to: "recipient@odisai.net",
   templateId: "template-id-from-database",
   templateData: {
     userName: "John Doe",
