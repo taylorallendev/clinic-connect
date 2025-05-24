@@ -12,27 +12,31 @@ import { AnimatedTestimonials } from "./components/landing/animated-testimonials
 const testimonials = [
   {
     quote:
-      "OdisAI has revolutionized our practice. We save hours each day on documentation, allowing us to focus on what matters most - our patients.",
-    name: "Dr. Sarah Johnson",
-    title: "Lakeside Veterinary Clinic",
+      "Odis is different from the other AI scribes I've tried— the diagnosis suggestions actually show up during the appointment, so most of the time I don't even need to touch the note afterward. That's been the biggest game changer for me. It feels more like a tool that works with me instead of something I have to manage.",
+    name: "Dr. Deepti Pal",
     designation: "Veterinarian",
     src: "/images/testimonials/vet-1.jpg",
   },
   {
     quote:
-      "The AI-powered note generation is incredibly accurate. It captures all the important details from our appointments without us having to type a single word.",
-    name: "Dr. Michael Chen",
-    title: "Urban Pet Hospital",
-    designation: "Chief Veterinarian",
+      "What I've really loved is that I walk into the room already knowing what I need to. The pre-appointment summaries are short and to the point — behavior notes, allergies, that kind of thing. It saves me time and honestly helps me connect with clients.",
+    name: "Dr. Tais Perpetuo",
+    designation: "Veterinarian",
     src: "/images/testimonials/vet-2.jpg",
   },
   {
     quote:
-      "The pre-appointment summaries and differential diagnosis suggestions have transformed how we prepare for visits. We're more informed and efficient.",
-    name: "Lisa Rodriguez",
-    title: "Valley Vet Care",
+      "One of the things clients notice right away is how fast they get follow-up instructions now. Before, they'd wait hours or we'd have to call them way later. Now it's all automated, and I think it makes us look way more organized and responsive.",
+    name: "Jenn, Manager",
     designation: "Practice Manager",
     src: "/images/testimonials/vet-3.jpg",
+  },
+  {
+    quote:
+      "From my side of things — I'm at the front a lot — it's just taken so much off our plate. Discharge instructions used to be this whole process at the end of every appointment. Now it's basically automatic. Clients get a summary right away, and I can actually focus on helping the people in front of me.",
+    name: "Kayla, Receptionist",
+    designation: "Receptionist",
+    src: "/images/testimonials/vet-4.jpg",
   },
 ];
 
