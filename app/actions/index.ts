@@ -46,7 +46,7 @@ import {
 
 import {
   simpleSendEmail as emailSimpleSendEmail,
-} from "./email/service";
+} from "./email/service.ts";
 
 import {
   sendEmailWithTemplate as emailSendWithTemplate,

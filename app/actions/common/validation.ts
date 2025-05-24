@@ -1,5 +1,3 @@
-"use server";
-
 /**
  * Common validation schemas and utilities for server actions
  */
