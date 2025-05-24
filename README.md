@@ -102,7 +102,7 @@ Please file feedback and issues over on the [Supabase GitHub org](https://github
 The project follows a domain-driven design approach with a well-organized directory structure:
 
 ```
-clinic-connect/
+odisai/
 ├── app/                      # Next.js app directory
 │   ├── actions/              # Server actions by domain
 │   │   ├── common/           # Shared utilities

@@ -1,10 +1,10 @@
 # Email Service Documentation
 
-This document outlines the email service integration using Resend in the Clinic Connect application.
+This document outlines the email service integration using Resend in the OdisAI application.
 
 ## Overview
 
-Clinic Connect uses [Resend](https://resend.com) as its email service provider. Resend provides a modern, developer-friendly API for sending transactional emails with high deliverability.
+OdisAI uses [Resend](https://resend.com) as its email service provider. Resend provides a modern, developer-friendly API for sending transactional emails with high deliverability.
 
 ## Setup and Configuration
 
@@ -14,7 +14,7 @@ Add the following environment variables to your `.env.local` file:
 
 ```
 RESEND_API_KEY=your-resend-api-key
-RESEND_DEFAULT_FROM=no-reply@your-domain.com
+RESEND_DEFAULT_FROM=no-reply@odisai.com
 ```
 
 ### Installation
@@ -40,7 +40,7 @@ import { simpleSendEmail } from "@/app/actions";
 
 // Inside a server action or API route
 await simpleSendEmail(
-  "recipient@example.com",
+  "recipient@odisai.com",
   "Email Subject",
   "<p>HTML email content</p>"
 );
@@ -55,7 +55,7 @@ import { sendEmailWithTemplate } from "@/app/actions";
 
 // Inside a server action or API route
 await sendEmailWithTemplate({
-  to: "recipient@example.com",
+  to: "recipient@odisai.com",
   templateId: "template-id-from-database",
   templateData: {
     userName: "John Doe",
