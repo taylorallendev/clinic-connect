@@ -21,16 +21,16 @@ export function FeatureSection() {
     },
     {
       icon: Calendar,
-      title: "Smart Scheduling",
+      title: "Pre-Appointment Summary",
       description:
-        "Optimize your calendar with AI that reduces no-shows and intelligently manages appointment times.",
+        "Delivers targeted patient summaries with behavioral patterns, health trends, and key insights to prepare veterinarians before entering the exam room.",
       className: "aspect-square",
     },
     {
       icon: MessageSquare,
-      title: "Client Communication",
+      title: "Automated Phone Call Agent",
       description:
-        "Automated reminders and follow-ups keep clients informed and engaged, improving satisfaction and retention.",
+        "AI voice agent delivers discharge summaries to clients' voicemail after appointments in a natural, conversational tone, enhancing follow-up care.",
       className: "aspect-square",
     },
     {
@@ -49,9 +49,9 @@ export function FeatureSection() {
     },
     {
       icon: BarChart,
-      title: "Practice Analytics",
+      title: "Differential Diagnosis Suggestions",
       description:
-        "Gain insights into your practice performance with detailed analytics and reporting on patient care and business metrics.",
+        "Real-time AI-powered diagnostic suggestions that update during the exam itself, with differentials automatically added to your generated documentation.",
       className: "aspect-square",
     },
     {

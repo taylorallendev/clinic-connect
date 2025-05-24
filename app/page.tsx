@@ -28,7 +28,7 @@ const testimonials = [
   },
   {
     quote:
-      "Our scheduling efficiency has improved dramatically. No more double-bookings or long wait times. Our clients and staff are much happier.",
+      "The pre-appointment summaries and differential diagnosis suggestions have transformed how we prepare for visits. We're more informed and efficient.",
     name: "Lisa Rodriguez",
     title: "Valley Vet Care",
     designation: "Practice Manager",
@@ -88,19 +88,19 @@ const benefits = [
     icon: Clock,
     title: "Save Time",
     description:
-      "Reduce documentation time by up to 85% with AI-powered note generation and automated appointment scheduling.",
+      "Reduce documentation time with AI-powered note generation and pre-appointment summaries to streamline your workflow.",
   },
   {
     icon: BarChart,
-    title: "Increase Revenue",
+    title: "Improve Clinical Decisions",
     description:
-      "See more patients and improve billing accuracy, leading to increased practice revenue and growth.",
+      "Get AI-powered differential diagnosis suggestions to support your clinical reasoning and improve patient outcomes.",
   },
   {
     icon: PawPrint,
-    title: "Improve Patient Care",
+    title: "Enhance Patient Care",
     description:
-      "Focus more on your patients and less on paperwork, leading to better care and higher satisfaction.",
+      "Focus more on your patients and less on paperwork, with comprehensive support throughout the appointment lifecycle.",
   },
 ];
 
