@@ -121,12 +121,6 @@ export default function LandingPage() {
           </div>
           <nav className="hidden md:flex gap-6">
             <Link
-              href="#features"
-              className="text-sm font-medium hover:text-primary"
-            >
-              Features
-            </Link>
-            <Link
               href="#benefits"
               className="text-sm font-medium hover:text-primary"
             >
@@ -227,8 +221,8 @@ export default function LandingPage() {
                   Ready to Transform Your Veterinary Practice?
                 </h2>
                 <p className="max-w-[900px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Join hundreds of veterinary clinics already using OdisAI to
-                  streamline their workflow.
+                  Join veterinary clinics already using OdisAI to streamline
+                  their workflow.
                 </p>
               </div>
             </div>
