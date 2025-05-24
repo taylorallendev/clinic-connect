@@ -209,41 +209,13 @@ export function EnhancedHero() {
                     <span className="block">With AI</span>
                   </h1>
                   <p className="text-xl text-muted-foreground max-w-[600px] mb-8">
-                    ClinicConnect combines AI-powered scribing, differential diagnosis,
-                    and note generation to save time and improve
+                    OdisAI combines AI-powered appointment management,
+                    scribing, and note generation to save time and improve
                     patient care.
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <AnimatePresence>
-              {isVisible && (
-                <motion.div
-                  variants={fadeInUp}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="flex flex-col sm:flex-row gap-4"
-                >
-                  <Button size="lg" className="px-8 py-6 text-base rounded-xl">
-                    Start Free Trial
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="px-8 py-6 text-base rounded-xl"
-                  >
-                    Book a Demo
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Free trial info removed as requested */}
-
-            {/* Stats circles removed as requested */}
-          </div>
 
           {/* Right column - SOAP Notes Demo */}
           <div className="relative">

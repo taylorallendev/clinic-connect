@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { SoapResponse, useCaseStore } from "@/store/use-case-store";
-import { createCase, generateSoapNotes } from "./actions";
+import { createCase, generateSoapNotes } from "@/app/actions";
 
 // Case form schema
 export const caseFormSchema = z.object({

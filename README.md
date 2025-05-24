@@ -97,6 +97,84 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
 Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
 
+## Project Structure
+
+The project follows a domain-driven design approach with a well-organized directory structure:
+
+```
+clinic-connect/
+├── app/                      # Next.js app directory
+│   ├── actions/              # Server actions by domain
+│   │   ├── common/           # Shared utilities
+│   │   │   ├── auth.ts       # Authentication actions
+│   │   │   └── validation.ts # Validation schemas and types
+│   │   ├── cases/            # Case management
+│   │   │   └── actions.ts
+│   │   ├── appointments/     # Appointment management
+│   │   │   └── actions.ts
+│   │   ├── generations/      # AI content generation
+│   │   │   └── actions.ts
+│   │   ├── soap-notes/       # SOAP notes management
+│   │   │   └── actions.ts
+│   │   ├── transcriptions/   # Transcriptions management
+│   │   │   └── actions.ts
+│   │   ├── templates/        # Template management
+│   │   │   └── actions.ts
+│   │   └── index.ts          # Re-exports all actions
+│   ├── api/                  # API routes
+│   │   └── ...
+│   ├── app/                  # App router pages
+│   │   ├── dashboard/        # Dashboard pages and components
+│   │   │   ├── current-case/ # Case management UI
+│   │   │   ├── appointments/ # Appointments UI
+│   │   │   └── ...
+│   │   └── ...
+│   └── ...
+├── components/               # Shared UI components
+│   ├── ui/                   # UI component library (shadcn/ui)
+│   └── ...
+├── context/                  # React context providers
+├── hooks/                    # Custom React hooks
+├── store/                    # Client-side state management
+├── supabase/                 # Supabase schema and migrations
+├── types/                    # TypeScript type definitions
+└── utils/                    # Utility functions
+    └── supabase/             # Supabase client utilities
+```
+
+### Server Actions Structure
+
+We've organized server actions by domain to improve maintainability and separation of concerns:
+
+1. **Authentication (`/app/actions/common/auth.ts`)**
+   - `signIn` - Handle user sign-in
+   - `signUp` - Register new users
+   - `signOut` - Log users out
+   - `resetPassword` - Send password reset emails
+   - `updatePassword` - Update user passwords
+   - `getCurrentUserId` - Get the current authenticated user
+
+2. **Case Management (`/app/actions/cases/actions.ts`)**
+   - `createCase` - Create new medical cases
+   - `updateCase` - Update case information
+   - `getCase` - Retrieve case data
+   - `saveActionsToCase` - Save case actions (recordings, notes)
+
+3. **Appointments (`/app/actions/appointments/actions.ts`)**
+   - `getAppointments` - List and filter appointments
+   - `getAppointmentById` - Get detailed appointment info
+   - `getUpcomingAppointments` - Get upcoming appointments
+   - `debugListAllCases` - Debug utility for troubleshooting
+
+4. **Content Generation (`/app/actions/generations/actions.ts`)**
+   - `generateContentFromTemplate` - Generate AI content from templates and transcriptions
+
+All actions are re-exported from the `/app/actions/index.ts` file for backward compatibility, allowing imports like:
+
+```typescript
+import { createCase, getCase } from "@/app/actions";
+```
+
 ## More Supabase examples
 
 - [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)

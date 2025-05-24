@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { SOCKET_STATES } from "@/context/DeepgramContextProvider";
 import { MicrophoneState } from "@/context/MicrophoneContextProvider";
-import { saveActionsToCase as saveActionsToCaseAction } from "@/app/app/dashboard/current-case/actions";
+import { saveActionsToCase as saveActionsToCaseAction } from "@/app/actions";
 
 export interface SoapResponse {
   subjective: string;
@@ -33,7 +33,7 @@ export interface AppointmentData {
   type: string;
   status: string;
   patients: {
-    id: string;
+    id: string | null;
     name: string;
     first_name: string;
     last_name: string;
@@ -44,7 +44,13 @@ export interface AppointmentData {
     first_name: string;
     last_name: string;
   };
+  metadata?: {
+    hasTranscriptions: boolean;
+    hasSoapNotes: boolean;
+    hasGenerations: boolean;
+  };
   case_actions?: CaseAction[];
+  rawData?: any;
 }
 
 interface CaseState {
@@ -55,7 +61,7 @@ interface CaseState {
   transcriptText: string;
   microphoneState: MicrophoneState;
   connectionState: SOCKET_STATES;
-  selectedRecordings: string[]; // Array of selected recording IDs
+  selectedRecordings: string[];
   currentCaseId: string | null;
   loadedAppointment: AppointmentData | null;
 
@@ -70,7 +76,7 @@ interface CaseState {
   setConnectionState: (state: SOCKET_STATES) => void;
   handleRecordingFinished: () => void;
   reset: () => void;
-  saveActionsToCase: (caseId: number) => Promise<boolean>;
+  saveActionsToCase: (caseId: number | string) => Promise<boolean>;
   toggleRecordingSelection: (actionId: string) => void;
   clearSelectedRecordings: () => void;
   setCurrentCaseId: (id: string | null) => void;
@@ -173,22 +179,33 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       connectionState: SOCKET_STATES.closed,
       selectedRecordings: [],
       currentCaseId: null,
+      loadedAppointment: null,
     }),
 
-  // Updated function to use the server action
-  saveActionsToCase: async (caseId: number) => {
+  // Updated function to use the server action and handle string IDs
+  saveActionsToCase: async (caseId) => {
     const { caseActions } = get();
 
     if (caseActions.length === 0) return true;
 
     try {
-      const result = await saveActionsToCaseAction(caseId, caseActions);
+      // Convert string ID to number if needed
+      const numericCaseId =
+        typeof caseId === "string" ? parseInt(caseId, 10) : caseId;
+
+      // Check if conversion was successful
+      if (isNaN(numericCaseId)) {
+        console.error("Invalid case ID format:", caseId);
+        return false;
+      }
+
+      const result = await saveActionsToCaseAction(numericCaseId, caseActions);
 
       if (result.success) {
         console.log("Successfully saved all case actions");
         return true;
       } else {
-        // console.error("Failed to save case actions:", result.error);
+        console.error("Failed to save case actions:", result.error);
         return false;
       }
     } catch (error) {
@@ -198,14 +215,16 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   },
 
   setCurrentCaseId: (id) => set({ currentCaseId: id }),
-  
+
   // Load appointment data into the store
   loadAppointmentData: (appointment) => {
     set({
       currentCaseId: appointment.id,
       loadedAppointment: appointment,
-      // Initialize case actions from the appointment's case_actions
+      // Initialize case actions from the appointment's case_actions or empty array
       caseActions: appointment.case_actions || [],
     });
+
+    console.log("Loaded appointment data into store:", appointment);
   },
 }));

@@ -1,16 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AppointmentsTable } from "./appointments-table";
-import { AppointmentSidebar } from "./appointment-sidebar";
+import { format } from "date-fns";
+import { Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pagination } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Search, Calendar, RefreshCw } from "lucide-react";
-import { format } from "date-fns";
-import { AppointmentData } from "@/store/use-case-store";
-import { DatePickerDemo } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -18,138 +13,74 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePickerDemo } from "@/components/ui/date-picker";
+import { AppointmentsTable } from "./appointments-table";
+import { AppointmentSidebar } from "./appointment-sidebar";
+import { getAppointments, debugListAllCases } from "@/app/actions";
+
+// Import AppointmentData from the store to ensure consistency
+import { AppointmentData } from "@/store/use-case-store";
 
 export default function AppointmentsPage() {
+  // State for appointments data
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedAppointment, setSelectedAppointment] =
     useState<AppointmentData | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // State for filters
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
-  const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 10;
 
-  // Fetch appointments
+  // Fetch appointments when filters or pagination changes
   useEffect(() => {
-    let isMounted = true; // For preventing state updates after unmount
+    let isMounted = true;
 
     async function fetchAppointments() {
-      if (!isMounted) return;
-
-      setLoading(true);
       try {
-        console.log("Main Page: Fetching appointments with params:", {
+        setLoading(true);
+        console.log("Fetching appointments with filters:", {
           page,
-          pageSize,
           searchQuery,
           dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
           statusFilter,
         });
 
-        // Log state for debugging
-        console.log("Current appointments state:", {
-          currentAppointments: appointments.length,
-          loadingState: loading,
+        // Use the server action directly instead of the API route
+        const result = await getAppointments({
+          page,
+          pageSize,
+          searchQuery: searchQuery ? searchQuery.trim() : "",
+          dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
+          timestamp: Date.now(), // Add timestamp to bust cache
         });
-
-        // Create a unique timestamp for cache busting
-        const fetchTimestamp = Date.now();
-
-        const response = await fetch("/api/appointments", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            page,
-            pageSize,
-            searchQuery: searchQuery ? searchQuery.trim() : "",
-            dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
-            statusFilter: statusFilter ? statusFilter.trim() : "",
-            timestamp: fetchTimestamp,
-          }),
-        });
-
-        if (!response.ok) {
-          try {
-            const errorText = await response.text();
-            console.error("API error response:", errorText);
-
-            // Try parsing the error text as JSON (if it's a structured error)
-            try {
-              const errorJson = JSON.parse(errorText);
-              if (errorJson.error) {
-                console.error("Structured error from API:", errorJson.error);
-
-                // Check for specific error types and handle them
-                if (errorJson.error.includes("enum case_status")) {
-                  console.error(
-                    "Status enum error - the status filter value is not valid in the database"
-                  );
-                  // Reset status filter since it's causing errors
-                  if (isMounted) {
-                    setStatusFilter("");
-                  }
-                }
-
-                if (errorJson.error.includes("dateTime")) {
-                  console.error(
-                    "Date filter error - there might be an issue with the dateTime column"
-                  );
-                  // Reset date filter since it's causing errors
-                  if (isMounted) {
-                    setDateFilter(null);
-                  }
-                }
-              }
-            } catch (jsonError) {
-              // If error text is not JSON, just log the raw text
-              console.error("Raw API error (not JSON):", errorText);
-            }
-          } catch (parseError) {
-            // If we can't even get the error text
-            console.error("Failed to parse error response:", parseError);
-          }
-
-          // Set empty appointments instead of throwing
-          if (isMounted) {
-            setAppointments([]);
-            setTotalCount(0);
-          }
-          return;
-        }
-
-        const data = await response.json();
-        console.log("Received appointments data:", data);
-
-        if (data.debug) {
-          console.log("API debug info:", data.debug);
-        }
+        console.log(result);
 
         if (!isMounted) return;
 
-        if (data.error) {
-          console.error("API returned error:", data.error);
-          setAppointments([]);
-          setTotalCount(0);
-        } else if (Array.isArray(data.appointments)) {
+        if (result.appointments) {
           console.log(
-            `Setting ${data.appointments.length} appointments with totalCount=${data.totalCount}`
+            `Setting ${result.appointments.length} appointments with totalCount=${result.totalCount}`
           );
 
           // Check if we have any appointments with actual data
-          if (data.appointments.length > 0) {
-            console.log("First appointment sample:", data.appointments[0]);
+          if (result.appointments.length > 0) {
+            console.log("First appointment sample:", result.appointments[0]);
           } else {
-            console.log("No appointments were returned from the API");
+            console.log("No appointments were returned from the server action");
           }
 
-          setAppointments(data.appointments);
-          setTotalCount(data.totalCount || 0);
+          setAppointments(result.appointments);
+          setTotalCount(result.totalCount || 0);
         } else {
-          console.error("API did not return appointments array:", data);
+          console.error(
+            "Server action did not return appointments array:",
+            result
+          );
           setAppointments([]);
           setTotalCount(0);
         }
@@ -172,7 +103,7 @@ export default function AppointmentsPage() {
     return () => {
       isMounted = false;
     };
-  }, [page, searchQuery, dateFilter, statusFilter]);
+  }, [page, searchQuery, dateFilter, statusFilter, pageSize]);
 
   // Handle appointment selection
   const handleSelectAppointment = (appointment: AppointmentData) => {
@@ -193,12 +124,9 @@ export default function AppointmentsPage() {
     e.preventDefault();
     console.log("Manual search triggered with:", searchQuery);
     setPage(0); // Reset to first page when searching
-
-    // Fetch with current filters
-    fetchAppointmentsDirectly();
   };
 
-  // A direct fetch function that bypasses child components
+  // A direct fetch function that uses server actions
   const fetchAppointmentsDirectly = async () => {
     console.log("Direct fetch with filters:", {
       searchQuery,
@@ -208,35 +136,43 @@ export default function AppointmentsPage() {
 
     setLoading(true);
     try {
-      const response = await fetch("/api/appointments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          page,
-          pageSize,
-          searchQuery: searchQuery ? searchQuery.trim() : "",
-          dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
-          statusFilter: statusFilter ? statusFilter.trim() : "",
-          timestamp: Date.now(),
-        }),
+      // Use the server action directly
+      const result = await getAppointments({
+        page,
+        pageSize,
+        searchQuery: searchQuery ? searchQuery.trim() : "",
+        dateFilter: dateFilter ? format(dateFilter, "yyyy-MM-dd") : "",
+        timestamp: Date.now(), // Add timestamp to bust cache
+        forceRefresh: true, // Force a fresh fetch
       });
 
-      const data = await response.json();
-      if (Array.isArray(data.appointments)) {
+      if (result.appointments) {
         console.log(
-          `Direct fetch returned ${data.appointments.length} appointments`
+          `Direct fetch returned ${result.appointments.length} appointments`
         );
-        setAppointments(data.appointments);
-        setTotalCount(data.totalCount || 0);
+        setAppointments(result.appointments);
+        setTotalCount(result.totalCount || 0);
       } else {
-        console.error("Direct fetch did not return appointments array:", data);
+        console.error(
+          "Direct fetch did not return appointments array:",
+          result
+        );
       }
     } catch (error) {
       console.error("Error in direct fetch:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Debug function to check database state
+  const debugDatabase = async () => {
+    console.log("Debugging database state...");
+    try {
+      const cases = await debugListAllCases();
+      console.log("Database debug results:", cases);
+    } catch (error) {
+      console.error("Error debugging database:", error);
     }
   };
 
@@ -267,6 +203,14 @@ export default function AppointmentsPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-foreground">Appointments</h1>
+        <Button
+          onClick={debugDatabase}
+          variant="outline"
+          size="sm"
+          className="text-xs"
+        >
+          Debug DB
+        </Button>
       </div>
 
       {/* Add filter controls section */}
@@ -283,8 +227,8 @@ export default function AppointmentsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="default"
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
@@ -328,7 +272,6 @@ export default function AppointmentsPage() {
               <SelectItem value="ongoing">Ongoing</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="reviewed">Reviewed</SelectItem>
-              <SelectItem value="exported">Exported</SelectItem>
             </SelectContent>
           </Select>
           {statusFilter && (
@@ -440,27 +383,19 @@ export default function AppointmentsPage() {
                       setStatusFilter("");
                       setPage(0);
 
-                      // Directly fetch without any filters
-                      // Don't wait for React state to update - use direct values
+                      // Use server action directly
                       setLoading(true);
-                      fetch("/api/appointments", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          page: 0,
-                          pageSize,
-                          searchQuery: "",
-                          dateFilter: "",
-                          statusFilter: "",
-                          timestamp: Date.now(),
-                        }),
+                      getAppointments({
+                        page: 0,
+                        pageSize,
+                        searchQuery: "",
+                        dateFilter: "",
+                        timestamp: Date.now(),
+                        forceRefresh: true,
                       })
-                        .then((response) => response.json())
                         .then((data) => {
                           console.log("Direct clear filters response:", data);
-                          if (Array.isArray(data.appointments)) {
+                          if (data.appointments) {
                             setAppointments(data.appointments);
                             setTotalCount(data.totalCount || 0);
                           }

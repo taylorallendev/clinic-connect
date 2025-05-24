@@ -1,13 +1,17 @@
 import { DashboardSidebar } from "./components/dashboard-sidebar";
 import {
-  getUserMetadata,
-  UserData as ClerkUserData,
-} from "@/utils/clerk/server";
-import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { createClient } from "@/utils/supabase/server";
+
+// Define a type for Supabase user data
+interface UserData {
+  id: string;
+  email: string;
+  user_metadata: Record<string, any>;
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -16,15 +20,21 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
-  let user: ClerkUserData | null = null;
+  let user: UserData | null = null;
 
   try {
-    const userData = await getUserMetadata();
-    user = {
-      id: userData.id,
-      email: userData.email || "",
-      user_metadata: userData.user_metadata,
-    };
+    const supabase = await createClient();
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser();
+
+    if (supabaseUser) {
+      user = {
+        id: supabaseUser.id,
+        email: supabaseUser.email || "",
+        user_metadata: supabaseUser.user_metadata || {},
+      };
+    }
   } catch (error) {
     // Handle authentication error
     console.error("Authentication error:", error);

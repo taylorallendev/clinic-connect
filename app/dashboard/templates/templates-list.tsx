@@ -11,7 +11,7 @@ import {
   Template,
   deleteTemplate,
   updateTemplate,
-} from "../../app/dashboard/template-actions";
+} from "@/app/actions";
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -42,10 +42,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
+// Define template form schema aligned with database types
 const templateFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  type: z.enum(["soap", "summary", "email", "structured"]),
-  content: z.string().min(1, "Content is required"),
+  type: z.enum(["soap", "summary", "email", "structured"]), // Consider using Constants if template types become an enum in DB
+  content: z.string(),
+  prompt: z.string().min(1, "Prompt is required"),
+  model: z.string().default("gpt-4"),
 });
 
 function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
@@ -56,6 +59,8 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
       name: "",
       type: "soap",
       content: "",
+      prompt: "",
+      model: "gpt-4",
     },
   });
 
@@ -142,6 +147,40 @@ function CreateTemplateDialog({ onSuccess }: { onSuccess: () => void }) {
                       {...field}
                       className="bg-muted/20 border-input"
                       placeholder="Template content"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="prompt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prompt</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="bg-muted/20 border-input"
+                      placeholder="Template prompt"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="model"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Model</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="bg-muted/20 border-input"
+                      placeholder="Template model"
                     />
                   </FormControl>
                   <FormMessage />
@@ -260,9 +299,11 @@ function EditTemplateDialog({
   const form = useForm<z.infer<typeof templateFormSchema>>({
     resolver: zodResolver(templateFormSchema),
     defaultValues: {
-      name: template.name,
+      name: template.name || "",
       type: template.type as any,
-      content: template.content,
+      content: template.content || "",
+      prompt: template.prompt || "",
+      model: template.model || "gpt-4",
     },
   });
 
@@ -349,6 +390,40 @@ function EditTemplateDialog({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="prompt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prompt</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="bg-muted/20 border-input"
+                      placeholder="Template prompt"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="model"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Model</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="bg-muted/20 border-input"
+                      placeholder="Template model"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -370,7 +445,7 @@ export function TemplatesList() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteTemplateId, setDeleteTemplateId] = useState<number | null>(null);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -398,15 +473,19 @@ export function TemplatesList() {
     if (searchTerm.trim() !== "") {
       filtered = filtered.filter(
         (template) =>
-          template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          template.content.toLowerCase().includes(searchTerm.toLowerCase())
+          (template.name?.toLowerCase() || "").includes(
+            searchTerm.toLowerCase()
+          ) ||
+          (template.content?.toLowerCase() || "").includes(
+            searchTerm.toLowerCase()
+          )
       );
     }
 
     setFilteredTemplates(filtered);
   }, [searchTerm, typeFilter, templates]);
 
-  async function handleDeleteTemplate(id: number) {
+  async function handleDeleteTemplate(id: string) {
     setIsDeleting(true);
     setDeleteTemplateId(id);
 
@@ -494,7 +573,7 @@ export function TemplatesList() {
                       : "bg-warning/20 text-warning hover:bg-warning/30"
                 }
               >
-                {template.type.toUpperCase()}
+                {(template.type || "unknown").toUpperCase()}
               </Badge>
             </CardHeader>
             <CardContent>
@@ -503,7 +582,8 @@ export function TemplatesList() {
               </p>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
-                  Created: {new Date(template.createdAt).toLocaleDateString()}
+                  Created:{" "}
+                  {new Date(template.created_at ?? Date()).toLocaleDateString()}
                 </p>
                 <div className="flex gap-2">
                   <Button

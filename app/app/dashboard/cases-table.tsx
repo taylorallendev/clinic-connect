@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileText, MoreHorizontal, Download } from "lucide-react";
-import { Case } from "./actions";
+import { Case } from "@/app/actions";
 
 interface CasesTableProps {
   cases: Case[];

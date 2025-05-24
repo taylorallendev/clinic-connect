@@ -70,7 +70,7 @@ export function FeatureSection() {
           <SectionHeading
             badge="AI-Powered Platform"
             title="Revolutionize Your Veterinary Practice"
-            description="Managing a veterinary practice is already demanding. ClinicConnect's AI tools help you focus on what matters most - your patients."
+            description="Managing a veterinary practice is already demanding. OdisAI's AI tools help you focus on what matters most - your patients."
             align="left"
             badgeVariant="primary"
           />

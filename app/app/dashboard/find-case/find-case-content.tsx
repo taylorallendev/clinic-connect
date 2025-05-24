@@ -48,7 +48,7 @@ import {
   CaseStatus,
   CaseType,
   PaginationMeta,
-} from "./actions";
+} from "@/app/actions";
 
 // Status badge component with color coding
 function StatusBadge({ status }: { status: CaseStatus }) {

@@ -17,7 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import { DropResult } from "react-beautiful-dnd";
-import { getUpcomingAppointments } from "./actions";
+import { getUpcomingAppointments } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
