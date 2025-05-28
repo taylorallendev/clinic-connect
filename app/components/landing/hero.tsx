@@ -179,11 +179,11 @@ export function EnhancedHero() {
   };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-background to-muted pt-20 pb-32 md:pt-32 md:pb-40 lg:pt-40 lg:pb-48">
+    <div className="relative overflow-hidden bg-gradient-to-b from-background to-muted pt-20 pb-8 md:pt-32 md:pb-10 lg:pt-40 lg:pb-12">
       {/* Background decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-primary/5 blur-3xl"></div>
-        <div className="absolute bottom-1/3 left-1/3 w-96 h-96 rounded-full bg-accent/5 blur-3xl"></div>
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-teal-400/10 blur-3xl"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-96 h-96 rounded-full bg-sky-400/10 blur-3xl"></div>
       </div>
 
       <div className="container relative px-4 md:px-6">
@@ -198,12 +198,12 @@ export function EnhancedHero() {
                   animate="visible"
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <Badge className="mb-4 px-3 py-1 text-sm bg-primary hover:bg-primary/80">
+                  <Badge className="mb-4 px-3 py-1 text-sm bg-teal-500 hover:bg-teal-400">
                     AI-Powered Veterinary Platform
                   </Badge>
                   <h1 className="font-boldonese font-black text-4xl md:text-5xl lg:text-6xl xl:text-7xl tracking-tight leading-tight text-foreground mb-6">
                     <span className="block">Transform Your</span>
-                    <span className="block text-primary">
+                    <span className="block text-teal-500">
                       Veterinary Practice
                     </span>
                     <span className="block">With AI</span>
@@ -230,9 +230,9 @@ export function EnhancedHero() {
                   <div className="p-4 border-b border-border bg-muted/20">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary" />
+                        <FileText className="h-5 w-5 text-teal-500" />
                         <h3 className="font-medium">SOAP Notes</h3>
-                        <Badge className="bg-green-700/50 text-green-100 border-0 text-xs">
+                        <Badge className="bg-sky-500/50 text-sky-100 border-0 text-xs">
                           AI Generated
                         </Badge>
                       </div>
@@ -487,20 +487,9 @@ export function EnhancedHero() {
             transition={{ duration: 0.7 }}
             className="relative z-10"
           >
-            <h3 className="text-xl md:text-2xl font-medium text-primary mb-6">
+            <h3 className="text-xl md:text-2xl font-medium text-teal-500 mb-6">
               Support throughout the full appointment lifecycle
             </h3>
-            <div className="flex flex-wrap justify-center gap-8 md:gap-12">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <motion.div
-                  key={i}
-                  className="h-12 w-28 bg-muted/50 rounded-md flex items-center justify-center"
-                  whileInView={{ y: [20, 0], opacity: [0, 1] }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 * i }}
-                ></motion.div>
-              ))}
-            </div>
           </motion.div>
         </div>
       </div>
