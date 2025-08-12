@@ -32,6 +32,9 @@ export interface AppointmentData {
   time: string;
   type: string;
   status: string;
+  // Legacy fields for backward compatibility
+  patientName?: string;
+  ownerName?: string;
   patients: {
     id: string | null;
     name: string;
@@ -49,8 +52,27 @@ export interface AppointmentData {
     hasSoapNotes: boolean;
     hasGenerations: boolean;
   };
-  case_actions?: CaseAction[];
-  rawData?: any;
+  rawData?: {
+    transcriptions?: Array<{
+      id: string;
+      transcript: string | null;
+      created_at: string;
+    }>;
+    soap_notes?: Array<{
+      id: string;
+      subjective: string | null;
+      objective: string | null;
+      assessment: string | null;
+      plan: string | null;
+      created_at: string;
+    }>;
+    generations?: Array<{
+      id: string;
+      prompt: string | null;
+      content: string | null;
+      created_at: string;
+    }>;
+  };
 }
 
 interface CaseState {
@@ -182,24 +204,15 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       loadedAppointment: null,
     }),
 
-  // Updated function to use the server action and handle string IDs
+  // Updated function to use the server action with string IDs (no conversion needed)
   saveActionsToCase: async (caseId) => {
     const { caseActions } = get();
 
     if (caseActions.length === 0) return true;
 
     try {
-      // Convert string ID to number if needed
-      const numericCaseId =
-        typeof caseId === "string" ? parseInt(caseId, 10) : caseId;
-
-      // Check if conversion was successful
-      if (isNaN(numericCaseId)) {
-        console.error("Invalid case ID format:", caseId);
-        return false;
-      }
-
-      const result = await saveActionsToCaseAction(numericCaseId, caseActions);
+      // Use the caseId directly as string (new schema uses UUID strings)
+      const result = await saveActionsToCaseAction(caseId.toString(), caseActions);
 
       if (result.success) {
         console.log("Successfully saved all case actions");
@@ -216,15 +229,104 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
   setCurrentCaseId: (id) => set({ currentCaseId: id }),
 
-  // Load appointment data into the store
+  // Load appointment data into the store - updated for normalized schema
   loadAppointmentData: (appointment) => {
+    const caseActions: CaseAction[] = [];
+
+    // Convert normalized data to CaseAction format if rawData exists
+    if (appointment.rawData) {
+      // Convert transcriptions to recording actions
+      if (appointment.rawData.transcriptions) {
+        appointment.rawData.transcriptions.forEach((transcription: any) => {
+          caseActions.push({
+            id: transcription.id,
+            type: "recording",
+            content: {
+              transcript: transcription.transcript || "",
+            },
+            timestamp: new Date(transcription.created_at).getTime(),
+          });
+        });
+      }
+
+      // Convert soap_notes to soap actions
+      if (appointment.rawData.soap_notes) {
+        appointment.rawData.soap_notes.forEach((soapNote: any) => {
+          caseActions.push({
+            id: soapNote.id,
+            type: "soap",
+            content: {
+              transcript: "", // SOAP notes might not have associated transcript
+              soap: {
+                subjective: soapNote.subjective || "",
+                objective: soapNote.objective || "",
+                assessment: soapNote.assessment || "",
+                plan: soapNote.plan || "",
+              },
+            },
+            timestamp: new Date(soapNote.created_at).getTime(),
+          });
+        });
+      }
+
+      // Convert generations to soap actions (generations are typically SOAP-like content)
+      if (appointment.rawData.generations) {
+        appointment.rawData.generations.forEach((generation: any) => {
+          // Try to parse the content if it's JSON
+          let soapContent;
+          try {
+            const parsed = JSON.parse(generation.content || "{}");
+            if (parsed.subjective || parsed.objective || parsed.assessment || parsed.plan) {
+              soapContent = {
+                subjective: parsed.subjective || "",
+                objective: parsed.objective || "",
+                assessment: parsed.assessment || "",
+                plan: parsed.plan || "",
+              };
+            } else {
+              // If not SOAP format, put content in plan field
+              soapContent = {
+                subjective: `Generated content from template`,
+                objective: "",
+                assessment: "",
+                plan: generation.content || "",
+              };
+            }
+          } catch (e) {
+            // If parsing fails, treat as plain text
+            soapContent = {
+              subjective: `Generated content`,
+              objective: "",
+              assessment: "",
+              plan: generation.content || "",
+            };
+          }
+
+          caseActions.push({
+            id: generation.id,
+            type: "soap",
+            content: {
+              transcript: "", // Generations might not have direct transcript
+              soap: soapContent,
+            },
+            timestamp: new Date(generation.created_at).getTime(),
+          });
+        });
+      }
+    }
+
+    // Sort actions by timestamp (newest first)
+    caseActions.sort((a, b) => b.timestamp - a.timestamp);
+
     set({
       currentCaseId: appointment.id,
       loadedAppointment: appointment,
-      // Initialize case actions from the appointment's case_actions or empty array
-      caseActions: appointment.case_actions || [],
+      caseActions,
     });
 
-    console.log("Loaded appointment data into store:", appointment);
+    console.log("Loaded appointment data into store with converted actions:", {
+      appointment,
+      convertedActions: caseActions,
+    });
   },
 }));

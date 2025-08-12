@@ -114,9 +114,66 @@ export function AppointmentSidebar({
     }
   };
 
-  // Filter to only show SOAP notes
-  const soapActions =
-    appointment.case_actions?.filter((action) => action.type === "soap") || [];
+  // Convert rawData to case actions format for display
+  const soapActions: CaseAction[] = [];
+  
+  if (appointment.rawData?.soap_notes) {
+    appointment.rawData.soap_notes.forEach((soapNote: any) => {
+      soapActions.push({
+        id: soapNote.id,
+        type: "soap",
+        content: {
+          soap: {
+            subjective: soapNote.subjective || "",
+            objective: soapNote.objective || "",
+            assessment: soapNote.assessment || "",
+            plan: soapNote.plan || "",
+          },
+        },
+        timestamp: new Date(soapNote.created_at).getTime(),
+      });
+    });
+  }
+  
+  if (appointment.rawData?.generations) {
+    appointment.rawData.generations.forEach((generation: any) => {
+      let soapContent;
+      try {
+        const parsed = JSON.parse(generation.content || "{}");
+        if (parsed.subjective || parsed.objective || parsed.assessment || parsed.plan) {
+          soapContent = {
+            subjective: parsed.subjective || "",
+            objective: parsed.objective || "",
+            assessment: parsed.assessment || "",
+            plan: parsed.plan || "",
+          };
+        } else {
+          soapContent = {
+            subjective: `Generated content from template`,
+            objective: "",
+            assessment: "",
+            plan: generation.content || "",
+          };
+        }
+      } catch (e) {
+        soapContent = {
+          subjective: `Generated content`,
+          objective: "",
+          assessment: "",
+          plan: generation.content || "",
+        };
+      }
+
+      soapActions.push({
+        id: generation.id,
+        type: "soap",
+        content: {
+          soap: soapContent,
+        },
+        timestamp: new Date(generation.created_at).getTime(),
+      });
+    });
+  }
 
   return (
     <div className={`fixed inset-0 z-[999] ${isOpen ? "block" : "hidden"}`}>

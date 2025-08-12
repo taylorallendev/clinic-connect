@@ -127,10 +127,10 @@ export function AppointmentsTable({
                         {appointment.time}
                       </TableCell>
                       <TableCell className="text-foreground">
-                        {appointment.patientName || appointment.patients?.name || "Unknown Patient"}
+                        {appointment.patients?.name || appointment.name || "Unknown Patient"}
                       </TableCell>
                       <TableCell className="text-foreground">
-                        {appointment.ownerName || appointment.users?.name || "Unassigned"}
+                        {appointment.users?.name || "Unassigned"}
                       </TableCell>
                       <TableCell className="text-foreground">
                         <Badge

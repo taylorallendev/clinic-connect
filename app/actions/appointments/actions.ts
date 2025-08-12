@@ -62,6 +62,7 @@ interface AppointmentQueryResult {
 interface AppointmentResult {
   appointments: Array<{
     id: string;
+    name: string;
     patientName: string;
     ownerName: string;
     type: string;
@@ -71,6 +72,23 @@ interface AppointmentResult {
     hasTranscription: boolean;
     hasSoapNote: boolean;
     hasGeneration: boolean;
+    patients: {
+      id: string | null;
+      name: string;
+      first_name: string;
+      last_name: string;
+    };
+    users: {
+      id: string;
+      name: string;
+      first_name: string;
+      last_name: string;
+    };
+    metadata: {
+      hasTranscriptions: boolean;
+      hasSoapNotes: boolean;
+      hasGenerations: boolean;
+    };
   }>;
   totalCount: number;
   page: number;
@@ -215,6 +233,23 @@ export async function getAppointments({
       hasTranscription: boolean;
       hasSoapNote: boolean;
       hasGeneration: boolean;
+      patients: {
+        id: string | null;
+        name: string;
+        first_name: string;
+        last_name: string;
+      };
+      users: {
+        id: string;
+        name: string;
+        first_name: string;
+        last_name: string;
+      };
+      metadata: {
+        hasTranscriptions: boolean;
+        hasSoapNotes: boolean;
+        hasGenerations: boolean;
+      };
     }> = [];
 
     if (casesData && casesData.length > 0) {
