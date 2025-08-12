@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AWS Infrastructure
+infrastructure/terraform/.terraform/
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/terraform.tfstate*
+infrastructure/terraform/.terraform.tfstate.lock.info
+infrastructure/lambda/**/node_modules/
+infrastructure/lambda/**/__pycache__/
+infrastructure/lambda/**/*.pyc
+infrastructure/dist/
+*.zip
+*.tfvars.local
+
+# AWS credentials (if accidentally added)
+.aws/
+aws-credentials.json

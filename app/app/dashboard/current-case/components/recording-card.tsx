@@ -91,20 +91,11 @@ export function RecordingCard() {
     setStoreIsRecording(microphoneState === MicrophoneState.Open);
   }, [microphoneState, setStoreIsRecording]);
 
-  // Set up listeners when connection is established and recording is started
+  // Set up listeners when connection is established
   useEffect(() => {
-    if (!microphone || !connection || connectionState !== SOCKET_STATES.open) {
+    if (!connection || connectionState !== SOCKET_STATES.open) {
       return;
     }
-
-    // Function to handle audio data and send to Deepgram
-    const onData = (e: BlobEvent) => {
-      // Prevent empty packets from being sent (iOS Safari fix)
-      if (e.data.size > 0) {
-        console.log(`Sending audio packet: ${e.data.size} bytes`);
-        connection?.send(e.data);
-      }
-    };
 
     // Function to handle transcript events from Deepgram
     const onTranscript = (data: LiveTranscriptionEvent) => {
@@ -167,7 +158,7 @@ export function RecordingCard() {
         interimTranscriptRef.current = "";
         setInterimTranscript("");
 
-        // Update the continuous transcript with combined final + interim
+        // Update the continuous transcript with final text
         setContinuousTranscript(finalTranscriptRef.current);
 
         // Update the streaming content in the store for other components
@@ -195,11 +186,8 @@ export function RecordingCard() {
       }
     };
 
-    if (isRecording && microphoneState === MicrophoneState.Open) {
-      // Add event listeners
-      connection.addListener(LiveTranscriptionEvents.Transcript, onTranscript);
-      microphone.addEventListener(MicrophoneEvents.DataAvailable, onData);
-    }
+    // Add transcript listener
+    connection.addListener(LiveTranscriptionEvents.Transcript, onTranscript);
 
     // Cleanup function to remove listeners
     return () => {
@@ -207,10 +195,32 @@ export function RecordingCard() {
         LiveTranscriptionEvents.Transcript,
         onTranscript
       );
+    };
+  }, [connection, connectionState, setStreamingContent, setTranscriptText]);
+
+  // Set up microphone audio data handling separately
+  useEffect(() => {
+    if (!microphone || !connection || connectionState !== SOCKET_STATES.open || !isRecording) {
+      return;
+    }
+
+    // Function to handle audio data and send to Deepgram
+    const onData = (e: BlobEvent) => {
+      // Prevent empty packets from being sent (iOS Safari fix)
+      if (e.data.size > 0) {
+        console.log(`Sending audio packet: ${e.data.size} bytes`);
+        connection.send(e.data);
+      }
+    };
+
+    // Add event listener for audio data
+    microphone.addEventListener(MicrophoneEvents.DataAvailable, onData);
+
+    // Cleanup function to remove listeners
+    return () => {
       microphone.removeEventListener(MicrophoneEvents.DataAvailable, onData);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRecording, microphoneState, connectionState]);
+  }, [microphone, connection, connectionState, isRecording]);
 
   // Keep the connection alive
   useEffect(() => {

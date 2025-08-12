@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Clock, BarChart, Stethoscope, PawPrint, Settings2, Sparkles, Zap } from "lucide-react";
+import {
+  Clock,
+  BarChart,
+  Stethoscope,
+  PawPrint,
+  Settings2,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import { FeatureSection } from "./components/landing/feature-section";
 import { EnhancedHero } from "./components/landing/hero";
 import { SectionHeading } from "./components/landing/section-heading";
@@ -89,76 +97,94 @@ const pricingPlans = [
 
 // Features component
 const CardDecorator = ({ children }: { children: ReactNode }) => (
-    <div aria-hidden className="relative mx-auto size-36 [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]">
-        <div className="absolute inset-0 [--border:black] dark:[--border:white] bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-10"/>
-        <div className="bg-background absolute inset-0 m-auto flex size-12 items-center justify-center border-t border-l">{children}</div>
+  <div
+    aria-hidden
+    className="relative mx-auto size-36 [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
+  >
+    <div className="absolute inset-0 [--border:black] dark:[--border:white] bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
+    <div className="bg-background absolute inset-0 m-auto flex size-12 items-center justify-center border-t border-l">
+      {children}
     </div>
-)
+  </div>
+);
 
 function Features() {
-    const features = [
-        {
-            icon: Clock,
-            title: "Save Time",
-            description: "Reduce documentation time with AI-powered note generation and pre-appointment summaries to streamline your workflow."
-        },
-        {
-            icon: BarChart,
-            title: "Improve Clinical Decisions",
-            description: "Get AI-powered differential diagnosis suggestions to support your clinical reasoning and improve patient outcomes."
-        },
-        {
-            icon: PawPrint,
-            title: "Enhance Patient Care",
-            description: "Focus more on your patients and less on paperwork, with comprehensive support throughout the appointment lifecycle."
-        }
-    ];
+  const features = [
+    {
+      icon: Clock,
+      title: "Save Time",
+      description:
+        "Reduce documentation time with AI-powered note generation and pre-appointment summaries to streamline your workflow.",
+    },
+    {
+      icon: BarChart,
+      title: "Improve Clinical Decisions",
+      description:
+        "Get AI-powered differential diagnosis suggestions to support your clinical reasoning and improve patient outcomes.",
+    },
+    {
+      icon: PawPrint,
+      title: "Enhance Patient Care",
+      description:
+        "Focus more on your patients and less on paperwork, with comprehensive support throughout the appointment lifecycle.",
+    },
+  ];
 
-    return (
-        <section className="relative bg-zinc-900 py-16 md:py-32 overflow-hidden">
-            {/* Background gradients */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* Top-left gradient */}
-                <div className="absolute -top-24 -left-24 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl opacity-30"></div>
-                
-                {/* Bottom-right gradient */}
-                <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-sky-400/5 rounded-full blur-3xl opacity-30"></div>
-                
-                {/* Center accent */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-300/5 rounded-full blur-3xl opacity-20"></div>
-            </div>
-            
-            <div className="@container mx-auto max-w-5xl px-6 relative z-10">
-                <div className="text-center">
-                    <h2 className="text-balance text-4xl font-semibold lg:text-5xl text-teal-400">Transform Your Practice's Workflow</h2>
-                    <p className="mt-4 text-zinc-400">See how OdisAI can help you save time, reduce stress, and improve patient care.</p>
-                </div>
-                <div className="mx-auto mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 *:text-center md:mt-16">
-                    {features.map((feature, index) => {
-                        const Icon = feature.icon;
-                        return (
-                            <Card key={index} className="group shadow-lg bg-zinc-800 border border-zinc-700 relative overflow-hidden">
-                                {/* Individual card gradient accent */}
-                                <div className="absolute -inset-1 bg-gradient-to-b from-teal-500/5 via-transparent to-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                                
-                                <CardHeader className="pb-3 relative">
-                                    <div className="flex justify-center">
-                                        <div className="rounded-full bg-zinc-700/50 p-4">
-                                            <Icon className="h-6 w-6 text-teal-400" aria-hidden />
-                                        </div>
-                                    </div>
-                                    <h3 className="mt-6 font-medium text-zinc-100">{feature.title}</h3>
-                                </CardHeader>
-                                <CardContent className="relative">
-                                    <p className="text-sm text-zinc-400">{feature.description}</p>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-            </div>
-        </section>
-    )
+  return (
+    <section className="relative bg-zinc-900 py-16 md:py-32 overflow-hidden">
+      {/* Background gradients */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Top-left gradient */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl opacity-30"></div>
+
+        {/* Bottom-right gradient */}
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-sky-400/5 rounded-full blur-3xl opacity-30"></div>
+
+        {/* Center accent */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-300/5 rounded-full blur-3xl opacity-20"></div>
+      </div>
+
+      <div className="@container mx-auto max-w-5xl px-6 relative z-10">
+        <div className="text-center">
+          <h2 className="text-balance text-4xl font-semibold lg:text-5xl text-teal-400">
+            Transform Your Practice's Workflow
+          </h2>
+          <p className="mt-4 text-zinc-400">
+            See how OdisAI can help you save time, reduce stress, and improve
+            patient care.
+          </p>
+        </div>
+        <div className="mx-auto mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 *:text-center md:mt-16">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <Card
+                key={index}
+                className="group shadow-lg bg-zinc-800 border border-zinc-700 relative overflow-hidden"
+              >
+                {/* Individual card gradient accent */}
+                <div className="absolute -inset-1 bg-gradient-to-b from-teal-500/5 via-transparent to-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                <CardHeader className="pb-3 relative">
+                  <div className="flex justify-center">
+                    <div className="rounded-full bg-zinc-700/50 p-4">
+                      <Icon className="h-6 w-6 text-teal-400" aria-hidden />
+                    </div>
+                  </div>
+                  <h3 className="mt-6 font-medium text-zinc-100">
+                    {feature.title}
+                  </h3>
+                </CardHeader>
+                <CardContent className="relative">
+                  <p className="text-sm text-zinc-400">{feature.description}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function LandingPage() {
