@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -6,16 +8,11 @@ import {
   BarChart,
   Stethoscope,
   PawPrint,
-  Settings2,
-  Sparkles,
-  Zap,
 } from "lucide-react";
-import { FeatureSection } from "./components/landing/feature-section";
-import { EnhancedHero } from "./components/landing/hero";
+import { LandingHeroV2 } from "./components/landing/hero-v2";
 import { SectionHeading } from "./components/landing/section-heading";
-import { SoapNotesDemo } from "./components/landing/soap-notes-demo";
 import { AnimatedTestimonials } from "./components/landing/animated-testimonials";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 // Data for testimonials
 const testimonials = [
@@ -146,10 +143,10 @@ function Features() {
 
       <div className="@container mx-auto max-w-5xl px-6 relative z-10">
         <div className="text-center">
-          <h2 className="text-balance text-4xl font-semibold lg:text-5xl text-teal-400">
+          <h2 className="text-balance text-4xl font-semibold lg:text-5xl text-teal-400" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>
             Transform Your Practice's Workflow
           </h2>
-          <p className="mt-4 text-zinc-400">
+          <p className="mt-4 text-zinc-400" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
             See how OdisAI can help you save time, reduce stress, and improve
             patient care.
           </p>
@@ -171,12 +168,12 @@ function Features() {
                       <Icon className="h-6 w-6 text-teal-400" aria-hidden />
                     </div>
                   </div>
-                  <h3 className="mt-6 font-medium text-zinc-100">
+                  <h3 className="mt-6 font-medium text-zinc-100" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>
                     {feature.title}
                   </h3>
                 </CardHeader>
                 <CardContent className="relative">
-                  <p className="text-sm text-zinc-400">{feature.description}</p>
+                  <p className="text-sm text-zinc-400" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>{feature.description}</p>
                 </CardContent>
               </Card>
             );
@@ -189,43 +186,91 @@ function Features() {
 
 export default function LandingPage() {
   const currentYear = new Date().getFullYear();
+  const [showNavbar, setShowNavbar] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {showNavbar && (
+        <header className="sticky top-0 z-50 w-full bg-black">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-6 w-6 text-teal-500" />
-            <span className="text-xl font-boldonese font-bold">OdisAI</span>
+            <span className="text-xl font-bold text-white" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>OdisAI</span>
           </div>
-          <nav className="hidden md:flex gap-6">
+          
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-6">
             <Link
               href="#benefits"
-              className="text-sm font-medium hover:text-teal-500"
+              className="text-sm font-medium text-zinc-300 hover:text-teal-400 transition-colors"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
-              Benefits
+              Features
             </Link>
             <Link
               href="#testimonials"
-              className="text-sm font-medium hover:text-teal-500"
+              className="text-sm font-medium text-zinc-300 hover:text-teal-400 transition-colors"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
               Testimonials
             </Link>
-            {/* Pricing link temporarily removed
             <Link
-              href="#pricing"
-              className="text-sm font-medium hover:text-teal-500"
+              href="#contact"
+              className="text-sm font-medium text-zinc-300 hover:text-teal-400 transition-colors"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
-              Pricing
+              Contact
             </Link>
-            */}
+            
+            {/* Divider */}
+            <div className="h-4 w-px bg-zinc-700"></div>
+            
+            {/* Authentication Links */}
+            <Link
+              href="/login"
+              className="text-sm font-medium text-zinc-300 hover:text-teal-400 transition-colors"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
+            >
+              Login
+            </Link>
+            <Button size="sm" className="bg-teal-500 hover:bg-teal-400 text-white">
+              <Link href="/signup" className="text-white no-underline" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+                Sign Up
+              </Link>
+            </Button>
+            
+            {/* User Profile (when authenticated) - Hidden for now */}
+            {false && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium text-zinc-300 hover:text-teal-400 transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-medium">
+                    JD
+                  </div>
+                </div>
+              </>
+            )}
           </nav>
+          
+          {/* Mobile Menu Button */}
+          <Button variant="ghost" size="sm" className="md:hidden text-zinc-300 hover:text-teal-400">
+            <span className="sr-only">Menu</span>
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </Button>
         </div>
       </header>
+      )}
 
       <main className="flex-1">
-        {/* Enhanced Hero Section */}
-        <EnhancedHero />
+        {/* New Animated Hero Section (from test landing) */}
+        <LandingHeroV2 onNavbarShow={() => setShowNavbar(true)} />
 
         {/* Features Section */}
         {/* <section id="features" className="w-full">
@@ -271,10 +316,10 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-boldonese">
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>
                   Ready to Transform Your Veterinary Practice?
                 </h2>
-                <p className="max-w-[900px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                <p className="max-w-[900px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
                   Join veterinary clinics already using OdisAI to streamline
                   their workflow.
                 </p>
@@ -317,10 +362,10 @@ export default function LandingPage() {
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-boldonese">
+                  <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>
                     Get in Touch
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
                     Have questions about OdisAI? Our team is here to help.
                   </p>
                 </div>
@@ -330,8 +375,8 @@ export default function LandingPage() {
                       <PawPrint className="h-5 w-5 text-teal-500" />
                     </div>
                     <div>
-                      <p className="font-medium">Email</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>Email</p>
+                      <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
                         info@odisai.net
                       </p>
                     </div>
@@ -341,8 +386,8 @@ export default function LandingPage() {
                       <PawPrint className="h-5 w-5 text-teal-500" />
                     </div>
                     <div>
-                      <p className="font-medium">Phone</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>Phone</p>
+                      <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
                         +1 (800) 123-4567
                       </p>
                     </div>
@@ -355,6 +400,7 @@ export default function LandingPage() {
                     <label
                       htmlFor="name"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      style={{ fontFamily: "'Red Hat Display', sans-serif" }}
                     >
                       Name
                     </label>
@@ -368,6 +414,7 @@ export default function LandingPage() {
                     <label
                       htmlFor="email"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      style={{ fontFamily: "'Red Hat Display', sans-serif" }}
                     >
                       Email
                     </label>
@@ -383,6 +430,7 @@ export default function LandingPage() {
                   <label
                     htmlFor="practice"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    style={{ fontFamily: "'Red Hat Display', sans-serif" }}
                   >
                     Practice Name
                   </label>
@@ -396,6 +444,7 @@ export default function LandingPage() {
                   <label
                     htmlFor="message"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    style={{ fontFamily: "'Red Hat Display', sans-serif" }}
                   >
                     Message
                   </label>
@@ -416,29 +465,32 @@ export default function LandingPage() {
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row px-4 md:px-6">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-5 w-5 text-teal-500" />
-            <span className="text-lg font-boldonese font-bold">OdisAI</span>
+            <span className="text-lg font-bold" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>OdisAI</span>
           </div>
           <nav className="flex gap-4 sm:gap-6">
             <Link
               href="#"
               className="text-xs hover:underline underline-offset-4"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
               Terms of Service
             </Link>
             <Link
               href="#"
               className="text-xs hover:underline underline-offset-4"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
               Privacy Policy
             </Link>
             <Link
               href="#"
               className="text-xs hover:underline underline-offset-4"
+              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
               Cookie Policy
             </Link>
           </nav>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
             &copy; {currentYear} OdisAI. All rights reserved.
           </div>
         </div>

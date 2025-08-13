@@ -35,11 +35,11 @@ export function SectionHeading({
         </div>
       )}
       <div className="flex gap-2 flex-col">
-        <h2 className="text-3xl md:text-5xl tracking-tighter font-boldonese font-bold">
+        <h2 className="text-3xl md:text-5xl tracking-tighter font-bold" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>
           {title}
         </h2>
         {description && (
-          <p className="text-lg max-w-xl lg:max-w-2xl leading-relaxed tracking-tight text-muted-foreground">
+          <p className="text-lg max-w-xl lg:max-w-2xl leading-relaxed tracking-tight text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
             {description}
           </p>
         )}
