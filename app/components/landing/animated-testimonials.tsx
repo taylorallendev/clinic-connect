@@ -116,11 +116,11 @@ export function AnimatedTestimonials({
               ease: "easeInOut",
             }}
           >
-            <h3 className="text-2xl font-bold">{testimonials[active].name}</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-2xl font-bold" style={{ fontFamily: "'Red Hat Display', sans-serif" }}>{testimonials[active].name}</h3>
+            <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
               {testimonials[active].designation}
             </p>
-            <motion.p className="mt-6 text-lg text-muted-foreground">
+            <motion.p className="mt-6 text-lg text-muted-foreground" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
               {testimonials[active].quote.split(" ").map((word, index) => (
                 <motion.span
                   key={index}
