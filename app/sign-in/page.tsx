@@ -10,10 +10,10 @@ import { AlertCircle } from "lucide-react";
 export default async function SignIn({
   searchParams,
 }: {
-  searchParams: { error?: string; message?: string };
+  searchParams: { error?: string; message?: string; redirect_to?: string };
 }) {
   // Convert searchParams to a regular object to avoid the dynamic API issue
-  const { error, message } = searchParams;
+  const { error, message, redirect_to } = searchParams;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-12 sm:px-6 lg:px-8">
@@ -39,6 +39,9 @@ export default async function SignIn({
           )}
 
           <form className="space-y-6" action={signIn}>
+            {redirect_to && (
+              <input type="hidden" name="redirect_to" value={redirect_to} />
+            )}
             <div>
               <Label htmlFor="email">Email address</Label>
               <div className="mt-2">

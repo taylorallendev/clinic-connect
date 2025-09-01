@@ -1,6 +1,11 @@
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { ModernDashboardContent } from "./modern-dashboard-content";
+import { DashboardSkeleton } from "./dashboard-skeleton";
 
-// Dashboard page is removed - redirect to current case instead
 export default function Dashboard() {
-  redirect("/app/dashboard/current-case");
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <ModernDashboardContent />
+    </Suspense>
+  );
 }

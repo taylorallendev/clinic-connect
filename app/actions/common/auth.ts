@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const redirectTo = formData.get("redirect_to") as string;
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -25,10 +26,15 @@ export async function signIn(formData: FormData) {
   if (error) {
     const searchParams = new URLSearchParams();
     searchParams.set("error", error.message);
+    if (redirectTo) {
+      searchParams.set("redirect_to", redirectTo);
+    }
     return redirect(`/sign-in?${searchParams.toString()}`);
   }
 
-  redirect("/app/dashboard/current-case");
+  // Redirect to the originally requested page or default to dashboard
+  const destination = redirectTo || "/app/dashboard";
+  redirect(destination);
 }
 
 /**

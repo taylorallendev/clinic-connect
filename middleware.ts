@@ -26,24 +26,46 @@ export async function middleware(request: NextRequest) {
   // Get the pathname from the URL
   const { pathname } = request.nextUrl;
 
-  // If user is signed in and trying to access the landing page or auth pages, redirect to dashboard
-  if (session) {
-    if (
-      pathname === "/" ||
-      pathname.startsWith("/sign-in") ||
-      pathname.startsWith("/sign-up")
-    ) {
-      return NextResponse.redirect(
-        new URL("/app/dashboard/current-case", request.url)
-      );
-    }
+  // Define public routes that don't require authentication
+  const publicRoutes = [
+    "/",
+    "/sign-in",
+    "/sign-up",
+    "/forgot-password",
+    "/reset-password",
+    "/auth/callback",
+    "/api/authenticate",
+    "/api/deepgram/authenticate"
+  ];
+
+  // Define auth routes that should redirect to dashboard if already logged in
+  const authRoutes = [
+    "/sign-in",
+    "/sign-up",
+    "/forgot-password"
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  const isAuthRoute = authRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  // If user is signed in and trying to access auth pages, redirect to dashboard
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(
+      new URL("/app/dashboard", request.url)
+    );
   }
 
   // If user is not signed in and trying to access protected routes, redirect to sign-in
-  if (!session) {
-    if (pathname.startsWith("/app")) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
-    }
+  if (!session && pathname.startsWith("/app")) {
+    // Store the attempted URL to redirect back after login
+    const redirectUrl = new URL("/sign-in", request.url);
+    redirectUrl.searchParams.set("redirect_to", pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
   // Return the response for all other cases

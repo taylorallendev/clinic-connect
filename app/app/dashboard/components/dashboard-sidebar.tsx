@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BookOpen, Calendar, FileText, PawPrint } from "lucide-react";
+import { BookOpen, Calendar, FileText, PawPrint, Home, Search, FolderOpen } from "lucide-react";
 import { signOut } from "@/app/actions";
 
 import {
@@ -26,9 +26,25 @@ function NavMain() {
       <SidebarMenu className="gap-y-1">
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
+            <Link href="/app/dashboard">
+              <Home />
+              Dashboard
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
             <Link href="/app/dashboard/current-case">
               <Calendar />
               Current Case
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href="/app/dashboard/find-case">
+              <Search />
+              Find Case
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -45,6 +61,14 @@ function NavMain() {
             <Link href="/app/dashboard/templates">
               <FileText />
               Templates
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href="/app/dashboard/export-center">
+              <FolderOpen />
+              Export Center
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

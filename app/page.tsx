@@ -227,14 +227,14 @@ export default function LandingPage() {
             
             {/* Authentication Links */}
             <Link
-              href="/login"
+              href="/sign-in"
               className="text-sm font-medium text-zinc-300 hover:text-teal-400 transition-colors"
               style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
               Login
             </Link>
             <Button size="sm" className="bg-teal-500 hover:bg-teal-400 text-white">
-              <Link href="/signup" className="text-white no-underline" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+              <Link href="/sign-up" className="text-white no-underline" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
                 Sign Up
               </Link>
             </Button>

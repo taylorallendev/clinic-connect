@@ -599,7 +599,7 @@ export default function FindCase() {
                             icons={[FileText, ClipboardList, UserRound]}
                             action={{
                               label: "Create New Case",
-                              onClick: () => router.push("/dashboard/case/new"),
+                              onClick: () => router.push("/app/dashboard/case/new"),
                             }}
                             className="mx-auto"
                           />
@@ -611,7 +611,7 @@ export default function FindCase() {
                           key={caseItem.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
-                            router.push(`/dashboard/case/${caseItem.id}`)
+                            router.push(`/app/dashboard/case/${caseItem.id}`)
                           }
                         >
                           <TableCell>{caseItem.id}</TableCell>
@@ -722,7 +722,7 @@ export default function FindCase() {
                           key={caseItem.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
-                            router.push(`/dashboard/case/${caseItem.id}`)
+                            router.push(`/app/dashboard/case/${caseItem.id}`)
                           }
                         >
                           <TableCell>{caseItem.name}</TableCell>
@@ -788,7 +788,7 @@ export default function FindCase() {
                           key={caseItem.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
-                            router.push(`/dashboard/case/${caseItem.id}`)
+                            router.push(`/app/dashboard/case/${caseItem.id}`)
                           }
                         >
                           <TableCell>{caseItem.name}</TableCell>
@@ -860,7 +860,7 @@ export default function FindCase() {
                           key={caseItem.id}
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() =>
-                            router.push(`/dashboard/case/${caseItem.id}`)
+                            router.push(`/app/dashboard/case/${caseItem.id}`)
                           }
                         >
                           <TableCell>{caseItem.name}</TableCell>
