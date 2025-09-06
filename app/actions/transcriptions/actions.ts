@@ -26,8 +26,20 @@ export async function saveTranscription(
       throw new Error("Unauthorized");
     }
 
-    // Create the transcription record
+    // Verify the case belongs to the user
     const supabase = await createClient();
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (caseError || !caseData) {
+      throw new Error("Case not found or unauthorized");
+    }
+
+    // Create the transcription record
     const { data: transcription, error } = await supabase
       .from("transcriptions")
       .insert({
@@ -72,8 +84,20 @@ export async function getTranscriptionsForCase(caseId: string) {
       throw new Error("Unauthorized");
     }
 
-    // Get all transcriptions for the case
+    // Verify the case belongs to the user
     const supabase = await createClient();
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (caseError || !caseData) {
+      throw new Error("Case not found or unauthorized");
+    }
+
+    // Get all transcriptions for the case
     const { data: transcriptions, error } = await supabase
       .from("transcriptions")
       .select("*")
@@ -113,16 +137,17 @@ export async function updateTranscription(
       throw new Error("Unauthorized");
     }
 
-    // Get the transcription to find its case_id for path revalidation
+    // Get the transcription and verify its case belongs to the user
     const supabase = await createClient();
     const { data: existingTranscription, error: getError } = await supabase
       .from("transcriptions")
-      .select("case_id")
+      .select("case_id, cases!inner(id, user_id)")
       .eq("id", transcriptionId)
+      .eq("cases.user_id", userId)
       .single();
 
-    if (getError) {
-      throw getError;
+    if (getError || !existingTranscription) {
+      throw new Error("Transcription not found or unauthorized");
     }
 
     // Update the transcription

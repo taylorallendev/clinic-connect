@@ -27,16 +27,26 @@ export async function createCase(data: CreateCaseInput) {
       "====================== CASE CREATION START ======================"
     );
 
-    // Create Supabase client
+    // Create Supabase client and get current user
     const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    console.log("Supabase client created");
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return {
+        success: false,
+        error: "You must be logged in to create a case",
+      };
+    }
 
-    // First, create the case
+    console.log("Supabase client created, user authenticated:", user.id);
+
+    // First, create the case with user_id
     const caseData: TablesInsert<"cases"> = {
       type: data.type,
       status: data.status,
       visibility: data.visibility,
+      user_id: user.id,
       created_at: new Date(data.dateTime).toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -119,11 +129,12 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
     // Validate input data against the schema
     const parsedData = updateCaseSchema.parse(data);
 
-    // First, check if the name has changed
+    // First, check if the case belongs to the user
     const { data: currentCase, error: getCurrentError } = await supabase
       .from("cases")
-      .select("name, patientId")
+      .select("user_id")
       .eq("id", parsedData.id)
+      .eq("user_id", user.id)
       .single();
 
     if (getCurrentError) {
@@ -147,11 +158,12 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
       updateData.visibility = parsedData.visibility as Enums<"CaseVisibility">;
     }
 
-    // Update the case data
+    // Update the case data (only if it belongs to the user)
     const { data: updatedCase, error: updateError } = await supabase
       .from("cases")
       .update(updateData)
       .eq("id", parsedData.id.toString())
+      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -182,6 +194,79 @@ export async function updateCase(data: z.infer<typeof updateCaseSchema>) {
 }
 
 /**
+ * Gets all cases for the current user
+ * Used in the dashboard and case list components
+ */
+export async function getUserCases() {
+  try {
+    console.log("getUserCases called");
+
+    // Create Supabase client and get current user
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return {
+        success: false,
+        error: "You must be logged in to view cases",
+      };
+    }
+
+    console.log(`Fetching cases for user: ${user.id}`);
+
+    // Fetch all cases for the user with related patient data
+    const { data: cases, error } = await supabase
+      .from("cases")
+      .select(
+        `
+        *,
+        patients (
+          id,
+          name,
+          owner_name
+        )
+      `
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to fetch user cases:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    console.log(`Found ${cases?.length || 0} cases for user`);
+
+    // Format the response
+    const formattedCases = (cases || []).map(caseItem => ({
+      id: caseItem.id,
+      type: caseItem.type,
+      status: caseItem.status,
+      visibility: caseItem.visibility,
+      user_id: caseItem.user_id,
+      created_at: caseItem.created_at,
+      updated_at: caseItem.updated_at,
+      patient: caseItem.patients?.[0] || null,
+    }));
+
+    return {
+      success: true,
+      data: formattedCases,
+    };
+  } catch (error) {
+    console.error("Failed to get user cases:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to get user cases",
+    };
+  }
+}
+
+/**
  * Gets a case by ID with all related data
  * Used in the case view component
  */
@@ -189,11 +274,20 @@ export async function getCase(caseId: string) {
   try {
     console.log(`getCase called with ID: ${caseId}`);
 
-    // Create Supabase client
+    // Create Supabase client and get current user
     const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    // Fetch the case with all related data
-    console.log(`Fetching case with ID: ${caseId}`);
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return {
+        success: false,
+        error: "You must be logged in to view cases",
+      };
+    }
+
+    // Fetch the case with all related data, filtered by user_id
+    console.log(`Fetching case with ID: ${caseId} for user: ${user.id}`);
     const { data: caseData, error } = await supabase
       .from("cases")
       .select(
@@ -226,6 +320,7 @@ export async function getCase(caseId: string) {
       `
       )
       .eq("id", caseId)
+      .eq("user_id", user.id)
       .single();
 
     if (error) {
@@ -252,6 +347,7 @@ export async function getCase(caseId: string) {
       type: caseData.type,
       status: caseData.status,
       visibility: caseData.visibility,
+      user_id: caseData.user_id,
       created_at: caseData.created_at,
       updated_at: caseData.updated_at,
       patient: caseData.patients?.[0] || null,
@@ -290,6 +386,22 @@ export async function saveActionsToCase(
 
     if (!user) {
       throw new Error("Unauthorized");
+    }
+
+    // Verify that the case belongs to the user
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (caseError || !caseData) {
+      console.error("Case not found or unauthorized:", caseError);
+      return {
+        success: false,
+        error: "Case not found or you don't have permission to modify it",
+      };
     }
 
     console.log(`Processing ${actions.length} actions for case ${caseId}`);

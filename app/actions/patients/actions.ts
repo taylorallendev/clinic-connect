@@ -25,10 +25,11 @@ export async function getPatients(filter?: string) {
     // Initialize Supabase client
     const supabase = await createClient();
     
-    // Start building the query
+    // Start building the query - join with cases to filter by user_id
     let query = supabase
       .from("patients")
-      .select("*, cases(id, type, status, created_at)");
+      .select("*, cases!inner(id, type, status, created_at, user_id)")
+      .eq("cases.user_id", userId);
     
     // Apply filter if provided
     if (filter) {
@@ -68,12 +69,13 @@ export async function getPatientById(patientId: string) {
       throw new Error("Unauthorized");
     }
 
-    // Get the patient with case information
+    // Get the patient with case information - verify it belongs to user's cases
     const supabase = await createClient();
     const { data: patient, error } = await supabase
       .from("patients")
-      .select("*, cases(id, type, status, created_at)")
+      .select("*, cases!inner(id, type, status, created_at, user_id)")
       .eq("id", patientId)
+      .eq("cases.user_id", userId)
       .single();
 
     if (error) {

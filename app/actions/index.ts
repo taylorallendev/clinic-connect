@@ -30,6 +30,7 @@ import {
   createCase as casesCreateCase,
   updateCase as casesUpdateCase,
   getCase as casesGetCase,
+  getUserCases as casesGetUserCases,
   saveActionsToCase as casesSaveActionsToCase,
 } from "./cases/actions";
 
@@ -108,6 +109,10 @@ export async function updateCase(
 
 export async function getCase(id: string) {
   return casesGetCase(id);
+}
+
+export async function getUserCases() {
+  return casesGetUserCases();
 }
 
 export async function saveActionsToCase(

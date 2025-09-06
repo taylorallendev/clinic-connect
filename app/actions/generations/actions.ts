@@ -152,6 +152,19 @@ export async function generateContentFromTemplate(
 
     // Save the generation to the database if a case ID was provided
     if (templateData.caseId) {
+      // Verify the case belongs to the user before saving
+      const supabase = await createClient();
+      const { data: caseData, error: caseError } = await supabase
+        .from("cases")
+        .select("id")
+        .eq("id", templateData.caseId)
+        .eq("user_id", userId)
+        .single();
+
+      if (caseError || !caseData) {
+        throw new Error("Case not found or unauthorized");
+      }
+
       await saveGeneration({
         caseId: templateData.caseId,
         templateId: templateData.templateId,
@@ -202,8 +215,20 @@ export async function saveGeneration({
       throw new Error("Unauthorized");
     }
 
-    // Create the generation
+    // Verify the case belongs to the user
     const supabase = await createClient();
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (caseError || !caseData) {
+      throw new Error("Case not found or unauthorized");
+    }
+
+    // Create the generation
     const { data: generation, error } = await supabase
       .from("generations")
       .insert({
@@ -250,8 +275,20 @@ export async function getGenerationsForCase(caseId: string) {
       throw new Error("Unauthorized");
     }
 
-    // Get all generations for the case
+    // Verify the case belongs to the user
     const supabase = await createClient();
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (caseError || !caseData) {
+      throw new Error("Case not found or unauthorized");
+    }
+
+    // Get all generations for the case
     const { data: generations, error } = await supabase
       .from("generations")
       .select("*, templates(id, name, type)")

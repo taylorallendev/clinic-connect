@@ -14,13 +14,22 @@ import { Tables, Database } from "@/database.types";
  */
 export async function debugListAllCases() {
   try {
-    console.log("*** DEBUG: Listing all cases in database ***");
+    console.log("*** DEBUG: Listing all cases for current user ***");
     const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return [];
+    }
 
-    // Get all cases sorted by id (safer if created_at doesn't exist)
+    // Get all cases for the user sorted by id
     const { data: cases, error } = await supabase
       .from("cases")
       .select("*")
+      .eq("user_id", user.id)
       .order("id", { ascending: false })
       .limit(20);
 
@@ -123,12 +132,25 @@ export async function getAppointments({
       timestamp,
     });
     const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return {
+        appointments: [],
+        totalCount: 0,
+        page: 0,
+        pageSize,
+      };
+    }
 
     // Calculate pagination
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    // First, build the query to fetch cases with related patient data
+    // First, build the query to fetch cases with related patient data, filtered by user
     let query = supabase
       .from("cases")
       .select(
@@ -139,6 +161,7 @@ export async function getAppointments({
         status,
         created_at,
         updated_at,
+        user_id,
         patients (
           id,
           name,
@@ -155,6 +178,7 @@ export async function getAppointments({
         )
       `
       )
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     // Add console log to debug the query
@@ -211,10 +235,11 @@ export async function getAppointments({
       console.log("Sample case data:", JSON.stringify(casesData[0], null, 2));
     }
 
-    // Get total count for pagination
+    // Get total count for pagination (filtered by user)
     const { count: totalCount, error: countError } = await supabase
       .from("cases")
-      .select("id", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
 
     if (countError) {
       console.error("Error getting count:", countError);
@@ -351,6 +376,14 @@ export async function getAppointmentById(id: string) {
   try {
     console.log("Server action: getAppointmentById called for ID:", id);
     const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      throw new Error("You must be logged in to view appointments");
+    }
 
     // Define the return type for the query
     type CaseWithRelations = Tables<"cases"> & {
@@ -375,7 +408,7 @@ export async function getAppointmentById(id: string) {
       >;
     };
 
-    // Query the case with the given ID, including related data
+    // Query the case with the given ID, including related data (filtered by user)
     const { data: caseData, error: caseError } = await supabase
       .from("cases")
       .select(
@@ -386,6 +419,7 @@ export async function getAppointmentById(id: string) {
         status,
         created_at,
         updated_at,
+        user_id,
         patients (
           id,
           name,
@@ -414,6 +448,7 @@ export async function getAppointmentById(id: string) {
       `
       )
       .eq("id", id)
+      .eq("user_id", user.id)
       .single();
 
     if (caseError) {
@@ -530,7 +565,15 @@ export async function getUpcomingAppointments() {
   const supabase = await createClient();
 
   try {
-    // Query the cases table for upcoming appointments with related patient data
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return [];
+    }
+    
+    // Query the cases table for upcoming appointments with related patient data (filtered by user)
     const { data: casesData, error: casesError } = await supabase
       .from("cases")
       .select(
@@ -538,6 +581,7 @@ export async function getUpcomingAppointments() {
         id,
         type,
         created_at,
+        user_id,
         patients (
           id,
           name,
@@ -545,6 +589,7 @@ export async function getUpcomingAppointments() {
         )
       `
       )
+      .eq("user_id", user.id)
       .order("created_at", { ascending: true })
       .limit(5);
 

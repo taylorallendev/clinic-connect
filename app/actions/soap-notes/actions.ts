@@ -36,8 +36,20 @@ export async function createSoapNote({
       throw new Error("Unauthorized");
     }
 
-    // Create the SOAP note
+    // Verify the case belongs to the user
     const supabase = await createClient();
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (caseError || !caseData) {
+      throw new Error("Case not found or unauthorized");
+    }
+
+    // Create the SOAP note
     const { data: soapNote, error } = await supabase
       .from("soap_notes")
       .insert({
@@ -85,8 +97,20 @@ export async function getSoapNotesForCase(caseId: string) {
       throw new Error("Unauthorized");
     }
 
-    // Get all SOAP notes for the case
+    // Verify the case belongs to the user
     const supabase = await createClient();
+    const { data: caseData, error: caseError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("id", caseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (caseError || !caseData) {
+      throw new Error("Case not found or unauthorized");
+    }
+
+    // Get all SOAP notes for the case
     const { data: soapNotes, error } = await supabase
       .from("soap_notes")
       .select("*")
@@ -122,12 +146,13 @@ export async function getSoapNoteById(soapNoteId: string) {
       throw new Error("Unauthorized");
     }
 
-    // Get the SOAP note
+    // Get the SOAP note and verify its case belongs to the user
     const supabase = await createClient();
     const { data: soapNote, error } = await supabase
       .from("soap_notes")
-      .select("*")
+      .select("*, cases!inner(id, user_id)")
       .eq("id", soapNoteId)
+      .eq("cases.user_id", userId)
       .single();
 
     if (error) {
