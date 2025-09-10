@@ -1,4 +1,5 @@
 {
+  "name": "odis-ai",
   "private": true,
   "scripts": {
     "dev": "next dev",

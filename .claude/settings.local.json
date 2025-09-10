@@ -4,7 +4,11 @@
       "Bash(rm:*)",
       "Bash(npm run dev:*)",
       "Bash(pnpm dev:*)",
-      "Bash(pnpm run:*)"
+      "Bash(pnpm run:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(pkill:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": [],

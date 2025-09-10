@@ -110,7 +110,7 @@ Priority: [priority]
 ## Technical Implementation
 - **Domain:** [domain]
 - **Dependencies:** [dependencies]
-- **Files to modify:** /app/actions/[domain]/
+- **Files to modify:** /src/features/[domain]/
 
 Labels: enhancement, feature, [domain]
 Story Points: [points]
@@ -150,7 +150,7 @@ Story Points: [task points]
 [List requirements as checkboxes]
 
 ## Files to Create/Modify
-- /app/actions/[domain]/[relevant files]
+- /src/features/[domain]/[relevant files]
 
 Labels: task, implementation, [domain]
 Story Points: [task points]
@@ -209,76 +209,6 @@ Then show the file structure created and offer to create detailed implementation
 ### While implementing
 - Update both .claude/tasks/ files AND feature progress files
 - Cross-reference between feature acceptance criteria and technical progress
-```
-
-## Example Usage in Claude Code
-
-**You:** "I want to build SMS appointment reminders for the veterinary clinic"
-
-**Claude:** "This appears to be feature-level work involving external API integration (SMS service) and cross-domain functionality (communications + appointments). I can create a structured breakdown with individual copy/paste blocks for Linear and GitHub.
-
-Would you like me to create a structured feature breakdown? I'll ask a few planning questions and generate organized tasks with ready-to-use issue content."
-
-**You:** "Yes"
-
-**Claude:** "**Feature Name**: What should we call this feature?"
-
-**You:** "SMS Appointment Reminders"
-
-**Claude:** "**User Story**: Complete this - 'As a [user type], I want [capability] so that [benefit]'"
-
-**You:** "As a pet owner, I want to receive SMS reminders before appointments so I don't miss them"
-
-[Continue through all questions...]
-
-**Claude:** [After collecting all info] "Perfect! Based on your requirements, I've analyzed this as a complex feature (8 story points) and generated 3 tasks. Here are your individual copy/paste blocks:
-
-## 📋 Copy/Paste Content Generated
-
-### LINEAR FEATURE ISSUE
-```
-Title: SMS Appointment Reminders
-
-Description: 
-As a pet owner, I want to receive SMS reminders before appointments so I don't miss them
-[etc...]
-```
-
-### GITHUB FEATURE ISSUE  
-```
-**Feature:** SMS Appointment Reminders
-[etc...]
-```
-
-### TASK 1 - LINEAR ISSUE
-```
-Title: Twilio SMS Integration
-[etc...]
-```
-
-[And so on for each piece...]
-
-**Files Created:**
-- `.claude/features/sms-appointment-reminders/feature.md`
-- `.claude/features/sms-appointment-reminders/tasks/twilio-integration.md`
-- `.claude/features/sms-appointment-reminders/tasks/sms-scheduling.md`
-- `.claude/features/sms-appointment-reminders/tasks/delivery-tracking.md`
-- `.claude/features/sms-appointment-reminders/copy-paste-content.md`
-
-Would you like me to create a detailed implementation plan for the first task?"
-
-This way everything happens **inside Claude Code chat** and you get individual copy/paste blocks you can use directly in Linear and GitHub.
-### Before starting work
-- Always in plan mode to make a plan
-- After get the plan, make sure you Write the plan to .claude/tasks/TASK_NAME.md.
-- The plan should be a detailed implementation plan and the reasoning behind them, as well as tasks broken down.
-- If the task require external knowledge or certain package, also research to get latest knowledge (Use Task tool for research)
-- Don't over plan it, always think MVP.
-- Once you write the plan, firstly ask me to review it. Do not continue until I approve the plan.
-
-### While implementing
-- You should update the plan as you work.
-- After you complete tasks in the plan, you should update and append detailed descriptions of the changes you made, so following tasks can be easily hand over to other engineers.
 
 ## Project Overview
 
@@ -287,13 +217,13 @@ This is a Next.js web application for OdisAI, an end-to-end ai-native, small ani
 ## Development Commands
 
 ### Core Development
-- `pnpm dev` - Start Next.js development server
-- `pnpm build` - Build production application
-- `pnpm start` - Start production server
+- `npm run dev` - Start Next.js development server
+- `npm run build` - Build production application
+- `npm run start` - Start production server
 
 ### Database Type Generation
-- `pnpm run codegen` - Generate TypeScript types from Supabase schema (requires project ID)
-- `pnpm run codegen:local` - Run local codegen script (./scripts/run-codegen.sh)
+- `npm run codegen` - Generate TypeScript types from Supabase schema (requires project ID)
+- `npm run codegen:local` - Run local codegen script (./scripts/run-codegen.sh)
 
 Note: The Next.js config ignores TypeScript and ESLint errors during builds.
 
@@ -308,16 +238,115 @@ Note: The Next.js config ignores TypeScript and ESLint errors during builds.
 - **Email**: React Email with SendGrid/Resend
 - **AI**: OpenAI SDK for content generation
 
-### Project Structure
-This is a medical clinic management system with domain-driven design:
+### Project Structure (Refactored for Next.js 15 Best Practices)
 
-- `/app/actions/` - Server actions organized by domain (auth, cases, appointments, etc.)
-- `/app/app/dashboard/` - Main dashboard pages and components
-- `/components/ui/` - Reusable UI components (shadcn/ui)
-- `/store/` - Client-side state management (Zustand)
-- `/context/` - React context providers (Deepgram, Email, Microphone)
-- `/utils/supabase/` - Supabase client utilities for browser/server/middleware
-- `/supabase/migrations/` - Database schema migrations
+This project follows a modern Next.js 15 App Router architecture with feature-based organization:
+
+```
+/Users/s0381806/Development/odis-ai/
+├── app/                              # Next.js App Router
+│   ├── (auth)/                       # Route groups for auth pages
+│   │   ├── sign-in/
+│   │   ├── sign-up/
+│   │   ├── forgot-password/
+│   │   └── reset-password/
+│   ├── (dashboard)/                  # Protected dashboard routes
+│   │   ├── dashboard/
+│   │   │   ├── appointments/
+│   │   │   ├── cases/
+│   │   │   ├── current-case/
+│   │   │   ├── export-center/
+│   │   │   ├── find-case/
+│   │   │   ├── teams/
+│   │   │   └── templates/
+│   │   └── case/[id]/
+│   ├── actions/                      # Server actions by domain
+│   ├── api/                          # API routes
+│   ├── globals.css
+│   ├── layout.tsx                    # Root layout
+│   └── page.tsx                      # Landing page
+├── src/                              # Source directory (NEW)
+│   ├── components/                   # All reusable components
+│   │   ├── ui/                       # shadcn/ui components
+│   │   ├── forms/                    # Form components
+│   │   ├── layout/                   # Layout components
+│   │   ├── landing/                  # Landing page components  
+│   │   └── shared/                   # Shared components across features
+│   ├── features/                     # Feature-based modules
+│   │   ├── auth/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── lib/
+│   │   │   └── types/
+│   │   ├── appointments/
+│   │   ├── cases/
+│   │   ├── patients/
+│   │   └── templates/
+│   ├── lib/                          # Shared utilities and configurations
+│   │   ├── auth/
+│   │   ├── db/
+│   │   ├── email/
+│   │   ├── validations/
+│   │   ├── constants.ts
+│   │   └── utils.ts
+│   ├── hooks/                        # Global custom hooks
+│   ├── store/                        # Global state management
+│   ├── providers/                    # Context providers
+│   │   ├── deepgram-provider.tsx
+│   │   ├── microphone-provider.tsx
+│   │   ├── email-provider.tsx
+│   │   └── providers.tsx             # Combined providers
+│   └── types/                        # Global TypeScript types
+├── emails/                           # Email templates
+├── infrastructure/                   # Infrastructure code
+├── supabase/                         # Supabase config
+└── docs/                            # Documentation
+```
+
+### Key Refactoring Changes Made
+
+#### 1. **Source Directory Structure**
+- **NEW**: Added `src/` directory to separate source code from configuration
+- **Improved**: Clear separation between app routing and reusable components
+- **Benefit**: Better organization and easier navigation for large codebases
+
+#### 2. **Route Groups Implementation**
+- **NEW**: `app/(auth)/` for authentication routes
+- **NEW**: `app/(dashboard)/` for protected dashboard routes
+- **Benefit**: Better URL organization without affecting the actual URLs
+
+#### 3. **Feature-Based Architecture**
+- **Maintained**: `src/features/` with domain-driven design
+- **Enhanced**: Each feature has its own components, hooks, lib, and types
+- **Benefit**: Scalable architecture that grows with the application
+
+#### 4. **Component Organization**
+- **Consolidated**: All components now in `src/components/`
+- **Categorized**: UI, forms, layout, landing, and shared components
+- **Benefit**: Easier to find and maintain components
+
+#### 5. **Provider Consolidation**
+- **NEW**: `src/providers/providers.tsx` combines all context providers
+- **Simplified**: Root layout now uses single `<Providers>` component
+- **Benefit**: Cleaner root layout and easier provider management
+
+#### 6. **TypeScript Path Mappings**
+Updated `tsconfig.json` with comprehensive path mappings:
+```json
+{
+  "paths": {
+    "@/*": ["./*"],
+    "@/src/*": ["./src/*"],
+    "@/components/*": ["./src/components/*"],
+    "@/lib/*": ["./src/lib/*"],
+    "@/hooks/*": ["./src/hooks/*"],
+    "@/store/*": ["./src/store/*"],
+    "@/types/*": ["./src/types/*"],
+    "@/providers/*": ["./src/providers/*"],
+    "@/features/*": ["./src/features/*"]
+  }
+}
+```
 
 ### Server Actions Architecture
 All server actions are organized by domain in `/app/actions/` and re-exported through `/app/actions/index.ts`:
@@ -329,7 +358,25 @@ All server actions are organized by domain in `/app/actions/` and re-exported th
 - **Email**: Template-based email sending and React email components
 - **Templates**: CRUD for content generation templates
 
-Import pattern: `import { createCase, getCase } from "@/app/actions"`
+**Import pattern**: `import { createCase, getCase } from "@/app/actions"`
+
+### Updated Import Patterns
+
+#### Old Import Patterns (Before Refactoring):
+```typescript
+import { Button } from "@/components/ui/button"
+import { createClient } from "@/utils/supabase/server"
+import { useTranscription } from "@/hooks/use-transcription"
+import { cn } from "@/lib/utils"
+```
+
+#### New Import Patterns (After Refactoring):
+```typescript
+import { Button } from "@/src/components/ui/button"
+import { createClient } from "@/src/lib/supabase/server"
+import { useTranscription } from "@/src/hooks/use-transcription"
+import { cn } from "@/src/lib/utils"
+```
 
 ### Database Schema
 Uses Supabase with normalized schema including:
@@ -350,7 +397,7 @@ Types are auto-generated from Supabase schema in `database.types.ts`.
 - **Authentication**: Supabase Auth with middleware protection
 
 ### State Management
-- **Zustand store** (`/store/use-case-store.tsx`) manages:
+- **Zustand store** (`/src/store/use-case-store.tsx`) manages:
   - Recording state and transcriptions
   - Case actions (recordings, SOAP notes)
   - Current case and appointment data
@@ -362,8 +409,24 @@ Types are auto-generated from Supabase schema in `database.types.ts`.
 - Supabase local development support
 
 ## Important Notes
+
+### Development Guidelines
+- Follow the new `src/` directory structure for all new components and utilities
+- Use the updated import patterns with `@/src/` prefixes
+- Organize new features in `src/features/[domain]/` with proper subdirectories
+- Use route groups for organizing related pages without affecting URLs
+
+### Build and Deployment
 - All protected routes require authentication via middleware
 - Audio transcription requires Deepgram API credentials
 - AI features require OpenAI API configuration
 - Email functionality requires SendGrid or Resend configuration
 - Database types should be regenerated after schema changes using codegen commands
+
+### Code Quality
+- The project uses TypeScript strict mode
+- ESLint and TypeScript errors are ignored during builds (configured in next.config.ts)
+- All UI components use the `cn` utility function for conditional styling
+- Components follow shadcn/ui patterns and conventions
+
+This refactored architecture provides a solid foundation for scaling the OdisAI veterinary practice management platform while maintaining clean separation of concerns and following Next.js 15 best practices.

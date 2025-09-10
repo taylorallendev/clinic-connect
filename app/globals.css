@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    /* Font family configuration */
+    --font-sans: Switzer, system-ui, sans-serif;
     /* Existing theme colors - preserved exactly as provided */
     --background: 210 20% 98%;
     --foreground: 220 26% 14%;
@@ -55,6 +57,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
   }
 
   /* Custom style for template dropdown placeholder text */

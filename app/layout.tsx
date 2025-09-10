@@ -1,10 +1,5 @@
-import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
-import { DeepgramContextProvider } from "@/context/DeepgramContextProvider";
-import { MicrophoneContextProvider } from "@/context/MicrophoneContextProvider";
-import { EmailButtonProvider } from "../context/EmailButtonContext";
+import { Providers } from "@/src/providers/providers";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -16,36 +11,25 @@ export const metadata = {
   description: "AI-Powered Veterinary Platform",
 };
 
-const geistSans = Geist({
-  display: "swap",
-  subsets: ["latin"],
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={geistSans.className} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/css?f%5B%5D=switzer@400,500,600,700&amp;display=swap"
+        />
+      </head>
       <body className="bg-background text-foreground" suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           <main className="max-h-screen w-screen flex flex-col">
-            <EmailButtonProvider>
-              <MicrophoneContextProvider>
-                <DeepgramContextProvider>
-                  <div className="flex flex-col">{children}</div>
-                  <Toaster />
-                </DeepgramContextProvider>
-              </MicrophoneContextProvider>
-            </EmailButtonProvider>
+            <div className="flex flex-col">{children}</div>
           </main>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

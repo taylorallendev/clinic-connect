@@ -5,7 +5,7 @@
  * Handles creating, reading, updating, and deleting cases
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/src/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Enums, TablesUpdate, TablesInsert } from "@/database.types";

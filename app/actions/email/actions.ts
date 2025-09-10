@@ -9,7 +9,7 @@ import { getCurrentUserId } from "../common/auth";
 import { sendEmail } from "./service";
 import { getTemplateById } from "../templates/actions";
 import { EmailResponse } from "../types";
-import { isValidEmail } from "@/lib/email";
+import { isValidEmail } from "@/src/lib/email";
 
 /**
  * Sends an email using a template

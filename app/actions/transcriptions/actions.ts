@@ -5,7 +5,7 @@
  * Handles creating, reading, and managing transcriptions
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/src/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserId } from "../common/auth";
 import { Tables } from "@/database.types";

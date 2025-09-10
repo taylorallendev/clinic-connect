@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createClient } from "@/utils/supabase/middleware";
+import { createClient } from "@/src/lib/supabase/middleware";
 
 export const config = {
   matcher: [
@@ -35,33 +35,27 @@ export async function middleware(request: NextRequest) {
     "/reset-password",
     "/auth/callback",
     "/api/authenticate",
-    "/api/deepgram/authenticate"
+    "/api/deepgram/authenticate",
   ];
 
   // Define auth routes that should redirect to dashboard if already logged in
-  const authRoutes = [
-    "/sign-in",
-    "/sign-up",
-    "/forgot-password"
-  ];
+  const authRoutes = ["/sign-in", "/sign-up", "/forgot-password"];
 
-  const isPublicRoute = publicRoutes.some(route => 
-    pathname === route || pathname.startsWith(`${route}/`)
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  const isAuthRoute = authRoutes.some(route => 
-    pathname === route || pathname.startsWith(`${route}/`)
+  const isAuthRoute = authRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
   // If user is signed in and trying to access auth pages, redirect to dashboard
   if (session && isAuthRoute) {
-    return NextResponse.redirect(
-      new URL("/app/dashboard", request.url)
-    );
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // If user is not signed in and trying to access protected routes, redirect to sign-in
-  if (!session && pathname.startsWith("/app")) {
+  if (!session && pathname.startsWith("/dashboard")) {
     // Store the attempted URL to redirect back after login
     const redirectUrl = new URL("/sign-in", request.url);
     redirectUrl.searchParams.set("redirect_to", pathname);

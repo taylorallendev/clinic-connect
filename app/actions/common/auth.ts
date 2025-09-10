@@ -5,7 +5,7 @@
  * Handles user authentication, registration, and password management
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/src/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 /**

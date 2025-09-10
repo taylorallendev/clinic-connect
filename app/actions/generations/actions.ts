@@ -5,7 +5,7 @@
  * Handles AI-based content generation from templates and transcripts
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/src/lib/supabase/server";
 import { generateObject, generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { getCurrentUserId } from "../common/auth";

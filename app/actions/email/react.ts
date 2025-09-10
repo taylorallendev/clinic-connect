@@ -7,12 +7,12 @@
 import { Resend } from "resend";
 import { getCurrentUserId } from "../common/auth";
 import { EmailResponse } from "../types";
-import { EMAIL_CONFIG } from "@/lib/email";
-import { isValidEmail } from "@/lib/email";
+import { EMAIL_CONFIG } from "@/src/lib/email";
+import { isValidEmail } from "@/src/lib/email";
 import {
   renderPasswordResetEmail,
   renderWelcomeEmail,
-} from "@/lib/email-renderer";
+} from "@/src/lib/email-renderer";
 
 // Initialize Resend with API key
 let resendInstance: Resend | null = null;

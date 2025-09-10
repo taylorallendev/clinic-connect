@@ -5,12 +5,12 @@
  * Handles creating, reading, updating, and deleting templates
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/src/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserId } from "../common/auth";
 import { Tables, TablesInsert, TablesUpdate } from "@/database.types";
 import { TemplateInsert, TemplateUpdate } from "../types";
-import { EMAIL_CONFIG } from "@/lib/email";
+import { EMAIL_CONFIG } from "@/src/lib/email";
 
 /**
  * Get all templates

@@ -5,8 +5,8 @@
  */
 
 import { getCurrentUserId } from "../common/auth";
-import { createClient } from "@/utils/supabase/server";
-import { EMAIL_CONFIG } from "@/lib/email";
+import { createClient } from "@/src/lib/supabase/server";
+import { EMAIL_CONFIG } from "@/src/lib/email";
 import { EmailResponse } from "../types";
 
 /**

@@ -5,7 +5,7 @@
  * Handles listing, filtering, and retrieving appointment data
  */
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/src/lib/supabase/server";
 import { Tables, Database } from "@/database.types";
 
 /**
